@@ -1,0 +1,25 @@
+import { Link } from 'react-router-dom'
+
+export default function ServiceCard({ service }) {
+  return (
+    <Link
+      to={`/services/${service._id}`}
+      className="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-1"
+    >
+      <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-5 group-hover:bg-primary group-hover:text-white transition-colors">
+        <svg className="w-7 h-7 text-primary group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+        </svg>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
+        {service.name}
+      </h3>
+      <p className="text-sm text-gray-500 leading-relaxed mb-4 line-clamp-2">
+        {service.description || 'Comprehensive healthcare service provided by our experienced team.'}
+      </p>
+      <span className="text-sm font-medium text-primary group-hover:underline">
+        Learn more →
+      </span>
+    </Link>
+  )
+}

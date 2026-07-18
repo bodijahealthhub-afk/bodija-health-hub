@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
+  <!-- Medical Cross -->
+  <g transform="translate(10, 10)">
+    <!-- Cross vertical -->
+    <rect x="25" y="0" width="30" height="100" rx="8" fill="#0D9488"/>
+    <!-- Cross horizontal -->
+    <rect x="0" y="25" width="80" height="30" rx="8" fill="#0D9488"/>
+    <!-- Stethoscope tubing -->
+    <path d="M40 15 C 65 15, 65 50, 50 50 C 35 50, 35 75, 50 75" 
+          stroke="#0B7F74" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- Stethoscope head -->
+    <circle cx="50" cy="82" r="12" fill="#0D9488" stroke="#0B7F74" stroke-width="3"/>
+    <circle cx="50" cy="82" r="6" fill="#0B7F74"/>
+  </g>
+  <!-- Text -->
+  <text x="110" y="42" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="bold" fill="#0D9488">Bodija</text>
+  <text x="110" y="78" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="bold" fill="#0D9488">Health</text>
+  <text x="110" y="114" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="bold" fill="#0D9488">Hub</text>
+</svg>
