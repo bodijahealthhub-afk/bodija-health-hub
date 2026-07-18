@@ -1,9 +1,13 @@
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+// Load .env from project root (works for both local and Render)
+const rootDir = path.resolve(__dirname, '../..');
+require('dotenv').config({ path: path.join(rootDir, '.env') });
 
-const db = new Database(path.join(__dirname, '..', process.env.DB_PATH || './database.sqlite'));
+// Use DB_PATH from env, or default to server/database.sqlite for local dev
+const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'database.sqlite');
+const db = new Database(path.isAbsolute(dbPath) ? dbPath : path.join(rootDir, dbPath));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');

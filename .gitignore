@@ -1,6 +1,7 @@
 node_modules/
 client/node_modules/
 server/database.sqlite
+data/
 .env
 *.log
 .DS_Store
