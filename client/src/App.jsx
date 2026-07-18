@@ -130,7 +130,8 @@ export default function App() {
             <Route path="site-settings" element={<AdminSiteSettings />} />
             <Route path="media" element={<AdminMediaLibrary />} />
             <Route path="seo" element={<AdminSeoSettings />} />
-            <Route path="backup" element={<AdminBackupRestore />}`n          <Route path="admin-users" element={<AdminManagement />} /> />
+            <Route path="backup" element={<AdminBackupRestore />} />
+            <Route path="admin-users" element={<AdminManagement />} />
           </Route>
         </Route>
       </Routes>

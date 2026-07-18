@@ -48,9 +48,9 @@ const navGroups = [
       { path: '/admin/media', label: 'Media Library', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
       { path: '/admin/seo', label: 'SEO', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
       { path: '/admin/site-settings', label: 'Site Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+      { path: '/admin/admin-users', label: 'Admin Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+      { path: '/admin/backup', label: 'Backup & Restore', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' },
       { path: '/admin/settings', label: 'Settings', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
-      { path: '/admin/backup', label: 'Admin Users', path: '/admin/admin-users' },
-    { label: 'Backup & Restore', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
     ],
   },
 ];
@@ -76,7 +76,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
           {!collapsed && (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center font-bold text-white">
-                BHH
+                B
               </div>
               <span className="font-semibold text-lg">Bodija Health</span>
             </div>
@@ -96,36 +96,34 @@ const Sidebar = ({ collapsed, onToggle }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4">
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navGroups.map((group) => (
-            <div key={group.label}>
+            <div key={group.label} className="mb-4">
               {!collapsed && (
-                <p className="px-3 mb-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <p className="px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   {group.label}
                 </p>
               )}
-              <div className="space-y-1">
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === '/admin'}
-                    onClick={() => window.innerWidth < 1024 && onToggle()}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                        isActive
-                          ? 'bg-teal-600 text-white'
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                      } ${collapsed ? 'justify-center' : ''}`
-                    }
-                  >
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                    </svg>
-                    {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
-                  </NavLink>
-                ))}
-              </div>
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.path === '/admin'}
+                  onClick={() => window.innerWidth < 1024 && onToggle()}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-teal-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    } ${collapsed ? 'justify-center' : ''}`
+                  }
+                >
+                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                  {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+                </NavLink>
+              ))}
             </div>
           ))}
         </nav>
@@ -140,4 +138,3 @@ const Sidebar = ({ collapsed, onToggle }) => {
 };
 
 export default Sidebar;
-
