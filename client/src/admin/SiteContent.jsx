@@ -270,21 +270,67 @@ export default function SiteContent() {
     <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Headline</label>
-        <input
-          type="text"
-          value={content.contact_headline || ''}
-          onChange={(e) => updateField('contact_headline', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-        />
+        <input type="text" value={content.contact_headline || ''} onChange={(e) => updateField('contact_headline', e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-        <textarea
-          value={content.contact_description || ''}
-          onChange={(e) => updateField('contact_description', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-        />
+        <textarea value={content.contact_description || ''} onChange={(e) => updateField('contact_description', e.target.value)} rows={4}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+          <input type="tel" value={content.contact_phone || ''} onChange={(e) => updateField('contact_phone', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="+234 801 234 5678" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp Number</label>
+          <input type="tel" value={content.contact_whatsapp || ''} onChange={(e) => updateField('contact_whatsapp', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="+234 801 234 5678" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <input type="email" value={content.contact_email || ''} onChange={(e) => updateField('contact_email', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="info@bodijahealthhub.com" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Working Hours</label>
+          <input type="text" value={content.contact_hours || ''} onChange={(e) => updateField('contact_hours', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Mon-Fri: 8AM - 6PM" />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+        <input type="text" value={content.contact_address || ''} onChange={(e) => updateField('contact_address', e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Bodija, Ibadan, Oyo State, Nigeria" />
+      </div>
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Media Links</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Instagram URL</label>
+            <input type="url" value={content.social_instagram || ''} onChange={(e) => updateField('social_instagram', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://instagram.com/..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Facebook URL</label>
+            <input type="url" value={content.social_facebook || ''} onChange={(e) => updateField('social_facebook', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://facebook.com/..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Twitter/X URL</label>
+            <input type="url" value={content.social_twitter || ''} onChange={(e) => updateField('social_twitter', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://twitter.com/..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn URL</label>
+            <input type="url" value={content.social_linkedin || ''} onChange={(e) => updateField('social_linkedin', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="https://linkedin.com/..." />
+          </div>
+        </div>
       </div>
     </div>
   )
