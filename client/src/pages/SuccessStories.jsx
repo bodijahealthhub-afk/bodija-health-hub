@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiStar, FiQuote } from 'react-icons/fi'
+import { FiStar } from 'react-icons/fi'
 
 export default function SuccessStories() {
   const [testimonials, setTestimonials] = useState([])
@@ -26,7 +26,7 @@ export default function SuccessStories() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {stories.map((story, i) => (
               <div key={i} className="bg-warm-white rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow">
-                <FiQuote className="w-8 h-8 text-primary/30 mb-4" />
+                <svg className="w-8 h-8 text-primary/30 mb-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
                 <p className="text-gray-600 leading-relaxed mb-6">"{story.content}"</p>
                 <div className="flex items-center justify-between">
                   <div>
