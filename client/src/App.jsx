@@ -16,6 +16,13 @@ import FAQ from './pages/FAQ'
 import Careers from './pages/Careers'
 import Resources from './pages/Resources'
 import Sitemap from './pages/Sitemap'
+import LiveCare from './pages/LiveCare'
+import HearMenders from './pages/HearMenders'
+import BACR from './pages/BACR'
+import PartnerDetail from './pages/PartnerDetail'
+import Community from './pages/Community'
+import SuccessStories from './pages/SuccessStories'
+import Newsroom from './pages/Newsroom'
 
 // Admin imports
 import AdminLogin from './admin/AdminLogin'
@@ -90,6 +97,13 @@ function PublicLayout() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/sitemap" element={<Sitemap />} />
+          <Route path="/livecare" element={<LiveCare />} />
+          <Route path="/hear-menders" element={<HearMenders />} />
+          <Route path="/bacr" element={<BACR />} />
+          <Route path="/partner/:id" element={<PartnerDetail />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/success-stories" element={<SuccessStories />} />
+          <Route path="/newsroom" element={<Newsroom />} />
         </Routes>
       </main>
       <Footer />
@@ -138,4 +152,5 @@ export default function App() {
     </AuthProvider>
   )
 }
+
 
