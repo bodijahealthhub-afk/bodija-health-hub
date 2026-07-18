@@ -1,9 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const ImageUpload = ({ currentImage, onUpload, onRemove, label = 'Upload Image' }) => {
   const [preview, setPreview] = useState(currentImage || null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Update preview when currentImage prop changes (e.g., after API fetch)
+  useEffect(() => {
+    setPreview(currentImage || null);
+  }, [currentImage]);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];

@@ -54,8 +54,10 @@ export default function SiteContent() {
   const handleSave = async () => {
     setSaving(true)
     const token = localStorage.getItem('adminToken')
-    console.log('Save attempt - token:', token ? 'exists' : 'MISSING')
-    console.log('Content to save:', content)
+    console.log('=== SAVE DEBUG ===')
+    console.log('Token:', token ? token.substring(0, 20) + '...' : 'MISSING')
+    console.log('Content keys:', Object.keys(content))
+    console.log('Content sample:', JSON.stringify(content).substring(0, 200))
     try {
       const res = await fetch('/api/admin/site-content', {
         method: 'PUT',
@@ -66,7 +68,8 @@ export default function SiteContent() {
         body: JSON.stringify(content)
       })
       const responseText = await res.text()
-      console.log('Save response:', res.status, responseText)
+      console.log('Response status:', res.status)
+      console.log('Response body:', responseText.substring(0, 200))
       if (res.ok) {
         toast.success('Content saved successfully!')
       } else {

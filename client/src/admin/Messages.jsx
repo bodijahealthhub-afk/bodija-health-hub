@@ -20,7 +20,7 @@ const Messages = () => {
         });
         if (response.ok) {
           const data = await response.json();
-          setMessages(data.messages || []);
+          setMessages(Array.isArray(data) ? data : data.messages || []);
         }
       } catch {
         // Mock data
@@ -54,7 +54,7 @@ const Messages = () => {
     }
   }, [messages, searchQuery]);
 
-  const unreadCount = messages.filter((msg) => !msg.read).length;
+  const unreadCount = messages.filter((msg) => !msg.is_read).length;
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -95,7 +95,7 @@ const Messages = () => {
   const openMessage = (msg) => {
     setSelectedMessage(msg);
     setShowDetail(true);
-    if (!msg.read) {
+    if (!msg.is_read) {
       handleMarkAsRead(msg.id);
     }
   };
@@ -142,13 +142,13 @@ const Messages = () => {
                 key={msg.id}
                 onClick={() => openMessage(msg)}
                 className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                  !msg.read ? 'bg-teal-50/50' : ''
+                  !msg.is_read ? 'bg-teal-50/50' : ''
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      !msg.read ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-600'
+                      !msg.is_read ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-600'
                     }`}>
                       <span className="font-medium text-sm">
                         {msg.name.split(' ').map((n) => n[0]).join('')}
@@ -156,22 +156,22 @@ const Messages = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`text-sm ${!msg.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                        <h3 className={`text-sm ${!msg.is_read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
                           {msg.name}
                         </h3>
-                        {!msg.read && (
+                        {!msg.is_read && (
                           <span className="w-2 h-2 bg-teal-500 rounded-full" />
                         )}
                       </div>
                       <p className="text-sm text-gray-500 truncate">{msg.email}</p>
-                      <p className={`text-sm mt-1 ${!msg.read ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
+                      <p className={`text-sm mt-1 ${!msg.is_read ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
                         {msg.subject}
                       </p>
                       <p className="text-sm text-gray-500 truncate mt-1">{msg.message}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <span className="text-xs text-gray-500">{msg.date}</span>
+                    <span className="text-xs text-gray-500">{msg.created_at ? new Date(msg.created_at).toLocaleDateString() : "N/A"}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -215,7 +215,7 @@ const Messages = () => {
                   <p className="text-sm text-gray-500">{selectedMessage.email}</p>
                 </div>
               </div>
-              <span className="text-sm text-gray-500">{selectedMessage.date}</span>
+              <span className="text-sm text-gray-500">{selectedMessage?.created_at ? new Date(selectedMessage.created_at).toLocaleDateString() : "N/A"}</span>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
               <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.message}</p>

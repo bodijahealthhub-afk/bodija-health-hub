@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { FiMapPin, FiPhone, FiMail, FiClock, FiArrowRight, FiDownload, FiUsers, FiActivity, FiBell } from 'react-icons/fi'
+import { FiMapPin, FiPhone, FiMail, FiClock, FiArrowRight, FiDownload, FiUsers, FiActivity, FiBell, FiInstagram, FiFacebook, FiTwitter, FiLinkedin } from 'react-icons/fi'
 
 const actionCards = [
   {
@@ -45,6 +45,7 @@ export default function Contact() {
   const [contactDetails, setContactDetails] = useState(defaultContactDetails)
   const [headline, setHeadline] = useState('Ready to Be Part of Something Bigger?')
   const [subtext, setSubtext] = useState('Whether you\'re a patient, a family member, a healthcare provider, or a caregiver — we\'re here to connect you with the care, the partners, and the community you need.')
+  const [social, setSocial] = useState({})
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -77,6 +78,14 @@ export default function Contact() {
             { icon: FiMail, label: 'Email', value: email, sub: '' },
             { icon: FiClock, label: 'Working Hours', value: hours.split(',')[0] || 'Mon - Fri: 8:00 AM - 6:00 PM', sub: hours.split(',').slice(1).join(',').trim() || '' },
           ])
+
+          // Social media
+          setSocial({
+            instagram: data.social_instagram || '',
+            facebook: data.social_facebook || '',
+            twitter: data.social_twitter || '',
+            linkedin: data.social_linkedin || '',
+          })
         }
       } catch {
         // Use defaults
@@ -184,6 +193,33 @@ export default function Contact() {
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 />
+              </div>
+
+              {/* Social Media */}
+              <div className="bg-white rounded-xl p-5 border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-3">Follow Us</h3>
+                <div className="flex gap-3">
+                  {social.instagram && (
+                    <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600 hover:bg-pink-200 transition-colors">
+                      <FiInstagram className="w-5 h-5" />
+                    </a>
+                  )}
+                  {social.facebook && (
+                    <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 hover:bg-blue-200 transition-colors">
+                      <FiFacebook className="w-5 h-5" />
+                    </a>
+                  )}
+                  {social.twitter && (
+                    <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center text-sky-600 hover:bg-sky-200 transition-colors">
+                      <FiTwitter className="w-5 h-5" />
+                    </a>
+                  )}
+                  {social.linkedin && (
+                    <a href={social.linkedin} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-700 hover:bg-blue-200 transition-colors">
+                      <FiLinkedin className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 

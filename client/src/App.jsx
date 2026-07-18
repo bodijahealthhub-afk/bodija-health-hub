@@ -9,6 +9,7 @@ import Partners from './pages/Partners'
 import Platforms from './pages/Platforms'
 import Upcoming from './pages/Upcoming'
 import Contact from './pages/Contact'
+import Appointments from './pages/Appointments'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import FAQ from './pages/FAQ'
@@ -32,6 +33,7 @@ import AdminMessages from './admin/Messages'
 import AdminNewsletter from './admin/Newsletter'
 import AdminTestimonials from './admin/Testimonials'
 import AdminSettings from './admin/Settings'
+import AdminManagement from './admin/AdminManagement'
 import AdminSiteContent from './admin/SiteContent'
 import AdminHeroContent from './admin/HeroContent'
 import AdminFooterContent from './admin/FooterContent'
@@ -81,6 +83,7 @@ function PublicLayout() {
           <Route path="/platforms" element={<Platforms />} />
           <Route path="/upcoming" element={<Upcoming />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/appointments" element={<Appointments />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/faq" element={<FAQ />} />
@@ -127,10 +130,11 @@ export default function App() {
             <Route path="site-settings" element={<AdminSiteSettings />} />
             <Route path="media" element={<AdminMediaLibrary />} />
             <Route path="seo" element={<AdminSeoSettings />} />
-            <Route path="backup" element={<AdminBackupRestore />} />
+            <Route path="backup" element={<AdminBackupRestore />}`n          <Route path="admin-users" element={<AdminManagement />} /> />
           </Route>
         </Route>
       </Routes>
     </AuthProvider>
   )
 }
+
