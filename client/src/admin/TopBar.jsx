@@ -25,13 +25,27 @@ const TopBar = ({ onMenuToggle, user }) => {
     navigate('/admin/login');
   };
 
-  const notifications = [
-    { id: 1, text: 'New appointment booked', time: '5 min ago', read: false },
-    { id: 2, text: 'Patient message received', time: '1 hour ago', read: false },
-    { id: 3, text: 'Dr. Adewale confirmed schedule', time: '3 hours ago', read: true },
-  ];
-
+  const [notifications, setNotifications] = useState([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (!token) return;
+        const res = await fetch('/api/notifications', {
+          headers: { Authorization: Bearer  }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data);
+        }
+      } catch {}
+    };
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
@@ -139,3 +153,4 @@ const TopBar = ({ onMenuToggle, user }) => {
 };
 
 export default TopBar;
+

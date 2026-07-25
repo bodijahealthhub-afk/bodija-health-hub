@@ -67,10 +67,10 @@ export default function Contact() {
           if (data.contact_description) setSubtext(data.contact_description)
 
           // Build contact details from API
-          const phone = data.phone || '+234 801 234 5678'
-          const email = data.email || 'info@bodijahealthhub.com'
-          const address = data.address || '12 Bodija Road, Ibadan, Oyo State, Nigeria'
-          const hours = data.opening_hours || 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'
+          const phone = data.contact_phone || data.phone || '+234 801 234 5678'
+          const email = data.contact_email || data.email || 'info@bodijahealthhub.com'
+          const address = data.contact_address || data.address || '12 Bodija Road, Ibadan, Oyo State, Nigeria'
+          const hours = data.contact_hours || data.opening_hours || 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'
 
           setContactDetails([
             { icon: FiMapPin, label: 'Location', value: address.split(',')[0] || 'Bodija, Ibadan', sub: address.split(',').slice(1).join(',').trim() || 'Oyo State, Nigeria' },
@@ -324,3 +324,4 @@ export default function Contact() {
     </div>
   )
 }
+

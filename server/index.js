@@ -50,7 +50,7 @@ app.use('/api/admin/events', require('./routes/events'));
 app.use('/api/admin/gallery', require('./routes/gallery'));
 app.use('/api/admin/doctors', require('./routes/doctors'));
 app.use('/api/admin/appointments', require('./routes/appointments'));
-app.use('/api/admin/patients', require('./routes/patients'));
+app.use('/api/notifications', require('./routes/notifications'));\napp.use('/api/admin/notifications', require('./routes/notifications'));\n\napp.use('/api/admin/patients', require('./routes/patients'));
 
 // Public content routes for frontend pages
 app.use('/api/page-content', require('./routes/pageContent'));
@@ -76,3 +76,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
