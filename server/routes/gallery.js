@@ -1,14 +1,14 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 const db = require('../models/database');
+const { uploadsDir } = require('../utils/uploads');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Multer setup
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'uploads')),
+  destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`)
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });

@@ -215,16 +215,39 @@ db.exec(`
     data TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS career_applications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    position TEXT NOT NULL,
+    cover_letter TEXT,
+    status TEXT DEFAULT 'new' CHECK(status IN ('new','reviewing','shortlisted','rejected','hired')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS upcoming_registrations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    area_of_interest TEXT NOT NULL,
+    status TEXT DEFAULT 'new',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Seed data if empty
 const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
 if (userCount === 0) {
-  const adminHash = bcrypt.hashSync('admin123', 10);
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@bodijahealthhub.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  const adminHash = bcrypt.hashSync(adminPassword, 10);
 
   // Admin user
   db.prepare(`INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)`).run(
-    'Admin User', 'admin@bodijahealthhub.com', adminHash, 'admin', '+234 801 234 5678'
+    'Admin User', adminEmail, adminHash, 'admin', '+234 801 234 5678'
   );
 
   // Doctor users
@@ -360,6 +383,11 @@ if (userCount === 0) {
     // Contact
     ['contact_headline', 'Ready to Be Part of Something Bigger?'],
     ['contact_description', 'Whether you\'re a patient, a family member, a healthcare provider, or a caregiver — we\'re here to connect you with the care, the partners, and the community you need.'],
+    ['contact_phone', '+234 801 234 5678'],
+    ['contact_email', 'info@bodijahealthhub.com'],
+    ['contact_address', '12 Bodija Road, Ibadan, Oyo State, Nigeria'],
+    ['contact_whatsapp', '+234 801 234 5678'],
+    ['contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'],
     // Footer
     ['footer_tagline', 'Your Trusted Healthcare Partner in Ibadan. Providing compassionate, comprehensive medical services for individuals and families.'],
     ['footer_copyright', '© 2025 Bodija Health Hub. All rights reserved.'],

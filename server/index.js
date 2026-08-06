@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(process.env.UPLOADS_DIR || path.join(__dirname, 'uploads')));
 
 // Public routes
 app.use('/api/auth', require('./routes/auth'));
@@ -31,6 +31,9 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/site-content', require('./routes/siteContent'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/page-content', require('./routes/pageContent'));
+app.use('/api/careers', require('./routes/careers'));
+app.use('/api/upcoming-registrations', require('./routes/upcoming'));
+app.use('/api/search', require('./routes/search'));
 
 // Admin routes
 app.use('/api/admin/site-content', require('./routes/siteContent'));

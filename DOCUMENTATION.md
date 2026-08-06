@@ -5,7 +5,7 @@
 Bodija Health Hub (BHH) is a community-based integrated healthcare ecosystem website. It connects clinics, specialists, wellness services, and digital platforms under one hub — making accessible, connected, and continuous care a reality for families in Ibadan, Nigeria.
 
 **Live Website:** https://client-six-eta-66.vercel.app  
-**Backend API:** https://bodija-health-hub.onrender.com  
+**Backend API:** https://backend-production-f347f.up.railway.app  
 **Admin Panel:** https://client-six-eta-66.vercel.app/admin  
 **GitHub:** https://github.com/bodijahealthhub-afk/bodija-health-hub
 
@@ -19,7 +19,7 @@ Bodija Health Hub (BHH) is a community-based integrated healthcare ecosystem web
 | Backend | Node.js + Express.js | REST API server |
 | Database | SQLite (better-sqlite3) | Persistent data storage |
 | Hosting (Frontend) | Vercel | Static hosting, CDN, HTTPS |
-| Hosting (Backend) | Render | Node.js server hosting |
+| Hosting (Backend) | Railway | Node.js server hosting with persistent volume |
 | Auth | JWT (jsonwebtoken) | Session management |
 | Password Hashing | bcryptjs | Secure password storage |
 | File Uploads | Multer | Image handling |
@@ -208,6 +208,9 @@ BodijaHealthHub/
 | POST | /api/appointments | Book an appointment |
 | POST | /api/auth/login | Login and get JWT token |
 | POST | /api/auth/register | Register new user |
+| POST | /api/careers | Submit a job application |
+| POST | /api/upcoming-registrations | Register interest for upcoming projects |
+| GET | /api/search?q=term | Search services, doctors, blog, events |
 
 ### Admin Endpoints (JWT Auth Required)
 
@@ -239,6 +242,9 @@ BodijaHealthHub/
 | GET | /api/messages | admin, super_admin | View messages |
 | PUT | /api/messages/:id/read | admin, super_admin | Mark message as read |
 | GET | /api/newsletter/subscribers | admin, super_admin | View subscribers |
+| GET/DELETE | /api/careers | admin, super_admin | Manage job applications |
+| PUT | /api/careers/:id/status | admin, super_admin | Update application status |
+| GET/DELETE | /api/upcoming-registrations | admin, super_admin | Manage project interest registrations |
 
 ---
 
@@ -337,24 +343,34 @@ All website content is stored in the `site_content` database table as key-value 
 - **Build command:** `npm run build`
 - **Output directory:** `dist`
 - **Framework:** Vite
-- **Rewrites:** `/api/*` → `https://bodija-health-hub.onrender.com/api/*`
+- **Rewrites:** `/api/*` → `https://backend-production-f347f.up.railway.app/api/*`
+- **Rewrites:** `/uploads/*` → `https://backend-production-f347f.up.railway.app/uploads/*`
 - **SPA fallback:** All non-asset routes → `/index.html`
 
-### Backend (Render)
+### Backend (Railway)
 
-- **Build command:** `npm install` (root)
-- **Start command:** `node index.js`
-- **Port:** 10000 (from PORT env var)
-- **Database:** SQLite at `./data/database.sqlite`
-- **Auto-deploy:** On GitHub push to master
+- **Service:** `backend` (Railway project `feisty-creativity`)
+- **Build:** Nixpacks (`railway up` from repo root, or GitHub source)
+- **Start command:** `node server/index.js`
+- **Node version:** pinned via `engines` (Node 22 — required for better-sqlite3 prebuilt binaries)
+- **Port:** 8080 (from PORT env var)
+- **Persistent volume:** `backend-volume` mounted at `/data`
+  - `DB_PATH=/data/database.sqlite`
+  - `UPLOADS_DIR=/data/uploads`
+- **Domain:** `https://backend-production-f347f.up.railway.app`
+
+### Redeploying the backend
+
+```bash
+cd BodijaHealthHub
+railway up --service backend --detach --json
+```
 
 ---
 
 ## Default Credentials
 
-| Account | Email | Password | Role |
-|---------|-------|----------|------|
-| Admin | admin@bodijahealthhub.com | admin123 | admin |
+Admin credentials are **not stored in this repository**. On first boot the server creates an admin user using the `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables. Contact the project owner for the current production credentials.
 
 ---
 
@@ -362,17 +378,21 @@ All website content is stored in the `site_content` database table as key-value 
 
 ### Backend (.env)
 
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| JWT_SECRET | bhh_secret_key_2026 | JWT token signing |
-| PORT | 10000 | Server port |
-| DB_PATH | ./data/database.sqlite | Database file path |
+| Variable | Purpose |
+|----------|---------|
+| JWT_SECRET | JWT token signing (required; set per environment, never commit) |
+| PORT | Server port |
+| DB_PATH | Database file path (point at a persistent volume in production) |
+| UPLOADS_DIR | Directory for uploaded files (point at a persistent volume in production) |
+| ADMIN_EMAIL | Initial admin email (used on first boot seed) |
+| ADMIN_PASSWORD | Initial admin password (used on first boot seed) |
 
 ### Frontend (vercel.json)
 
 | Setting | Value | Purpose |
 |---------|-------|---------|
-| Rewrites /api/* | https://bodija-health-hub.onrender.com/api/* | Proxy API calls to backend |
+| Rewrites /api/* | https://backend-production-f347f.up.railway.app/api/* | Proxy API calls to backend |
+| Rewrites /uploads/* | https://backend-production-f347f.up.railway.app/uploads/* | Proxy uploaded images |
 
 ---
 
