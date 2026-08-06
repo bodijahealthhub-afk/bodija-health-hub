@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// GET /api/gallery (public)
+// GET /api/gallery (public) or admin (with valid token — returns {images})
 router.get('/', (req, res) => {
   try {
     const { category, album } = req.query;
@@ -31,7 +31,30 @@ router.get('/', (req, res) => {
 
     query += ' ORDER BY created_at DESC';
     const items = db.prepare(query).all(...params);
-    res.json(items);
+
+    const toClient = (item) => ({
+      id: item.id,
+      title: item.title,
+      url: item.image_url,
+      image_url: item.image_url,
+      category: item.category,
+      album: item.album,
+      createdAt: item.created_at,
+      created_at: item.created_at,
+    });
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      try {
+        const decoded = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
+        if (['admin', 'super_admin', 'content_manager'].includes(decoded.role)) {
+          return res.json({ images: items.map(toClient) });
+        }
+      } catch (err) { /* fall through to public */ }
+    }
+
+    res.json(items.map(toClient));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch gallery' });
   }

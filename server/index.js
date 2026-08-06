@@ -23,6 +23,8 @@ app.use('/api/patients', require('./routes/patients'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/gallery', require('./routes/gallery'));
+app.use('/api/media', require('./routes/media'));
+app.use('/api/seo', require('./routes/seo'));
 app.use('/api/testimonials', require('./routes/testimonials'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/newsletter', require('./routes/newsletter'));
@@ -52,6 +54,7 @@ app.use('/api/admin/doctors', require('./routes/doctors'));
 app.use('/api/admin/appointments', require('./routes/appointments'));
 app.use('/api/admin/patients', require('./routes/patients'));
 app.use('/api/admin/notifications', require('./routes/notifications'));
+app.use('/api/admin/dashboard', require('./routes/dashboard'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

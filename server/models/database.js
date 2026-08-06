@@ -238,9 +238,7 @@ db.exec(`
   );
 `);
 
-// Seed data if empty
-const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-if (userCount === 0) {
+const insertUsersAndDoctors = () => {
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bodijahealthhub.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const adminHash = bcrypt.hashSync(adminPassword, 10);
@@ -280,7 +278,9 @@ if (userCount === 0) {
   for (const doc of doctorData) {
     insertDoctor.run(...doc);
   }
+};
 
+const insertContentDefaults = () => {
   // Services (all 16)
   const insertService = db.prepare(`INSERT INTO services (name, description, category, price, icon) VALUES (?, ?, ?, ?, ?)`);
   const services = [
@@ -473,6 +473,46 @@ if (userCount === 0) {
   for (const [key, value] of siteSettingsDefaults) {
     insertSiteSetting.run(key, value);
   }
+};
+
+// Seed data if empty
+const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+if (userCount === 0) {
+  insertUsersAndDoctors();
+  insertContentDefaults();
 }
+
+// Reset all content to the original defaults (used by the admin backup/reset endpoint).
+// Users, doctors, appointments, patients, messages, and uploads are preserved.
+function resetContentToDefaults() {
+  const contentTables = [
+    'services',
+    'blog_posts',
+    'events',
+    'gallery',
+    'testimonials',
+    'contact_info',
+    'site_content',
+    'page_sections',
+    'media',
+    'seo_settings',
+    'site_settings',
+  ];
+
+  db.pragma('foreign_keys = OFF');
+  try {
+    const del = db.transaction(() => {
+      for (const table of contentTables) {
+        db.prepare(`DELETE FROM ${table}`).run();
+      }
+    });
+    del();
+    insertContentDefaults();
+  } finally {
+    db.pragma('foreign_keys = ON');
+  }
+}
+
+db.resetContentToDefaults = resetContentToDefaults;
 
 module.exports = db;

@@ -4,6 +4,13 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+const toClient = (p) => ({
+  ...p,
+  bloodGroup: p.blood_group,
+  medicalHistory: p.medical_history,
+  createdAt: p.created_at,
+});
+
 // GET /api/patients
 router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
   try {
@@ -26,7 +33,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
 
     query += ' ORDER BY created_at DESC';
     const patients = db.prepare(query).all(...params);
-    res.json(patients);
+    res.json({ patients: patients.map(toClient) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch patients' });
   }
@@ -39,7 +46,7 @@ router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
     if (!patient) {
       return res.status(404).json({ error: 'Patient not found' });
     }
-    res.json(patient);
+    res.json(toClient(patient));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch patient' });
   }
@@ -48,7 +55,7 @@ router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
 // POST /api/patients
 router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
   try {
-    const { name, email, phone, age, gender, address, blood_group, medical_history } = req.body;
+    const { name, email, phone, age, gender, address, bloodGroup, blood_group, medicalHistory, medical_history } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Patient name is required' });
     }
@@ -56,10 +63,11 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'recepti
     const result = db.prepare(
       `INSERT INTO patients (name, email, phone, age, gender, address, blood_group, medical_history)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(name, email || null, phone || null, age || null, gender || null, address || null, blood_group || null, medical_history || null);
+    ).run(name, email || null, phone || null, age || null, gender || null, address || null,
+      bloodGroup || blood_group || null, medicalHistory || medical_history || null);
 
     const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(result.lastInsertRowid);
-    res.status(201).json(patient);
+    res.status(201).json(toClient(patient));
   } catch (err) {
     res.status(500).json({ error: 'Failed to create patient' });
   }
@@ -73,7 +81,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    const { name, email, phone, age, gender, address, blood_group, medical_history } = req.body;
+    const { name, email, phone, age, gender, address, bloodGroup, blood_group, medicalHistory, medical_history } = req.body;
 
     db.prepare(
       `UPDATE patients SET
@@ -87,10 +95,10 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
         medical_history = COALESCE(?, medical_history)
        WHERE id = ?`
     ).run(name || null, email || null, phone || null, age ?? null, gender || null,
-      address || null, blood_group || null, medical_history || null, req.params.id);
+      address || null, bloodGroup || blood_group || null, medicalHistory || medical_history || null, req.params.id);
 
     const updated = db.prepare('SELECT * FROM patients WHERE id = ?').get(req.params.id);
-    res.json(updated);
+    res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update patient' });
   }

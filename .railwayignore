@@ -1,0 +1,8 @@
+node_modules
+.git
+data
+client
+docs
+database.sqlite
+database.sqlite-shm
+database.sqlite-wal

@@ -5,7 +5,10 @@ const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'bhh_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 // POST /api/auth/login
 router.post('/login', (req, res) => {

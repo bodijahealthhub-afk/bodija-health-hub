@@ -47,7 +47,15 @@ router.post('/unsubscribe', (req, res) => {
 router.get('/subscribers', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
   try {
     const subscribers = db.prepare('SELECT * FROM newsletter_subscribers ORDER BY created_at DESC').all();
-    res.json(subscribers);
+    res.json({
+      subscribers: subscribers.map((s) => ({
+        id: s.id,
+        email: s.email,
+        name: '',
+        subscribedAt: s.created_at,
+        status: s.is_active ? 'active' : 'unsubscribed',
+      })),
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch subscribers' });
   }

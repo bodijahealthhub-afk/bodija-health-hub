@@ -4,41 +4,78 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /api/blog (public — published only)
-router.get('/', (req, res) => {
-  try {
-    const { category, page = 1, limit = 10 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+// GET /api/blog (public — published only) or /api/admin/blog (admin — all)
+router.get('/', (req, res, next) => {
+  const isAdmin = req.baseUrl.includes('/admin');
+  if (!isAdmin) {
+    try {
+      const { category, page = 1, limit = 10 } = req.query;
+      const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    let countQuery = "SELECT COUNT(*) as total FROM blog_posts WHERE status = 'published'";
-    let query = `SELECT bp.*, u.name as author_name
-                 FROM blog_posts bp
-                 LEFT JOIN users u ON bp.author_id = u.id
-                 WHERE bp.status = 'published'`;
-    const params = [];
+      let countQuery = "SELECT COUNT(*) as total FROM blog_posts WHERE status = 'published'";
+      let query = `SELECT bp.*, u.name as author_name
+                   FROM blog_posts bp
+                   LEFT JOIN users u ON bp.author_id = u.id
+                   WHERE bp.status = 'published'`;
+      const params = [];
 
-    if (category) {
-      query += ' AND bp.category LIKE ?';
-      countQuery += ' AND category LIKE ?';
-      params.push(`%${category}%`);
+      if (category) {
+        query += ' AND bp.category LIKE ?';
+        countQuery += ' AND category LIKE ?';
+        params.push(`%${category}%`);
+      }
+
+      const total = db.prepare(countQuery).get(...params).total;
+      query += ' ORDER BY bp.created_at DESC LIMIT ? OFFSET ?';
+      const posts = db.prepare(query).all(...params, parseInt(limit), offset);
+
+      res.json({ posts, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
+    } catch (err) {
+      console.error('Blog fetch error:', err.message, err.stack);
+      res.status(500).json({ error: 'Failed to fetch blog posts', details: err.message });
     }
-
-    const total = db.prepare(countQuery).get(...params).total;
-    query += ' ORDER BY bp.created_at DESC LIMIT ? OFFSET ?';
-    const posts = db.prepare(query).all(...params, parseInt(limit), offset);
-
-    res.json({ posts, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
-  } catch (err) {
-    console.error('Blog fetch error:', err.message, err.stack);
-    res.status(500).json({ error: 'Failed to fetch blog posts', details: err.message });
+    return;
   }
+
+  return authenticateToken(req, res, () => {
+    if (!['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    try {
+      const { status, category } = req.query;
+      let query = `SELECT bp.*, u.name as author
+                   FROM blog_posts bp
+                   LEFT JOIN users u ON bp.author_id = u.id
+                   WHERE 1=1`;
+      const params = [];
+
+      if (status) {
+        query += ' AND bp.status = ?';
+        params.push(status);
+      }
+      if (category) {
+        query += ' AND bp.category LIKE ?';
+        params.push(`%${category}%`);
+      }
+
+      query += ' ORDER BY bp.created_at DESC';
+      const posts = db.prepare(query).all(...params).map((p) => ({
+        ...p,
+        author: p.author || '',
+        date: p.created_at,
+      }));
+      res.json({ posts });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch blog posts' });
+    }
+  });
 });
 
 // GET /api/blog/admin (admin — all posts)
 router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), (req, res) => {
   try {
     const { status, category } = req.query;
-    let query = `SELECT bp.*, u.name as author_name
+    let query = `SELECT bp.*, u.name as author
                  FROM blog_posts bp
                  LEFT JOIN users u ON bp.author_id = u.id
                  WHERE 1=1`;
@@ -54,8 +91,12 @@ router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'con
     }
 
     query += ' ORDER BY bp.created_at DESC';
-    const posts = db.prepare(query).all(...params);
-    res.json(posts);
+    const posts = db.prepare(query).all(...params).map((p) => ({
+      ...p,
+      author: p.author || '',
+      date: p.created_at,
+    }));
+    res.json({ posts });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch blog posts' });
   }

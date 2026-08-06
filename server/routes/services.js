@@ -4,21 +4,31 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /api/services (public)
+const toClient = (s) => ({
+  ...s,
+  status: s.is_active ? 'active' : 'inactive',
+});
+
+// GET /api/services (public — active only) or /api/admin/services (admin — all)
 router.get('/', (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
     const { category } = req.query;
-    let query = 'SELECT * FROM services WHERE is_active = 1';
+    let query = 'SELECT * FROM services';
     const params = [];
 
+    if (!isAdmin) {
+      query += ' WHERE is_active = 1';
+    }
     if (category) {
-      query += ' AND category LIKE ?';
+      query += isAdmin ? ' WHERE' : ' AND';
+      query += ' category LIKE ?';
       params.push(`%${category}%`);
     }
 
     query += ' ORDER BY category, name';
     const services = db.prepare(query).all(...params);
-    res.json(services);
+    res.json(isAdmin ? { services: services.map(toClient) } : services);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch services' });
   }
@@ -31,7 +41,7 @@ router.get('/:id', (req, res) => {
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
-    res.json(service);
+    res.json(toClient(service));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch service' });
   }
@@ -40,17 +50,25 @@ router.get('/:id', (req, res) => {
 // POST /api/services (admin)
 router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), (req, res) => {
   try {
-    const { name, description, category, price, image, icon } = req.body;
+    const { name, description, category, price, image, icon, status } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Service name is required' });
     }
 
     const result = db.prepare(
-      'INSERT INTO services (name, description, category, price, image, icon) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(name, description || null, category || null, price || 0, image || null, icon || null);
+      'INSERT INTO services (name, description, category, price, image, icon, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      name,
+      description || null,
+      category || null,
+      price || 0,
+      image || null,
+      icon || null,
+      status === undefined ? 1 : (status === 'active' ? 1 : 0)
+    );
 
     const service = db.prepare('SELECT * FROM services WHERE id = ?').get(result.lastInsertRowid);
-    res.status(201).json(service);
+    res.status(201).json(toClient(service));
   } catch (err) {
     res.status(500).json({ error: 'Failed to create service' });
   }
@@ -64,7 +82,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    const { name, description, category, price, image, icon, is_active } = req.body;
+    const { name, description, category, price, image, icon, is_active, status } = req.body;
 
     db.prepare(
       `UPDATE services SET
@@ -76,10 +94,19 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
         icon = COALESCE(?, icon),
         is_active = COALESCE(?, is_active)
        WHERE id = ?`
-    ).run(name || null, description || null, category || null, price ?? null, image || null, icon || null, is_active ?? null, req.params.id);
+    ).run(
+      name || null,
+      description || null,
+      category || null,
+      price ?? null,
+      image || null,
+      icon || null,
+      (is_active !== undefined ? is_active : (status !== undefined ? (status === 'active' ? 1 : 0) : null)),
+      req.params.id
+    );
 
     const updated = db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
-    res.json(updated);
+    res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update service' });
   }

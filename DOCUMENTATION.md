@@ -198,6 +198,7 @@ BodijaHealthHub/
 | GET | /api/events | List active events |
 | GET | /api/testimonials | List active testimonials |
 | GET | /api/gallery | List gallery images |
+| GET | /api/media | List media files |
 | GET | /api/site-content | Get all website content |
 | GET | /api/site-content/:section | Get content for specific section |
 | GET | /api/settings | Get site settings |
@@ -222,29 +223,49 @@ BodijaHealthHub/
 | POST | /api/auth/create-admin | admin, super_admin | Create new admin user |
 | PUT | /api/auth/reset-password | admin, super_admin | Reset user password |
 | DELETE | /api/auth/users/:id | admin, super_admin | Delete user |
-| PUT | /api/site-content | admin, super_admin | Update website content |
-| PUT | /api/site-content/:section | admin, super_admin | Update specific section |
-| GET/PUT | /api/admin/site-settings | admin, super_admin | Manage site settings |
-| GET | /api/admin/site-content | admin, super_admin | Get all site content |
+| GET | /api/admin/dashboard | admin, super_admin, accountant | Dashboard stats + recent appointments (`{stats, recentAppointments}`, `monthlyRevenue` preformatted ₦) |
+| GET/POST/PUT/DELETE | /api/admin/services | admin, super_admin | Service management (wrapped `{services}`, `status` camelCase) |
+| GET/POST/PUT/DELETE | /api/admin/doctors | admin, super_admin | Doctor management (wrapped `{doctors}`, `status` camelCase, PATCH `/:id/status`) |
+| GET/POST/PUT/DELETE | /api/admin/appointments | admin, super_admin, receptionist | Appointment management (wrapped `{appointments}` with `patientName`/`doctor`/`service`/`paymentStatus`, PATCH `/:id/status`, PATCH `/:id/notes`) |
+| GET/POST/PUT/DELETE | /api/admin/patients | admin, super_admin | Patient management (wrapped `{patients}`, `bloodGroup`/`medicalHistory` camelCase) |
+| GET/POST/PUT/DELETE | /api/admin/blog | admin, super_admin | Blog management (wrapped `{posts}` with `author`/`date`/`views`/`status`) |
+| GET/POST/PUT/DELETE | /api/admin/events | admin, super_admin | Event management (wrapped `{events}`) |
+| GET/POST/PUT/DELETE | /api/admin/gallery | admin, super_admin | Gallery management (images with `title`/`url`/`category`/`album`) |
+| GET/POST/PUT/DELETE | /api/admin/testimonials | admin, super_admin | Testimonial management (`name`/`rating`/`content`/`active`/`createdAt`) |
+| GET/DELETE | /api/admin/messages | admin, super_admin | View/delete messages |
+| GET | /api/admin/media | admin, super_admin | Media library (wrapped `{media, stats:{total,images,usedIn}}`) |
+| POST | /api/admin/media/upload | admin, super_admin | Upload media (multipart field `images`, max 20 files, 10 MB each) |
+| DELETE | /api/admin/media/:id | admin, super_admin | Delete media item |
+| GET/PUT | /api/admin/seo | admin, super_admin | SEO settings (`{pages, robots, sitemap}`, bulk PUT) |
+| POST | /api/admin/seo/sitemap/generate | admin, super_admin | Generate sitemap XML |
+| GET | /api/admin/backups | admin, super_admin | List stored backups (`{backups}`) |
+| POST | /api/admin/backups/create | admin, super_admin | Create a stored server backup |
+| GET | /api/admin/backups/export | admin, super_admin | Export all data as JSON |
+| POST | /api/admin/backups/import | admin, super_admin | Import content data (also aliased at POST /) |
+| POST | /api/admin/backups/reset | admin, super_admin | Reset all content to defaults |
+| POST | /api/admin/backups/:id/restore | admin, super_admin | Restore from a stored backup |
+| DELETE | /api/admin/backups/:id | admin, super_admin | Delete a stored backup |
+| GET/PUT | /api/admin/site-content | admin, super_admin | Get/update all site content |
 | GET/PUT | /api/admin/page-content/:pageId | admin, super_admin | Manage page content |
-| GET/PUT | /api/admin/seo/:pageId | admin, super_admin | Manage SEO |
-| GET/POST/DELETE | /api/admin/media | admin, super_admin | Media library |
-| GET/POST | /api/admin/backups | admin, super_admin | Export/import data |
-| GET | /api/dashboard/stats | admin, super_admin | Dashboard statistics |
-| GET/POST/PUT/DELETE | /api/appointments | Various | Appointment management |
-| GET/POST/PUT/DELETE | /api/patients | Various | Patient management |
-| GET/POST/PUT/DELETE | /api/doctors | admin, super_admin | Doctor management |
-| GET/POST/PUT/DELETE | /api/services | Various | Service management |
-| GET/POST/PUT/DELETE | /api/blog | Various | Blog management |
-| GET/POST/PUT/DELETE | /api/events | Various | Event management |
-| GET/POST/PUT/DELETE | /api/gallery | Various | Gallery management |
-| GET/POST/PUT/DELETE | /api/testimonials | Various | Testimonial management |
+| GET/PUT | /api/admin/site-settings | admin, super_admin | Manage site settings |
+| GET | /api/admin/notifications | admin, super_admin | Notifications |
+| GET | /api/dashboard/stats | admin, super_admin | Flat dashboard statistics (backward compatible) |
+| GET/POST/PUT/DELETE | /api/appointments | Various | Legacy appointment management |
+| GET/POST/PUT/DELETE | /api/patients | Various | Legacy patient management |
+| GET/POST/PUT/DELETE | /api/doctors | admin, super_admin | Legacy doctor management |
+| GET/POST/PUT/DELETE | /api/services | Various | Legacy service management |
+| GET/POST/PUT/DELETE | /api/blog | Various | Legacy blog management |
+| GET/POST/PUT/DELETE | /api/events | Various | Legacy event management |
+| GET/POST/PUT/DELETE | /api/gallery | Various | Legacy gallery management |
+| GET/POST/PUT/DELETE | /api/testimonials | Various | Legacy testimonial management |
 | GET | /api/messages | admin, super_admin | View messages |
 | PUT | /api/messages/:id/read | admin, super_admin | Mark message as read |
-| GET | /api/newsletter/subscribers | admin, super_admin | View subscribers |
+| GET | /api/newsletter/subscribers | admin, super_admin | View subscribers (wrapped `{subscribers}` with `subscribedAt`/`status`) |
 | GET/DELETE | /api/careers | admin, super_admin | Manage job applications |
 | PUT | /api/careers/:id/status | admin, super_admin | Update application status |
 | GET/DELETE | /api/upcoming-registrations | admin, super_admin | Manage project interest registrations |
+
+> **Response contract note:** The `/api/admin/*` resource endpoints return wrapped objects (`{services}`, `{doctors}`, `{appointments}`, `{patients}`, `{posts}`, `{events}`, `{testimonials}`, `{media}`, `{backups}`, `{subscribers}`) with camelCase computed fields (e.g. `patientName`, `paymentStatus`, `bloodGroup`, `subscribedAt`). The dual-mounted public `/api/<resource>` endpoints return bare arrays (or `{posts,...}` for blog) for the public site. Both are served by the same router files via `req.baseUrl.includes('/admin')`.
 
 ---
 

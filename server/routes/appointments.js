@@ -4,6 +4,19 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+const toClient = (a) => ({
+  ...a,
+  patientName: a.patient_name,
+  email: a.patient_email,
+  phone: a.patient_phone,
+  patientEmail: a.patient_email,
+  patientPhone: a.patient_phone,
+  patientAge: a.patient_age,
+  doctor: a.doctor_name || '',
+  service: a.service_name || '',
+  paymentStatus: a.payment_status,
+});
+
 // POST /api/appointments (public booking)
 router.post('/', (req, res) => {
   try {
@@ -30,8 +43,14 @@ router.post('/', (req, res) => {
     ).run(patient_name, patient_email || null, patient_phone || null, patient_age || null,
       doctor_id || null, service_id || null, date, time, notes || null);
 
-    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(result.lastInsertRowid);
-    res.status(201).json(appointment);
+    const appointment = db.prepare(
+      `SELECT a.*, d.name as doctor_name, s.name as service_name
+       FROM appointments a
+       LEFT JOIN doctors d ON a.doctor_id = d.id
+       LEFT JOIN services s ON a.service_id = s.id
+       WHERE a.id = ?`
+    ).get(result.lastInsertRowid);
+    res.status(201).json(toClient(appointment));
   } catch (err) {
     res.status(500).json({ error: 'Failed to book appointment' });
   }
@@ -91,9 +110,61 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
 
     query += ' ORDER BY a.date DESC, a.time DESC';
     const appointments = db.prepare(query).all(...params);
-    res.json(appointments);
+    res.json({ appointments: appointments.map(toClient) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch appointments' });
+  }
+});
+
+// PATCH /api/appointments/:id/status (admin)
+router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+  try {
+    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    db.prepare('UPDATE appointments SET status = ? WHERE id = ?').run(status, req.params.id);
+
+    const updated = db.prepare(
+      `SELECT a.*, d.name as doctor_name, s.name as service_name
+       FROM appointments a
+       LEFT JOIN doctors d ON a.doctor_id = d.id
+       LEFT JOIN services s ON a.service_id = s.id
+       WHERE a.id = ?`
+    ).get(req.params.id);
+    res.json(toClient(updated));
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update appointment status' });
+  }
+});
+
+// PATCH /api/appointments/:id/notes (admin)
+router.patch('/:id/notes', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+  try {
+    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    const { notes } = req.body;
+    db.prepare('UPDATE appointments SET notes = COALESCE(?, notes) WHERE id = ?').run(notes ?? null, req.params.id);
+
+    const updated = db.prepare(
+      `SELECT a.*, d.name as doctor_name, s.name as service_name
+       FROM appointments a
+       LEFT JOIN doctors d ON a.doctor_id = d.id
+       LEFT JOIN services s ON a.service_id = s.id
+       WHERE a.id = ?`
+    ).get(req.params.id);
+    res.json(toClient(updated));
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update appointment notes' });
   }
 });
 
@@ -111,7 +182,7 @@ router.get('/:id', authenticateToken, (req, res) => {
     if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
-    res.json(appointment);
+    res.json(toClient(appointment));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch appointment' });
   }
@@ -148,7 +219,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
        WHERE a.id = ?`
     ).get(req.params.id);
 
-    res.json(updated);
+    res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update appointment' });
   }
