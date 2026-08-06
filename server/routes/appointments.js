@@ -225,4 +225,18 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
   }
 });
 
+// DELETE /api/appointments/:id (admin)
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+  try {
+    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+    db.prepare('DELETE FROM appointments WHERE id = ?').run(req.params.id);
+    res.json({ success: true, message: 'Appointment deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete appointment' });
+  }
+});
+
 module.exports = router;
