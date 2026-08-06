@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { sendMail } = require('../utils/email');
 
 const router = express.Router();
 
@@ -17,6 +18,16 @@ router.post('/', (req, res) => {
     ).run(name, email, phone || null, subject || null, message);
 
     const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      sendMail({
+        to: adminEmail,
+        subject: `New contact form message from ${name}`,
+        text: `You received a new message via the Bodija Health Hub contact form.\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nSubject: ${subject || 'N/A'}\n\nMessage:\n${message}`,
+      });
+    }
+
     res.status(201).json({ success: true, id: msg.id });
   } catch (err) {
     res.status(500).json({ error: 'Failed to send message' });

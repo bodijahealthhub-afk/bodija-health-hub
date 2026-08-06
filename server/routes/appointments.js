@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { sendMail } = require('../utils/email');
 
 const router = express.Router();
 
@@ -50,6 +51,15 @@ router.post('/', (req, res) => {
        LEFT JOIN services s ON a.service_id = s.id
        WHERE a.id = ?`
     ).get(result.lastInsertRowid);
+
+    if (patient_email) {
+      sendMail({
+        to: patient_email,
+        subject: 'Appointment Booking Confirmation - Bodija Health Hub',
+        text: `Dear ${patient_name},\n\nYour appointment has been booked successfully.\n\nDate: ${date}\nTime: ${time}\nDoctor: ${appointment.doctor_name || 'To be assigned'}\nService: ${appointment.service_name || ''}\n\nThank you for choosing Bodija Health Hub.\n\nWarm regards,\nBodija Health Hub`,
+      });
+    }
+
     res.status(201).json(toClient(appointment));
   } catch (err) {
     res.status(500).json({ error: 'Failed to book appointment' });

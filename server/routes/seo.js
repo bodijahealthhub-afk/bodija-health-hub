@@ -44,7 +44,7 @@ const setSetting = (key, value) => {
 };
 
 const generateSitemapXml = () => {
-  const baseUrl = 'https://bodijahealthhub.com';
+  const baseUrl = (process.env.SITE_URL || 'https://bodijahealthhub.com').replace(/\/+$/, '');
   const urls = [];
 
   const seoRows = db.prepare('SELECT page_id, canonical FROM seo_settings').all();
@@ -202,3 +202,4 @@ router.put('/:pageId', authenticateToken, requireRole('admin', 'super_admin'), (
 });
 
 module.exports = router;
+module.exports.generateSitemapXml = generateSitemapXml;

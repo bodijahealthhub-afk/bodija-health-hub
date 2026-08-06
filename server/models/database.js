@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const path = require('path');
 // Load .env from project root (works for both local and Render)
 const rootDir = path.resolve(__dirname, '../..');
@@ -239,13 +240,21 @@ db.exec(`
 `);
 
 const insertUsersAndDoctors = () => {
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@bodijahealthhub.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  const adminHash = bcrypt.hashSync(adminPassword, 10);
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required in production');
+    }
+    console.warn('[seed] ADMIN_EMAIL/ADMIN_PASSWORD not set — using default dev credentials (production will fail fast).');
+  }
+  const seededAdminEmail = adminEmail || 'admin@bodijahealthhub.com';
+  const seededAdminPassword = adminPassword || 'admin123';
+  const adminHash = bcrypt.hashSync(seededAdminPassword, 10);
 
   // Admin user
   db.prepare(`INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)`).run(
-    'Admin User', adminEmail, adminHash, 'admin', '+234 801 234 5678'
+    'Admin User', seededAdminEmail, adminHash, 'admin', '+234 801 234 5678'
   );
 
   // Doctor users
@@ -261,8 +270,11 @@ const insertUsersAndDoctors = () => {
   const insertUser = db.prepare(`INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, 'doctor', ?)`);
   const doctorIds = [];
   for (const doc of doctorUsers) {
-    const result = insertUser.run(doc.name, doc.email, adminHash, doc.phone);
+    const doctorPassword = process.env.DOCTOR_PASSWORD || crypto.randomBytes(12).toString('base64url');
+    const docHash = bcrypt.hashSync(doctorPassword, 10);
+    const result = insertUser.run(doc.name, doc.email, docHash, doc.phone);
     doctorIds.push(result.lastInsertRowid);
+    console.log(`[seed] Doctor account created: ${doc.email} (password: ${doctorPassword})`);
   }
 
   // Doctors

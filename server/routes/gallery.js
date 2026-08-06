@@ -1,8 +1,10 @@
 const express = require('express');
 const multer = require('multer');
+const fs = require('fs');
 const db = require('../models/database');
 const { uploadsDir } = require('../utils/uploads');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { uploadFile, configured: storageConfigured } = require('../utils/objectStorage');
 
 const router = express.Router();
 
@@ -74,10 +76,19 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/gallery (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), upload.single('image'), (req, res) => {
+router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), upload.single('image'), async (req, res) => {
   try {
     const { title, category, album } = req.body;
-    const image_url = req.file ? `/uploads/${req.file.filename}` : req.body.image_url;
+    let image_url = req.body.image_url;
+    if (req.file) {
+      if (storageConfigured()) {
+        const key = `gallery/${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+        image_url = await uploadFile({ key, filePath: req.file.path, contentType: req.file.mimetype });
+        try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
+      } else {
+        image_url = `/uploads/${req.file.filename}`;
+      }
+    }
 
     if (!image_url) {
       return res.status(400).json({ error: 'Image is required' });
@@ -95,7 +106,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/gallery/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), upload.single('image'), (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), upload.single('image'), async (req, res) => {
   try {
     const item = db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     if (!item) {
@@ -103,7 +114,16 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
     }
 
     const { title, category, album } = req.body;
-    const image_url = req.file ? `/uploads/${req.file.filename}` : req.body.image_url || null;
+    let image_url = req.body.image_url || null;
+    if (req.file) {
+      if (storageConfigured()) {
+        const key = `gallery/${Date.now()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+        image_url = await uploadFile({ key, filePath: req.file.path, contentType: req.file.mimetype });
+        try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
+      } else {
+        image_url = `/uploads/${req.file.filename}`;
+      }
+    }
 
     db.prepare(
       `UPDATE gallery SET

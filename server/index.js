@@ -2,17 +2,89 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-require('./models/database');
+let Sentry = null;
+if (process.env.SENTRY_DSN) {
+  Sentry = require('@sentry/node');
+  Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
+}
+
+const db = require('./models/database');
+const { generateSitemapXml } = require('./routes/seo');
+const { startScheduler } = require('./utils/scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.set('trust proxy', 1);
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+const allowedOrigins = (process.env.CORS_ORIGINS ||
+  'https://client-six-eta-66.vercel.app,https://client-nt8gk3ac6-team-bhh.vercel.app,http://localhost:5173,http://localhost:3000'
+).split(',').map((s) => s.trim()).filter(Boolean);
+
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(null, false);
+  },
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.API_RATE_LIMIT_MAX || 300),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.LOGIN_RATE_LIMIT_MAX || 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, please try again later' },
+});
+
+const publicWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.PUBLIC_WRITE_RATE_LIMIT_MAX || 20),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.method !== 'POST',
+  message: { error: 'Too many requests, please try again later' },
+});
+
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/messages', publicWriteLimiter);
+app.use('/api/newsletter', publicWriteLimiter);
+app.use('/api/appointments', publicWriteLimiter);
+app.use('/api/careers', publicWriteLimiter);
+app.use('/api/upcoming-registrations', publicWriteLimiter);
+
 app.use('/uploads', express.static(process.env.UPLOADS_DIR || path.join(__dirname, 'uploads')));
+
+app.get('/robots.txt', (req, res) => {
+  const row = db.prepare("SELECT value FROM site_settings WHERE key = 'robots_txt'").get();
+  const content = (row && row.value) || 'User-agent: *\nAllow: /';
+  res.type('text/plain').send(content);
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const row = db.prepare("SELECT value FROM site_settings WHERE key = 'sitemap'").get();
+  const content = (row && row.value) || generateSitemapXml();
+  res.type('application/xml').send(content);
+});
 
 // Public routes
 app.use('/api/auth', require('./routes/auth'));
@@ -65,12 +137,16 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
+  if (Sentry) Sentry.captureException(err);
   console.error(err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Bodija Health Hub server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Bodija Health Hub server running on port ${PORT}`);
+    startScheduler();
+  });
+}
 
 module.exports = app;

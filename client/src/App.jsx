@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import useSeo from './hooks/useSeo'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 
@@ -108,6 +109,8 @@ function PageLoader() {
 
 function PublicLayout() {
   const { loading } = useAuth()
+  const location = useLocation()
+  useSeo(location.pathname)
 
   if (loading) {
     return (

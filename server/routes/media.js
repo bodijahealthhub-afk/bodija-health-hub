@@ -1,8 +1,10 @@
 const express = require('express');
 const multer = require('multer');
+const fs = require('fs');
 const db = require('../models/database');
 const { uploadsDir } = require('../utils/uploads');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { uploadFile, configured: storageConfigured } = require('../utils/objectStorage');
 
 const router = express.Router();
 
@@ -55,7 +57,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/admin/media/upload (admin — multipart, field "images")
-router.post('/upload', authenticateToken, requireRole('admin', 'super_admin'), upload.array('images', 20), (req, res) => {
+router.post('/upload', authenticateToken, requireRole('admin', 'super_admin'), upload.array('images', 20), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
@@ -66,7 +68,14 @@ router.post('/upload', authenticateToken, requireRole('admin', 'super_admin'), u
     );
     const created = [];
     for (const file of req.files) {
-      const url = `/uploads/${file.filename}`;
+      let url;
+      if (storageConfigured()) {
+        const key = `media/${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+        url = await uploadFile({ key, filePath: file.path, contentType: file.mimetype });
+        try { fs.unlinkSync(file.path); } catch (e) { /* ignore */ }
+      } else {
+        url = `/uploads/${file.filename}`;
+      }
       const result = insert.run(file.originalname, url, url, req.body.category || 'general', file.size, file.mimetype);
       created.push(toClient(db.prepare('SELECT * FROM media WHERE id = ?').get(result.lastInsertRowid)));
     }
