@@ -19,7 +19,7 @@ const toClient = (a) => ({
 });
 
 // POST /api/appointments (public booking)
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { patient_name, patient_email, patient_phone, patient_age, doctor_id, service_id, date, time, notes } = req.body;
 
@@ -29,7 +29,7 @@ router.post('/', (req, res) => {
 
     // Check slot availability
     if (doctor_id) {
-      const existing = db.prepare(
+      const existing = await db.prepare(
         `SELECT id FROM appointments WHERE doctor_id = ? AND date = ? AND time = ? AND status != 'cancelled'`
       ).get(doctor_id, date, time);
 
@@ -38,13 +38,13 @@ router.post('/', (req, res) => {
       }
     }
 
-    const result = db.prepare(
+    const result = await db.prepare(
       `INSERT INTO appointments (patient_name, patient_email, patient_phone, patient_age, doctor_id, service_id, date, time, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(patient_name, patient_email || null, patient_phone || null, patient_age || null,
       doctor_id || null, service_id || null, date, time, notes || null);
 
-    const appointment = db.prepare(
+    const appointment = await db.prepare(
       `SELECT a.*, d.name as doctor_name, s.name as service_name
        FROM appointments a
        LEFT JOIN doctors d ON a.doctor_id = d.id
@@ -67,14 +67,14 @@ router.post('/', (req, res) => {
 });
 
 // GET /api/appointments/available-slots (admin)
-router.get('/available-slots', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.get('/available-slots', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
     const { doctor_id, date } = req.query;
     if (!doctor_id || !date) {
       return res.status(400).json({ error: 'doctor_id and date are required' });
     }
 
-    const booked = db.prepare(
+    const booked = await db.prepare(
       `SELECT time FROM appointments WHERE doctor_id = ? AND date = ? AND status != 'cancelled'`
     ).all(doctor_id, date);
 
@@ -91,7 +91,7 @@ router.get('/available-slots', authenticateToken, requireRole('admin', 'super_ad
 });
 
 // GET /api/appointments (admin)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
     const { status, date, doctor_id, search } = req.query;
     let query = `SELECT a.*, d.name as doctor_name, d.specialization, s.name as service_name
@@ -119,7 +119,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
     }
 
     query += ' ORDER BY a.date DESC, a.time DESC';
-    const appointments = db.prepare(query).all(...params);
+    const appointments = await db.prepare(query).all(...params);
     res.json({ appointments: appointments.map(toClient) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch appointments' });
@@ -127,9 +127,9 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
 });
 
 // PATCH /api/appointments/:id/status (admin)
-router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
-    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
@@ -139,9 +139,9 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
       return res.status(400).json({ error: 'Status is required' });
     }
 
-    db.prepare('UPDATE appointments SET status = ? WHERE id = ?').run(status, req.params.id);
+    await db.prepare('UPDATE appointments SET status = ? WHERE id = ?').run(status, req.params.id);
 
-    const updated = db.prepare(
+    const updated = await db.prepare(
       `SELECT a.*, d.name as doctor_name, s.name as service_name
        FROM appointments a
        LEFT JOIN doctors d ON a.doctor_id = d.id
@@ -155,17 +155,17 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
 });
 
 // PATCH /api/appointments/:id/notes (admin)
-router.patch('/:id/notes', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.patch('/:id/notes', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
-    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
     const { notes } = req.body;
-    db.prepare('UPDATE appointments SET notes = COALESCE(?, notes) WHERE id = ?').run(notes ?? null, req.params.id);
+    await db.prepare('UPDATE appointments SET notes = COALESCE(?, notes) WHERE id = ?').run(notes ?? null, req.params.id);
 
-    const updated = db.prepare(
+    const updated = await db.prepare(
       `SELECT a.*, d.name as doctor_name, s.name as service_name
        FROM appointments a
        LEFT JOIN doctors d ON a.doctor_id = d.id
@@ -179,9 +179,9 @@ router.patch('/:id/notes', authenticateToken, requireRole('admin', 'super_admin'
 });
 
 // GET /api/appointments/:id
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const appointment = db.prepare(
+    const appointment = await db.prepare(
       `SELECT a.*, d.name as doctor_name, d.specialization, s.name as service_name
        FROM appointments a
        LEFT JOIN doctors d ON a.doctor_id = d.id
@@ -199,16 +199,16 @@ router.get('/:id', authenticateToken, (req, res) => {
 });
 
 // PUT /api/appointments/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
-    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
     const { status, notes, payment_status, doctor_id, service_id, date, time } = req.body;
 
-    db.prepare(
+    await db.prepare(
       `UPDATE appointments SET
         status = COALESCE(?, status),
         notes = COALESCE(?, notes),
@@ -221,7 +221,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
     ).run(status || null, notes || null, payment_status || null,
       doctor_id ?? null, service_id ?? null, date || null, time || null, req.params.id);
 
-    const updated = db.prepare(
+    const updated = await db.prepare(
       `SELECT a.*, d.name as doctor_name, s.name as service_name
        FROM appointments a
        LEFT JOIN doctors d ON a.doctor_id = d.id
@@ -236,13 +236,13 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
 });
 
 // DELETE /api/appointments/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
-    const appointment = db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
-    db.prepare('DELETE FROM appointments WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM appointments WHERE id = ?').run(req.params.id);
     res.json({ success: true, message: 'Appointment deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete appointment' });

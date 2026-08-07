@@ -28,7 +28,7 @@ const toClient = (m) => ({
 });
 
 // GET /api/media (public) or /api/admin/media (admin — wrapped with stats)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
     const { category } = req.query;
@@ -36,12 +36,12 @@ router.get('/', (req, res) => {
     const params = [];
     if (category) { query += ' WHERE category = ?'; params.push(category); }
     query += ' ORDER BY created_at DESC';
-    const media = db.prepare(query).all(...params);
+    const media = await db.prepare(query).all(...params);
 
     if (isAdmin) {
-      const total = db.prepare('SELECT COUNT(*) as count FROM media').get().count;
-      const images = db.prepare("SELECT COUNT(*) as count FROM media WHERE mime_type LIKE 'image/%' OR thumbnail IS NOT NULL").get().count;
-      const usedIn = db.prepare('SELECT category, COUNT(*) as count FROM media GROUP BY category').all();
+      const total = (await db.prepare('SELECT COUNT(*) as count FROM media').get()).count;
+      const images = (await db.prepare("SELECT COUNT(*) as count FROM media WHERE mime_type LIKE 'image/%' OR thumbnail IS NOT NULL").get()).count;
+      const usedIn = await db.prepare('SELECT category, COUNT(*) as count FROM media GROUP BY category').all();
       const usedInObj = {};
       for (const row of usedIn) {
         usedInObj[row.category] = row.count;
@@ -76,8 +76,8 @@ router.post('/upload', authenticateToken, requireRole('admin', 'super_admin'), u
       } else {
         url = `/uploads/${file.filename}`;
       }
-      const result = insert.run(file.originalname, url, url, req.body.category || 'general', file.size, file.mimetype);
-      created.push(toClient(db.prepare('SELECT * FROM media WHERE id = ?').get(result.lastInsertRowid)));
+      const result = await insert.run(file.originalname, url, url, req.body.category || 'general', file.size, file.mimetype);
+      created.push(toClient(await db.prepare('SELECT * FROM media WHERE id = ?').get(result.lastInsertRowid)));
     }
 
     res.status(201).json({ media: created });
@@ -88,14 +88,14 @@ router.post('/upload', authenticateToken, requireRole('admin', 'super_admin'), u
 });
 
 // POST /api/media (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const { name, url, thumbnail, category, size, mime_type } = req.body;
     if (!name || !url) {
       return res.status(400).json({ error: 'Name and URL are required' });
     }
-    const result = db.prepare('INSERT INTO media (name, url, thumbnail, category, size, mime_type) VALUES (?, ?, ?, ?, ?, ?)').run(name, url, thumbnail || null, category || 'general', size || 0, mime_type || 'image/jpeg');
-    res.status(201).json(toClient(db.prepare('SELECT * FROM media WHERE id = ?').get(result.lastInsertRowid)));
+    const result = await db.prepare('INSERT INTO media (name, url, thumbnail, category, size, mime_type) VALUES (?, ?, ?, ?, ?, ?)').run(name, url, thumbnail || null, category || 'general', size || 0, mime_type || 'image/jpeg');
+    res.status(201).json(toClient(await db.prepare('SELECT * FROM media WHERE id = ?').get(result.lastInsertRowid)));
   } catch (err) {
     console.error('Error creating media:', err);
     res.status(500).json({ error: 'Failed to create media' });
@@ -103,9 +103,9 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, r
 });
 
 // DELETE /api/media/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    db.prepare('DELETE FROM media WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM media WHERE id = ?').run(req.params.id);
     res.json({ success: true });
   } catch (err) {
     console.error('Error deleting media:', err);

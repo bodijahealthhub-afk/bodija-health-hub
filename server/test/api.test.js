@@ -16,11 +16,13 @@ process.env.ADMIN_PASSWORD = 'test-admin-password';
 process.env.NODE_ENV = 'test';
 
 const app = require('../index');
+const db = require('../models/database');
 
 let server;
 let base;
 
 before(async () => {
+  await db.ready;
   server = app.listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
   base = `http://127.0.0.1:${server.address().port}`;

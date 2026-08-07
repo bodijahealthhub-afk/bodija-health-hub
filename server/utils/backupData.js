@@ -37,34 +37,36 @@ const ALL_TABLES = [
   'upcoming_registrations',
 ];
 
-const exportAll = () => {
+const exportAll = async () => {
   const data = {};
   for (const table of ALL_TABLES) {
-    data[table] = db.prepare(`SELECT * FROM ${table}`).all();
+    data[table] = await db.prepare(`SELECT * FROM ${table}`).all();
   }
   return { export_date: new Date().toISOString(), data };
 };
 
-const importData = (data) => {
+const importData = async (data) => {
   if (!data || typeof data !== 'object') return;
-  const transaction = db.transaction(() => {
-    db.pragma('foreign_keys = OFF');
-    for (const table of IMPORTABLE_TABLES) {
-      if (data[table] && Array.isArray(data[table])) {
-        for (const row of data[table]) {
-          const columns = Object.keys(row).filter((c) => c !== 'id');
-          if (columns.length === 0) continue;
-          const placeholders = columns.map(() => '?').join(', ');
-          const values = columns.map((c) => row[c]);
-          try {
-            db.prepare(`INSERT OR REPLACE INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`).run(...values);
-          } catch (e) { /* skip errors */ }
+  if (db.backend === 'sqlite') db.pragma('foreign_keys = OFF');
+  try {
+    await db.transaction(async () => {
+      for (const table of IMPORTABLE_TABLES) {
+        if (data[table] && Array.isArray(data[table])) {
+          for (const row of data[table]) {
+            const columns = Object.keys(row).filter((c) => c !== 'id');
+            if (columns.length === 0) continue;
+            const placeholders = columns.map(() => '?').join(', ');
+            const values = columns.map((c) => row[c]);
+            try {
+              await db.prepare(`INSERT OR REPLACE INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`).run(...values);
+            } catch (e) { /* skip errors */ }
+          }
         }
       }
-    }
-    db.pragma('foreign_keys = ON');
-  });
-  transaction();
+    });
+  } finally {
+    if (db.backend === 'sqlite') db.pragma('foreign_keys = ON');
+  }
 };
 
 module.exports = { exportAll, importData };

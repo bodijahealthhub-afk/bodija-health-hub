@@ -32,33 +32,33 @@ const toClient = (row) => ({
   nofollow: !!row.nofollow,
 });
 
-const getSetting = (key) => {
-  const row = db.prepare('SELECT value FROM site_settings WHERE key = ?').get(key);
+const getSetting = async (key) => {
+  const row = await db.prepare('SELECT value FROM site_settings WHERE key = ?').get(key);
   return row ? row.value : '';
 };
 
-const setSetting = (key, value) => {
-  db.prepare(
+const setSetting = async (key, value) => {
+  await db.prepare(
     'INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP'
   ).run(key, value === null || value === undefined ? '' : String(value));
 };
 
-const generateSitemapXml = () => {
+const generateSitemapXml = async () => {
   const baseUrl = (process.env.SITE_URL || 'https://bodijahealthhub.com').replace(/\/+$/, '');
   const urls = [];
 
-  const seoRows = db.prepare('SELECT page_id, canonical FROM seo_settings').all();
+  const seoRows = await db.prepare('SELECT page_id, canonical FROM seo_settings').all();
   for (const row of seoRows) {
     const path = SEARCH_PAGE_MAP[row.page_id] || `/${row.page_id}`;
     urls.push({ loc: `${baseUrl}${path}`, priority: row.page_id === 'home' ? 1.0 : 0.8 });
   }
 
-  const posts = db.prepare("SELECT slug, updated_at FROM blog_posts WHERE status = 'published'").all();
+  const posts = await db.prepare("SELECT slug, updated_at FROM blog_posts WHERE status = 'published'").all();
   for (const post of posts) {
     urls.push({ loc: `${baseUrl}/blog/${post.slug}`, lastmod: post.updated_at, priority: 0.7 });
   }
 
-  const events = db.prepare('SELECT id, date FROM events WHERE is_active = 1').all();
+  const events = await db.prepare('SELECT id, date FROM events WHERE is_active = 1').all();
   for (const event of events) {
     urls.push({ loc: `${baseUrl}/events/${event.id}`, lastmod: event.date, priority: 0.6 });
   }
@@ -74,17 +74,17 @@ const generateSitemapXml = () => {
 };
 
 // GET /api/seo (admin — all pages + robots + sitemap)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM seo_settings ORDER BY page_id').all();
+    const rows = await db.prepare('SELECT * FROM seo_settings ORDER BY page_id').all();
     const pages = {};
     for (const row of rows) {
       pages[row.page_id] = toClient(row);
     }
     res.json({
       pages,
-      robots: getSetting('robots_txt'),
-      sitemap: getSetting('sitemap'),
+      robots: await getSetting('robots_txt'),
+      sitemap: await getSetting('sitemap'),
     });
   } catch (err) {
     console.error('Error fetching SEO settings:', err);
@@ -93,7 +93,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), (req, re
 });
 
 // PUT /api/seo (admin — save all pages + robots + sitemap)
-router.put('/', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const { pages, robots, sitemap } = req.body || {};
 
@@ -116,10 +116,10 @@ router.put('/', authenticateToken, requireRole('admin', 'super_admin'), (req, re
            nofollow = excluded.nofollow,
            updated_at = CURRENT_TIMESTAMP`
       );
-      const saveAll = db.transaction((pageEntries) => {
-        for (const [pageId, p] of pageEntries) {
+      await db.transaction(async () => {
+        for (const [pageId, p] of Object.entries(pages)) {
           const data = p || {};
-          upsert.run(
+          await upsert.run(
             pageId,
             data.metaTitle || '',
             data.metaDescription || '',
@@ -136,11 +136,10 @@ router.put('/', authenticateToken, requireRole('admin', 'super_admin'), (req, re
           );
         }
       });
-      saveAll(Object.entries(pages));
     }
 
-    if (robots !== undefined) setSetting('robots_txt', robots);
-    if (sitemap !== undefined) setSetting('sitemap', sitemap);
+    if (robots !== undefined) await setSetting('robots_txt', robots);
+    if (sitemap !== undefined) await setSetting('sitemap', sitemap);
 
     res.json({ success: true });
   } catch (err) {
@@ -150,10 +149,10 @@ router.put('/', authenticateToken, requireRole('admin', 'super_admin'), (req, re
 });
 
 // PUT /api/seo/robots (admin — save robots.txt content)
-router.put('/robots', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.put('/robots', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const { content } = req.body || {};
-    setSetting('robots_txt', content || '');
+    await setSetting('robots_txt', content || '');
     res.json({ success: true });
   } catch (err) {
     console.error('Error saving robots.txt:', err);
@@ -162,10 +161,10 @@ router.put('/robots', authenticateToken, requireRole('admin', 'super_admin'), (r
 });
 
 // POST /api/seo/sitemap/generate (admin — generate sitemap)
-router.post('/sitemap/generate', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.post('/sitemap/generate', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const sitemap = generateSitemapXml();
-    setSetting('sitemap', sitemap);
+    const sitemap = await generateSitemapXml();
+    await setSetting('sitemap', sitemap);
     res.json({ success: true, sitemap });
   } catch (err) {
     console.error('Error generating sitemap:', err);
@@ -174,9 +173,9 @@ router.post('/sitemap/generate', authenticateToken, requireRole('admin', 'super_
 });
 
 // GET /api/seo/:pageId (public)
-router.get('/:pageId', (req, res) => {
+router.get('/:pageId', async (req, res) => {
   try {
-    const row = db.prepare('SELECT * FROM seo_settings WHERE page_id = ?').get(req.params.pageId);
+    const row = await db.prepare('SELECT * FROM seo_settings WHERE page_id = ?').get(req.params.pageId);
     res.json(row ? toClient(row) : {});
   } catch (err) {
     console.error('Error fetching SEO:', err);
@@ -185,14 +184,14 @@ router.get('/:pageId', (req, res) => {
 });
 
 // PUT /api/seo/:pageId (admin)
-router.put('/:pageId', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.put('/:pageId', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const { meta_title, meta_description, og_title, og_description, og_image, twitter_card, twitter_title, twitter_description, twitter_image, canonical, noindex, nofollow } = req.body;
-    const existing = db.prepare('SELECT id FROM seo_settings WHERE page_id = ?').get(req.params.pageId);
+    const existing = await db.prepare('SELECT id FROM seo_settings WHERE page_id = ?').get(req.params.pageId);
     if (existing) {
-      db.prepare('UPDATE seo_settings SET meta_title=?, meta_description=?, og_title=?, og_description=?, og_image=?, twitter_card=?, twitter_title=?, twitter_description=?, twitter_image=?, canonical=?, noindex=?, nofollow=?, updated_at=CURRENT_TIMESTAMP WHERE page_id=?').run(meta_title, meta_description, og_title, og_description, og_image, twitter_card, twitter_title, twitter_description, twitter_image, canonical, noindex ? 1 : 0, nofollow ? 1 : 0, req.params.pageId);
+      await db.prepare('UPDATE seo_settings SET meta_title=?, meta_description=?, og_title=?, og_description=?, og_image=?, twitter_card=?, twitter_title=?, twitter_description=?, twitter_image=?, canonical=?, noindex=?, nofollow=?, updated_at=CURRENT_TIMESTAMP WHERE page_id=?').run(meta_title, meta_description, og_title, og_description, og_image, twitter_card, twitter_title, twitter_description, twitter_image, canonical, noindex ? 1 : 0, nofollow ? 1 : 0, req.params.pageId);
     } else {
-      db.prepare('INSERT INTO seo_settings (page_id, meta_title, meta_description, og_title, og_description, og_image, twitter_card, twitter_title, twitter_description, twitter_image, canonical, noindex, nofollow) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(req.params.pageId, meta_title, meta_description, og_title, og_description, og_image, twitter_card || 'summary_large_image', twitter_title, twitter_description, twitter_image, canonical, noindex ? 1 : 0, nofollow ? 1 : 0);
+      await db.prepare('INSERT INTO seo_settings (page_id, meta_title, meta_description, og_title, og_description, og_image, twitter_card, twitter_title, twitter_description, twitter_image, canonical, noindex, nofollow) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(req.params.pageId, meta_title, meta_description, og_title, og_description, og_image, twitter_card || 'summary_large_image', twitter_title, twitter_description, twitter_image, canonical, noindex ? 1 : 0, nofollow ? 1 : 0);
     }
     res.json({ success: true });
   } catch (err) {

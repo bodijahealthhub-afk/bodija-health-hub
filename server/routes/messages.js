@@ -6,18 +6,18 @@ const { sendMail } = require('../utils/email');
 const router = express.Router();
 
 // POST /api/messages (public contact form)
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
     if (!name || !email || !message) {
       return res.status(400).json({ error: 'Name, email, and message are required' });
     }
 
-    const result = db.prepare(
+    const result = await db.prepare(
       'INSERT INTO messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)'
     ).run(name, email, phone || null, subject || null, message);
 
-    const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
+    const msg = await db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
 
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail) {
@@ -35,7 +35,7 @@ router.post('/', (req, res) => {
 });
 
 // GET /api/messages (admin)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
     const { is_read, search } = req.query;
     let query = 'SELECT * FROM messages WHERE 1=1';
@@ -51,7 +51,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
     }
 
     query += ' ORDER BY created_at DESC';
-    const messages = db.prepare(query).all(...params);
+    const messages = await db.prepare(query).all(...params);
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch messages' });
@@ -59,9 +59,9 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
 });
 
 // GET /api/messages/:id
-router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
-    const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
+    const message = await db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
     }
@@ -72,14 +72,14 @@ router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
 });
 
 // PUT /api/messages/:id/read
-router.put('/:id/read', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), (req, res) => {
+router.put('/:id/read', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
-    const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
+    const message = await db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
     }
 
-    db.prepare('UPDATE messages SET is_read = 1 WHERE id = ?').run(req.params.id);
+    await db.prepare('UPDATE messages SET is_read = 1 WHERE id = ?').run(req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to mark message as read' });
@@ -87,14 +87,14 @@ router.put('/:id/read', authenticateToken, requireRole('admin', 'super_admin', '
 });
 
 // DELETE /api/messages/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
+    const message = await db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
     }
 
-    db.prepare('DELETE FROM messages WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM messages WHERE id = ?').run(req.params.id);
     res.json({ message: 'Message deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete message' });

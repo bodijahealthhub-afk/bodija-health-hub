@@ -6,45 +6,46 @@ const router = express.Router();
 
 const formatNaira = (n) => `₦${Number(n || 0).toLocaleString('en-US')}`;
 
-const buildStats = () => {
+const buildStats = async () => {
   const today = new Date().toISOString().split('T')[0];
+  const firstOfMonth = new Date().toISOString().slice(0, 8) + '01';
 
-  const todayAppointments = db.prepare(
+  const todayAppointments = (await db.prepare(
     'SELECT COUNT(*) as count FROM appointments WHERE date = ?'
-  ).get(today).count;
+  ).get(today)).count;
 
-  const totalPatients = db.prepare('SELECT COUNT(*) as count FROM patients').get().count;
-  const totalDoctors = db.prepare('SELECT COUNT(*) as count FROM doctors WHERE is_active = 1').get().count;
-  const totalAppointments = db.prepare('SELECT COUNT(*) as count FROM appointments').get().count;
+  const totalPatients = (await db.prepare('SELECT COUNT(*) as count FROM patients').get()).count;
+  const totalDoctors = (await db.prepare('SELECT COUNT(*) as count FROM doctors WHERE is_active = 1').get()).count;
+  const totalAppointments = (await db.prepare('SELECT COUNT(*) as count FROM appointments').get()).count;
 
-  const pendingAppointments = db.prepare(
+  const pendingAppointments = (await db.prepare(
     "SELECT COUNT(*) as count FROM appointments WHERE status = 'pending'"
-  ).get().count;
+  ).get()).count;
 
-  const completedAppointments = db.prepare(
+  const completedAppointments = (await db.prepare(
     "SELECT COUNT(*) as count FROM appointments WHERE status = 'completed'"
-  ).get().count;
+  ).get()).count;
 
-  const revenue = db.prepare(
+  const revenue = (await db.prepare(
     "SELECT COALESCE(SUM(consultation_fee), 0) as total FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.payment_status = 'paid'"
-  ).get().total;
+  ).get()).total;
 
-  const monthlyRevenueRaw = db.prepare(
+  const monthlyRevenueRaw = (await db.prepare(
     `SELECT COALESCE(SUM(consultation_fee), 0) as total FROM appointments a
      JOIN doctors d ON a.doctor_id = d.id
      WHERE a.payment_status = 'paid'
-     AND a.date >= date('now', 'start of month')`
-  ).get().total;
+     AND a.date >= ?`
+  ).get(firstOfMonth)).total;
 
-  const unreadMessages = db.prepare(
+  const unreadMessages = (await db.prepare(
     'SELECT COUNT(*) as count FROM messages WHERE is_read = 0'
-  ).get().count;
+  ).get()).count;
 
-  const appointmentsByStatus = db.prepare(
+  const appointmentsByStatus = await db.prepare(
     'SELECT status, COUNT(*) as count FROM appointments GROUP BY status'
   ).all();
 
-  const recentRows = db.prepare(
+  const recentRows = await db.prepare(
     `SELECT a.*, d.name as doctor_name, s.name as service_name
      FROM appointments a
      LEFT JOIN doctors d ON a.doctor_id = d.id
@@ -79,18 +80,18 @@ const buildStats = () => {
 };
 
 // GET /api/dashboard (admin — wrapped for admin panel)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), (req, res) => {
+router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), async (req, res) => {
   try {
-    res.json(buildStats());
+    res.json(await buildStats());
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch dashboard stats' });
   }
 });
 
 // GET /api/dashboard/stats (admin — flat stats, backward compatible)
-router.get('/stats', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), (req, res) => {
+router.get('/stats', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), async (req, res) => {
   try {
-    const { stats, recentAppointments } = buildStats();
+    const { stats, recentAppointments } = await buildStats();
     res.json({ ...stats, recentAppointments });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch dashboard stats' });

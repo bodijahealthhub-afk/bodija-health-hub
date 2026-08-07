@@ -74,15 +74,15 @@ app.use('/api/upcoming-registrations', publicWriteLimiter);
 
 app.use('/uploads', express.static(process.env.UPLOADS_DIR || path.join(__dirname, 'uploads')));
 
-app.get('/robots.txt', (req, res) => {
-  const row = db.prepare("SELECT value FROM site_settings WHERE key = 'robots_txt'").get();
+app.get('/robots.txt', async (req, res) => {
+  const row = await db.prepare("SELECT value FROM site_settings WHERE key = 'robots_txt'").get();
   const content = (row && row.value) || 'User-agent: *\nAllow: /';
   res.type('text/plain').send(content);
 });
 
-app.get('/sitemap.xml', (req, res) => {
-  const row = db.prepare("SELECT value FROM site_settings WHERE key = 'sitemap'").get();
-  const content = (row && row.value) || generateSitemapXml();
+app.get('/sitemap.xml', async (req, res) => {
+  const row = await db.prepare("SELECT value FROM site_settings WHERE key = 'sitemap'").get();
+  const content = (row && row.value) || await generateSitemapXml();
   res.type('application/xml').send(content);
 });
 
@@ -143,9 +143,14 @@ app.use((err, req, res, next) => {
 });
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Bodija Health Hub server running on port ${PORT}`);
-    startScheduler();
+  db.ready.then(() => {
+    app.listen(PORT, () => {
+      console.log(`Bodija Health Hub server running on port ${PORT}`);
+      startScheduler();
+    });
+  }).catch((err) => {
+    console.error('Database initialization failed:', err);
+    process.exit(1);
   });
 }
 

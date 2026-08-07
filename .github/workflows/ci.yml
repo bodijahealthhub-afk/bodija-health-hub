@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db-backend: [sqlite, pglite]
     steps:
       - uses: actions/checkout@v4
 
@@ -19,11 +22,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run API tests
+      - name: Run API tests (${{ matrix.db-backend }})
         env:
           JWT_SECRET: ci-test-secret
           ADMIN_EMAIL: admin@bodijahealthhub.com
           ADMIN_PASSWORD: ci-admin-password
+          DB_BACKEND: ${{ matrix.db-backend }}
         run: npm test
 
   client-build:
