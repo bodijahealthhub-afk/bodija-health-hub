@@ -10,6 +10,7 @@ const isLocal = /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(url);
 const pool = new Pool({
   connectionString: url,
   ssl: isLocal ? false : { rejectUnauthorized: false },
+  family: Number(process.env.PG_FAMILY || 4),
 });
 
 const impl = {
