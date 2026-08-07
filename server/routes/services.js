@@ -10,7 +10,7 @@ const toClient = (s) => ({
 });
 
 // GET /api/services (public — active only) or /api/admin/services (admin — all)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
     const { category } = req.query;
@@ -27,7 +27,7 @@ router.get('/', (req, res) => {
     }
 
     query += ' ORDER BY category, name';
-    const services = db.prepare(query).all(...params);
+    const services = await db.prepare(query).all(...params);
     res.json(isAdmin ? { services: services.map(toClient) } : services);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch services' });
@@ -35,9 +35,9 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/services/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const service = db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
+    const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
@@ -48,14 +48,14 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/services (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), (req, res) => {
+router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
   try {
     const { name, description, category, price, image, icon, status } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Service name is required' });
     }
 
-    const result = db.prepare(
+    const result = await db.prepare(
       'INSERT INTO services (name, description, category, price, image, icon, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).run(
       name,
@@ -67,7 +67,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
       status === undefined ? 1 : (status === 'active' ? 1 : 0)
     );
 
-    const service = db.prepare('SELECT * FROM services WHERE id = ?').get(result.lastInsertRowid);
+    const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(toClient(service));
   } catch (err) {
     res.status(500).json({ error: 'Failed to create service' });
@@ -75,16 +75,16 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/services/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
   try {
-    const service = db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
+    const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
 
     const { name, description, category, price, image, icon, is_active, status } = req.body;
 
-    db.prepare(
+    await db.prepare(
       `UPDATE services SET
         name = COALESCE(?, name),
         description = COALESCE(?, description),
@@ -105,7 +105,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
       req.params.id
     );
 
-    const updated = db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
+    const updated = await db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
     res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update service' });
@@ -113,14 +113,14 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // DELETE /api/services/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const service = db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
+    const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
 
-    db.prepare('DELETE FROM services WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM services WHERE id = ?').run(req.params.id);
     res.json({ message: 'Service deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete service' });

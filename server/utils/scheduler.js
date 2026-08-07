@@ -24,12 +24,12 @@ function startScheduler() {
 
   const run = async () => {
     try {
-      const snapshot = exportAll();
+      const snapshot = await exportAll();
       const json = JSON.stringify(snapshot, null, 2);
       const filepath = path.join(backupsDir, `auto-backup-${new Date().toISOString().split('T')[0]}-${Date.now()}.json`);
       fs.writeFileSync(filepath, json);
 
-      const result = db.prepare(
+      const result = await db.prepare(
         'INSERT INTO backups (filename, size, created_by, data) VALUES (?, ?, ?, ?)'
       ).run(path.basename(filepath), Buffer.byteLength(json), 'system', json);
 

@@ -5,9 +5,9 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /api/site-content — public: returns all site content as key-value object
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const rows = db.prepare('SELECT key, value FROM site_content').all();
+    const rows = await db.prepare('SELECT key, value FROM site_content').all();
     const content = {};
     for (const row of rows) {
       content[row.key] = row.value;
@@ -19,7 +19,7 @@ router.get('/', (req, res) => {
 });
 
 // PUT /api/site-content — admin: update multiple key-value pairs
-router.put('/', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const updates = req.body;
     console.log('PUT received updates:', Object.keys(updates).length, 'keys');
@@ -28,15 +28,13 @@ router.put('/', authenticateToken, requireRole('admin', 'super_admin'), (req, re
       'INSERT INTO site_content (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP'
     );
 
-    const updateMany = db.transaction((items) => {
-      for (const [key, value] of Object.entries(items)) {
-        upsert.run(key, typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''));
+    await db.transaction(async () => {
+      for (const [key, value] of Object.entries(updates)) {
+        await upsert.run(key, typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''));
       }
     });
 
-    updateMany(updates);
-
-    const rows = db.prepare('SELECT key, value FROM site_content').all();
+    const rows = await db.prepare('SELECT key, value FROM site_content').all();
     const content = {};
     for (const row of rows) {
       content[row.key] = row.value;
@@ -49,7 +47,7 @@ router.put('/', authenticateToken, requireRole('admin', 'super_admin'), (req, re
 });
 
 // GET /api/site-content/:section — public: returns content for a specific section
-router.get('/:section', (req, res) => {
+router.get('/:section', async (req, res) => {
   try {
     const { section } = req.params;
     const prefixes = {
@@ -66,7 +64,7 @@ router.get('/:section', (req, res) => {
     const prefix = prefixes[section];
     if (!prefix) return res.status(404).json({ error: 'Unknown section' });
 
-    const rows = db.prepare('SELECT key, value FROM site_content WHERE key LIKE ?').all(prefix + '%');
+    const rows = await db.prepare('SELECT key, value FROM site_content WHERE key LIKE ?').all(prefix + '%');
     const content = {};
     for (const row of rows) {
       content[row.key] = row.value;
@@ -78,7 +76,7 @@ router.get('/:section', (req, res) => {
 });
 
 // PUT /api/site-content/:section — admin: update a specific section
-router.put('/:section', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.put('/:section', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const { section } = req.params;
     const updates = req.body;
@@ -122,16 +120,14 @@ router.put('/:section', authenticateToken, requireRole('admin', 'super_admin'), 
 
     const flatUpdates = flattenObj(updates, prefix);
 
-    const updateMany = db.transaction((items) => {
-      for (const [key, value] of Object.entries(items)) {
-        upsert.run(key, typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''));
+    await db.transaction(async () => {
+      for (const [key, value] of Object.entries(flatUpdates)) {
+        await upsert.run(key, typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''));
       }
     });
 
-    updateMany(flatUpdates);
-
     // Return updated section
-    const rows = db.prepare('SELECT key, value FROM site_content WHERE key LIKE ?').all(prefix + '%');
+    const rows = await db.prepare('SELECT key, value FROM site_content WHERE key LIKE ?').all(prefix + '%');
     const content = {};
     for (const row of rows) {
       content[row.key] = row.value;

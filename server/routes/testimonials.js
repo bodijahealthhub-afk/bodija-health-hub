@@ -12,7 +12,7 @@ const toClient = (t) => ({
 });
 
 // GET /api/testimonials (public — active only) or admin (with valid token — all, wrapped)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -27,11 +27,11 @@ router.get('/', (req, res) => {
     }
 
     if (isAdmin) {
-      const testimonials = db.prepare('SELECT * FROM testimonials ORDER BY created_at DESC').all();
+      const testimonials = await db.prepare('SELECT * FROM testimonials ORDER BY created_at DESC').all();
       return res.json({ testimonials: testimonials.map(toClient) });
     }
 
-    const testimonials = db.prepare('SELECT * FROM testimonials WHERE is_active = 1 ORDER BY created_at DESC').all();
+    const testimonials = await db.prepare('SELECT * FROM testimonials WHERE is_active = 1 ORDER BY created_at DESC').all();
     res.json(testimonials.map(toClient));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch testimonials' });
@@ -39,9 +39,9 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/testimonials/all (admin — all)
-router.get('/all', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.get('/all', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const testimonials = db.prepare('SELECT * FROM testimonials ORDER BY created_at DESC').all();
+    const testimonials = await db.prepare('SELECT * FROM testimonials ORDER BY created_at DESC').all();
     res.json({ testimonials: testimonials.map(toClient) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch testimonials' });
@@ -49,9 +49,9 @@ router.get('/all', authenticateToken, requireRole('admin', 'super_admin'), (req,
 });
 
 // GET /api/testimonials/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const testimonial = db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
+    const testimonial = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
     if (!testimonial) {
       return res.status(404).json({ error: 'Testimonial not found' });
     }
@@ -62,14 +62,14 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/testimonials (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const { name, patient_name, content, rating, photo, active, is_active } = req.body;
     if ((!name && !patient_name) || !content) {
       return res.status(400).json({ error: 'Patient name and content are required' });
     }
 
-    const result = db.prepare(
+    const result = await db.prepare(
       'INSERT INTO testimonials (patient_name, content, rating, photo, is_active) VALUES (?, ?, ?, ?, ?)'
     ).run(
       name || patient_name,
@@ -79,7 +79,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, r
       active !== undefined ? (active ? 1 : 0) : (is_active !== undefined ? is_active : 1)
     );
 
-    const testimonial = db.prepare('SELECT * FROM testimonials WHERE id = ?').get(result.lastInsertRowid);
+    const testimonial = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(toClient(testimonial));
   } catch (err) {
     res.status(500).json({ error: 'Failed to create testimonial' });
@@ -87,16 +87,16 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, r
 });
 
 // PUT /api/testimonials/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const testimonial = db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
+    const testimonial = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
     if (!testimonial) {
       return res.status(404).json({ error: 'Testimonial not found' });
     }
 
     const { name, patient_name, content, rating, photo, active, is_active } = req.body;
 
-    db.prepare(
+    await db.prepare(
       `UPDATE testimonials SET
         patient_name = COALESCE(?, patient_name),
         content = COALESCE(?, content),
@@ -113,7 +113,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req,
       req.params.id
     );
 
-    const updated = db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
+    const updated = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
     res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update testimonial' });
@@ -121,14 +121,14 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req,
 });
 
 // DELETE /api/testimonials/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const testimonial = db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
+    const testimonial = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
     if (!testimonial) {
       return res.status(404).json({ error: 'Testimonial not found' });
     }
 
-    db.prepare('DELETE FROM testimonials WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM testimonials WHERE id = ?').run(req.params.id);
     res.json({ message: 'Testimonial deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete testimonial' });

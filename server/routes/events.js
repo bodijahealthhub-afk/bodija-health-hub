@@ -7,7 +7,7 @@ const router = express.Router();
 const toClient = (e) => ({ ...e, status: e.is_active ? 'active' : 'inactive' });
 
 // GET /api/events (public — active only) or /api/admin/events (admin — all)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
     const { type } = req.query;
@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
     }
 
     query += ' ORDER BY date DESC';
-    const events = db.prepare(query).all(...params);
+    const events = await db.prepare(query).all(...params);
     res.json(isAdmin ? { events: events.map(toClient) } : events);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch events' });
@@ -31,9 +31,9 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/events/admin (admin — all events)
-router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), (req, res) => {
+router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
   try {
-    const events = db.prepare('SELECT * FROM events ORDER BY date DESC').all();
+    const events = await db.prepare('SELECT * FROM events ORDER BY date DESC').all();
     res.json({ events: events.map(toClient) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch events' });
@@ -41,9 +41,9 @@ router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'con
 });
 
 // GET /api/events/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const event = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+    const event = await db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
@@ -54,18 +54,18 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/events (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), (req, res) => {
+router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
   try {
     const { title, description, date, location, image, type } = req.body;
     if (!title) {
       return res.status(400).json({ error: 'Event title is required' });
     }
 
-    const result = db.prepare(
+    const result = await db.prepare(
       'INSERT INTO events (title, description, date, location, image, type) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(title, description || null, date || null, location || null, image || null, type || 'event');
 
-    const event = db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
+    const event = await db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(toClient(event));
   } catch (err) {
     res.status(500).json({ error: 'Failed to create event' });
@@ -73,16 +73,16 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/events/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
   try {
-    const event = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+    const event = await db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
     const { title, description, date, location, image, type, is_active, status } = req.body;
 
-    db.prepare(
+    await db.prepare(
       `UPDATE events SET
         title = COALESCE(?, title),
         description = COALESCE(?, description),
@@ -97,7 +97,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
       (is_active !== undefined ? is_active : (status !== undefined ? (status === 'active' ? 1 : 0) : null)),
       req.params.id);
 
-    const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+    const updated = await db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update event' });
@@ -105,14 +105,14 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // DELETE /api/events/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const event = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+    const event = await db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id);
     res.json({ message: 'Event deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete event' });

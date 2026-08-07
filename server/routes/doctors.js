@@ -14,7 +14,7 @@ const toClient = (d) => ({
 });
 
 // GET /api/doctors (public — active only) or /api/admin/doctors (admin — all)
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
     const { specialization, department, available_day } = req.query;
@@ -41,7 +41,7 @@ router.get('/', (req, res) => {
     }
 
     query += ' ORDER BY d.name ASC';
-    const doctors = db.prepare(query).all(...params);
+    const doctors = await db.prepare(query).all(...params);
     res.json(isAdmin ? { doctors: doctors.map(toClient) } : doctors);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch doctors' });
@@ -49,9 +49,9 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/doctors/:id (public)
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const doctor = db.prepare(
+    const doctor = await db.prepare(
       `SELECT d.*, u.email, u.avatar
        FROM doctors d
        LEFT JOIN users u ON d.user_id = u.id
@@ -67,7 +67,7 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/doctors (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const { name, email, password, specialization, bio, experience, experience_years, photo, department, availableDays, available_days, consultationFee, consultation_fee } = req.body;
     if (!name || !specialization) {
@@ -76,12 +76,12 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, r
 
     let userId = req.body.user_id || null;
     if (email && password) {
-      const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+      const existing = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
       if (existing) {
         userId = existing.id;
       } else {
         const hash = bcrypt.hashSync(password, 10);
-        const userResult = db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
+        const userResult = await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
           name, email, hash, 'doctor', req.body.phone || null
         );
         userId = userResult.lastInsertRowid;
@@ -89,7 +89,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, r
     }
 
     const days = Array.isArray(availableDays) ? availableDays.join(',') : (available_days || 'Mon,Tue,Wed,Thu,Fri');
-    const result = db.prepare(
+    const result = await db.prepare(
       `INSERT INTO doctors (user_id, name, specialization, bio, experience_years, photo, department, available_days, consultation_fee)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
@@ -97,7 +97,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, r
       photo || null, department || null, days, consultationFee ?? consultation_fee ?? 0
     );
 
-    const doctor = db.prepare(
+    const doctor = await db.prepare(
       `SELECT d.*, u.email FROM doctors d LEFT JOIN users u ON d.user_id = u.id WHERE d.id = ?`
     ).get(result.lastInsertRowid);
     res.status(201).json(toClient(doctor));
@@ -107,16 +107,16 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), (req, r
 });
 
 // PATCH /api/doctors/:id/status (admin)
-router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const doctor = db.prepare('SELECT * FROM doctors WHERE id = ?').get(req.params.id);
+    const doctor = await db.prepare('SELECT * FROM doctors WHERE id = ?').get(req.params.id);
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
     const status = req.body.status;
     const isActive = status === 'active' ? 1 : 0;
-    db.prepare('UPDATE doctors SET is_active = ? WHERE id = ?').run(isActive, req.params.id);
-    const updated = db.prepare(
+    await db.prepare('UPDATE doctors SET is_active = ? WHERE id = ?').run(isActive, req.params.id);
+    const updated = await db.prepare(
       `SELECT d.*, u.email FROM doctors d LEFT JOIN users u ON d.user_id = u.id WHERE d.id = ?`
     ).get(req.params.id);
     res.json(toClient(updated));
@@ -126,9 +126,9 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
 });
 
 // PUT /api/doctors/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const doctor = db.prepare('SELECT * FROM doctors WHERE id = ?').get(req.params.id);
+    const doctor = await db.prepare('SELECT * FROM doctors WHERE id = ?').get(req.params.id);
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
@@ -137,7 +137,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req,
 
     const days = Array.isArray(availableDays) ? availableDays.join(',') : (available_days || null);
 
-    db.prepare(
+    await db.prepare(
       `UPDATE doctors SET
         name = COALESCE(?, name),
         specialization = COALESCE(?, specialization),
@@ -158,7 +158,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req,
       req.params.id
     );
 
-    const updated = db.prepare(
+    const updated = await db.prepare(
       `SELECT d.*, u.email FROM doctors d LEFT JOIN users u ON d.user_id = u.id WHERE d.id = ?`
     ).get(req.params.id);
     res.json(toClient(updated));
@@ -168,14 +168,14 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req,
 });
 
 // DELETE /api/doctors/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const doctor = db.prepare('SELECT * FROM doctors WHERE id = ?').get(req.params.id);
+    const doctor = await db.prepare('SELECT * FROM doctors WHERE id = ?').get(req.params.id);
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
 
-    db.prepare('DELETE FROM doctors WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM doctors WHERE id = ?').run(req.params.id);
     res.json({ message: 'Doctor deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete doctor' });

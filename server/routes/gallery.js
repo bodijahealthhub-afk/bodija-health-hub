@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // GET /api/gallery (public) or admin (with valid token — returns {images})
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { category, album } = req.query;
     let query = 'SELECT * FROM gallery WHERE 1=1';
@@ -32,7 +32,7 @@ router.get('/', (req, res) => {
     }
 
     query += ' ORDER BY created_at DESC';
-    const items = db.prepare(query).all(...params);
+    const items = await db.prepare(query).all(...params);
 
     const toClient = (item) => ({
       id: item.id,
@@ -63,9 +63,9 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/gallery/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const item = db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
+    const item = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     if (!item) {
       return res.status(404).json({ error: 'Gallery item not found' });
     }
@@ -94,11 +94,11 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
       return res.status(400).json({ error: 'Image is required' });
     }
 
-    const result = db.prepare(
+    const result = await db.prepare(
       'INSERT INTO gallery (title, image_url, category, album) VALUES (?, ?, ?, ?)'
     ).run(title || null, image_url, category || null, album || null);
 
-    const item = db.prepare('SELECT * FROM gallery WHERE id = ?').get(result.lastInsertRowid);
+    const item = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(item);
   } catch (err) {
     res.status(500).json({ error: 'Failed to add gallery item' });
@@ -108,7 +108,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 // PUT /api/gallery/:id (admin)
 router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), upload.single('image'), async (req, res) => {
   try {
-    const item = db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
+    const item = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     if (!item) {
       return res.status(404).json({ error: 'Gallery item not found' });
     }
@@ -125,7 +125,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
       }
     }
 
-    db.prepare(
+    await db.prepare(
       `UPDATE gallery SET
         title = COALESCE(?, title),
         image_url = COALESCE(?, image_url),
@@ -134,7 +134,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
        WHERE id = ?`
     ).run(title || null, image_url, category || null, album || null, req.params.id);
 
-    const updated = db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
+    const updated = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: 'Failed to update gallery item' });
@@ -142,14 +142,14 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // DELETE /api/gallery/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    const item = db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
+    const item = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     if (!item) {
       return res.status(404).json({ error: 'Gallery item not found' });
     }
 
-    db.prepare('DELETE FROM gallery WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM gallery WHERE id = ?').run(req.params.id);
     res.json({ message: 'Gallery item deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete gallery item' });

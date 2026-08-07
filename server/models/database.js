@@ -1,4 +1,3 @@
-const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const path = require('path');
@@ -6,15 +5,19 @@ const path = require('path');
 const rootDir = path.resolve(__dirname, '../..');
 require('dotenv').config({ path: path.join(rootDir, '.env') });
 
-// Use DB_PATH from env, or default to server/database.sqlite for local dev
-const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'database.sqlite');
-const db = new Database(path.isAbsolute(dbPath) ? dbPath : path.join(rootDir, dbPath));
+const backend = process.env.DATABASE_URL
+  ? 'postgres'
+  : process.env.DB_BACKEND === 'pglite'
+    ? 'pglite'
+    : 'sqlite';
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const impl = backend === 'postgres'
+  ? require('./pgDb')
+  : backend === 'pglite'
+    ? require('./pgliteDb')
+    : require('./sqliteDb');
 
-// Create tables
-db.exec(`
+const SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -237,9 +240,9 @@ db.exec(`
     status TEXT DEFAULT 'new',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
-`);
+`;
 
-const insertUsersAndDoctors = () => {
+async function insertUsersAndDoctors() {
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminEmail || !adminPassword) {
@@ -252,12 +255,10 @@ const insertUsersAndDoctors = () => {
   const seededAdminPassword = adminPassword || 'admin123';
   const adminHash = bcrypt.hashSync(seededAdminPassword, 10);
 
-  // Admin user
-  db.prepare(`INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)`).run(
+  await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
     'Admin User', seededAdminEmail, adminHash, 'admin', '+234 801 234 5678'
   );
 
-  // Doctor users
   const doctorUsers = [
     { name: 'Dr. Adaeze Okafor', email: 'adaeze@bodijahealthhub.com', phone: '+234 802 345 6789' },
     { name: 'Dr. Emeka Adeyemi', email: 'emeka@bodijahealthhub.com', phone: '+234 803 456 7890' },
@@ -267,18 +268,17 @@ const insertUsersAndDoctors = () => {
     { name: 'Dr. Tunde Bakare', email: 'tunde@bodijahealthhub.com', phone: '+234 807 890 1234' },
   ];
 
-  const insertUser = db.prepare(`INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, 'doctor', ?)`);
+  const insertUser = db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, \'doctor\', ?)');
   const doctorIds = [];
   for (const doc of doctorUsers) {
     const doctorPassword = process.env.DOCTOR_PASSWORD || crypto.randomBytes(12).toString('base64url');
     const docHash = bcrypt.hashSync(doctorPassword, 10);
-    const result = insertUser.run(doc.name, doc.email, docHash, doc.phone);
+    const result = await insertUser.run(doc.name, doc.email, docHash, doc.phone);
     doctorIds.push(result.lastInsertRowid);
     console.log(`[seed] Doctor account created: ${doc.email} (password: ${doctorPassword})`);
   }
 
-  // Doctors
-  const insertDoctor = db.prepare(`INSERT INTO doctors (user_id, name, specialization, bio, experience_years, department, available_days, consultation_fee) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insertDoctor = db.prepare('INSERT INTO doctors (user_id, name, specialization, bio, experience_years, department, available_days, consultation_fee) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   const doctorData = [
     [doctorIds[0], 'Dr. Adaeze Okafor', 'Audiology', 'Specialist in hearing disorders and auditory assessment with over 12 years of clinical experience.', 12, 'Audiology', 'Mon,Tue,Wed,Thu,Fri', 15000],
     [doctorIds[1], 'Dr. Emeka Adeyemi', 'General Practice', 'Experienced general practitioner dedicated to comprehensive family healthcare.', 8, 'General Medicine', 'Mon,Tue,Wed,Thu,Fri', 10000],
@@ -288,13 +288,12 @@ const insertUsersAndDoctors = () => {
     [doctorIds[5], 'Dr. Tunde Bakare', 'Nephrology', 'Specialist in kidney care and dialysis management.', 11, 'Kidney Care', 'Tue,Wed,Thu,Fri', 18000],
   ];
   for (const doc of doctorData) {
-    insertDoctor.run(...doc);
+    await insertDoctor.run(...doc);
   }
-};
+}
 
-const insertContentDefaults = () => {
-  // Services (all 16)
-  const insertService = db.prepare(`INSERT INTO services (name, description, category, price, icon) VALUES (?, ?, ?, ?, ?)`);
+async function insertContentDefaults() {
+  const insertService = db.prepare('INSERT INTO services (name, description, category, price, icon) VALUES (?, ?, ?, ?, ?)');
   const services = [
     ['General Consultation', 'Comprehensive health assessment and medical consultation with our experienced doctors.', 'Primary Care', 10000, 'stethoscope'],
     ['Audiology', 'Complete hearing health services including diagnosis, treatment, and prevention of hearing disorders.', 'Specialized Care', 15000, 'ear'],
@@ -314,33 +313,32 @@ const insertContentDefaults = () => {
     ['Health Outreach Programs', 'Community health education, screening camps, and wellness outreach events.', 'Community', 0, 'hand-holding-heart'],
   ];
   for (const svc of services) {
-    insertService.run(...svc);
+    await insertService.run(...svc);
   }
 
-  // Blog posts
-  const insertBlog = db.prepare(`INSERT INTO blog_posts (title, slug, content, excerpt, category, author_id, status) VALUES (?, ?, ?, ?, ?, 1, 'published')`);
-  insertBlog.run(
+  const insertBlog = db.prepare('INSERT INTO blog_posts (title, slug, content, excerpt, category, author_id, status) VALUES (?, ?, ?, ?, ?, 1, \'published\')');
+  await insertBlog.run(
     'Understanding Hearing Loss: Causes, Symptoms, and Treatment Options',
     'understanding-hearing-loss',
     'Hearing loss affects millions of people worldwide and can significantly impact quality of life. In this comprehensive guide, we explore the common causes of hearing loss, from age-related degeneration to exposure to loud noise. Learn about the early warning signs, including difficulty following conversations, turning up the volume on devices, and withdrawing from social situations. Our audiology team explains the latest treatment options, from hearing aids to cochlear implants, and shares preventive measures you can take today to protect your hearing health. Regular hearing screenings are recommended for adults over 50, and early detection is key to effective treatment.',
     'Hearing loss affects millions worldwide. Learn about causes, early warning signs, and the latest treatment options from our audiology experts.',
     'Audiology'
   );
-  insertBlog.run(
+  await insertBlog.run(
     'Managing Hypertension: A Guide to Healthy Blood Pressure',
     'managing-hypertension',
     'Hypertension, often called the "silent killer," affects nearly half of all adults. This article covers essential strategies for managing blood pressure through lifestyle changes and, when necessary, medication. Discover the DASH diet approach, learn about the importance of regular exercise, and understand how stress management plays a role in blood pressure control. Our internal medicine specialists share practical tips for daily monitoring at home, understanding your readings, and knowing when to seek medical attention. We also discuss the connection between hypertension and other conditions like diabetes and kidney disease.',
     'Hypertension is a leading cause of heart disease. Our experts share practical strategies for managing your blood pressure effectively.',
     'Heart Health'
   );
-  insertBlog.run(
+  await insertBlog.run(
     'Child Health: Essential Vaccinations Every Parent Should Know About',
     'child-health-vaccinations',
     'Vaccinations remain one of the most important tools in protecting children from serious diseases. This guide provides parents with a comprehensive overview of the vaccination schedule, from birth through adolescence. Learn about the diseases vaccines prevent, common side effects, and why timely vaccination is crucial. Our pediatric team addresses common concerns and misconceptions about vaccines, explains the difference between routine and optional vaccinations, and provides tips for making vaccination visits less stressful for both children and parents. Stay informed about the latest additions to the national immunization program.',
     'Protect your child with the right vaccinations at the right time. Our pediatric guide covers everything parents need to know about immunization.',
     'Child Health'
   );
-  insertBlog.run(
+  await insertBlog.run(
     'Diabetes Management: Living Well with Diabetes',
     'diabetes-management',
     'Managing diabetes effectively requires a comprehensive approach that combines medical care, nutrition, exercise, and self-monitoring. This article explores evidence-based strategies for blood sugar control, including meal planning with Nigerian food options, the role of physical activity, and proper medication adherence. Our diabetes care team shares insights on monitoring techniques, recognizing complications early, and maintaining emotional well-being while managing a chronic condition. Learn about the latest advancements in diabetes care and how our multidisciplinary team supports patients in achieving their health goals.',
@@ -348,29 +346,25 @@ const insertContentDefaults = () => {
     'Diabetes Care'
   );
 
-  // Testimonials
-  const insertTestimonial = db.prepare(`INSERT INTO testimonials (patient_name, content, rating, is_active) VALUES (?, ?, ?, 1)`);
-  insertTestimonial.run('Adebayo Johnson', 'The audiology team at Bodija Health Hub changed my life. After years of struggling with hearing loss, I can finally enjoy conversations with my family again. The hearing aid fitting was professional and the follow-up care has been excellent.', 5);
-  insertTestimonial.run('Chinwe Okonkwo', 'Dr. Bello is an amazing pediatrician. She is patient, thorough, and genuinely cares about her young patients. My children actually look forward to their check-ups! The facility is clean and welcoming.', 5);
-  insertTestimonial.run('Ibrahim Mohammed', 'I have been managing my hypertension at Bodija Health Hub for two years now. The doctors are knowledgeable and the staff are always friendly. The hypertension clinic has helped me understand and control my blood pressure properly.', 4);
-  insertTestimonial.run('Funke Adeyemi', 'The home care service has been a blessing for my elderly mother. The nurses are professional, compassionate, and highly skilled. It gives our family peace of mind knowing she receives quality care at home.', 5);
-  insertTestimonial.run('Oluwaseun Akinola', 'I visited for a wellness screening and was impressed by the thoroughness of the check-up. The staff took time to explain every result and provided practical health advice. Highly recommend their preventive health services!', 5);
+  const insertTestimonial = db.prepare('INSERT INTO testimonials (patient_name, content, rating, is_active) VALUES (?, ?, ?, 1)');
+  await insertTestimonial.run('Adebayo Johnson', 'The audiology team at Bodija Health Hub changed my life. After years of struggling with hearing loss, I can finally enjoy conversations with my family again. The hearing aid fitting was professional and the follow-up care has been excellent.', 5);
+  await insertTestimonial.run('Chinwe Okonkwo', 'Dr. Bello is an amazing pediatrician. She is patient, thorough, and genuinely cares about her young patients. My children actually look forward to their check-ups! The facility is clean and welcoming.', 5);
+  await insertTestimonial.run('Ibrahim Mohammed', 'I have been managing my hypertension at Bodija Health Hub for two years now. The doctors are knowledgeable and the staff are always friendly. The hypertension clinic has helped me understand and control my blood pressure properly.', 4);
+  await insertTestimonial.run('Funke Adeyemi', 'The home care service has been a blessing for my elderly mother. The nurses are professional, compassionate, and highly skilled. It gives our family peace of mind knowing she receives quality care at home.', 5);
+  await insertTestimonial.run('Oluwaseun Akinola', 'I visited for a wellness screening and was impressed by the thoroughness of the check-up. The staff took time to explain every result and provided practical health advice. Highly recommend their preventive health services!', 5);
 
-  // Contact info
-  const insertContact = db.prepare(`INSERT INTO contact_info (key, value) VALUES (?, ?)`);
-  insertContact.run('phone', '+234 801 234 5678');
-  insertContact.run('email', 'info@bodijahealthhub.com');
-  insertContact.run('address', '12 Bodija Road, Ibadan, Oyo State, Nigeria');
-  insertContact.run('facebook', 'https://facebook.com/bodijahealthhub');
-  insertContact.run('twitter', 'https://twitter.com/bodijahealthhub');
-  insertContact.run('instagram', 'https://instagram.com/bodijahealthhub');
-  insertContact.run('whatsapp', '+234 801 234 5678');
-  insertContact.run('opening_hours', 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM');
+  const insertContact = db.prepare('INSERT INTO contact_info (key, value) VALUES (?, ?)');
+  await insertContact.run('phone', '+234 801 234 5678');
+  await insertContact.run('email', 'info@bodijahealthhub.com');
+  await insertContact.run('address', '12 Bodija Road, Ibadan, Oyo State, Nigeria');
+  await insertContact.run('facebook', 'https://facebook.com/bodijahealthhub');
+  await insertContact.run('twitter', 'https://twitter.com/bodijahealthhub');
+  await insertContact.run('instagram', 'https://instagram.com/bodijahealthhub');
+  await insertContact.run('whatsapp', '+234 801 234 5678');
+  await insertContact.run('opening_hours', 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM');
 
-  // Site content defaults
-  const insertSiteContent = db.prepare(`INSERT OR IGNORE INTO site_content (key, value) VALUES (?, ?)`);
+  const insertSiteContent = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?, ?)');
   const siteContentDefaults = [
-    // Hero
     ['hero_headline', 'Quality Healthcare for Every Family'],
     ['hero_subtext', 'Bodija Health Hub provides comprehensive, compassionate healthcare services in the heart of Ibadan. Your well-being is our priority.'],
     ['hero_cta1_text', 'Book Appointment'],
@@ -378,21 +372,16 @@ const insertContentDefaults = () => {
     ['hero_cta2_text', 'Our Services'],
     ['hero_cta2_link', '/services'],
     ['hero_image', ''],
-    // About
     ['about_headline', 'A Healthcare Ecosystem, Not Just a Clinic'],
     ['about_description', 'Bodija Health Hub is an integrated healthcare network designed to ensure that patients receive coordinated, comprehensive care at every stage of their health journey.\n\nBy connecting primary care, specialist consultations, diagnostics, therapy, and digital health solutions under one umbrella, we eliminate the gaps that often leave families navigating the healthcare system alone.\n\nOur model is built on the belief that when healthcare providers, specialists, and digital platforms work in harmony, patients don\'t just get treated — they get cared for, consistently and completely.'],
     ['about_mission', 'To build and sustain an integrated healthcare network that brings together clinics, specialists, diagnostics, therapy, and digital health solutions — making quality, coordinated care accessible to every individual and family in our community.'],
     ['about_vision', 'To be the most trusted integrated healthcare ecosystem in Ibadan and beyond — where every family has access to connected, continuous, and compassionate care.'],
-    // Ecosystem
     ['ecosystem_headline', 'One Hub. Many Hands. Whole-Person Care.'],
     ['ecosystem_description', 'Care doesn\'t exist in isolation — and neither should the systems that support it. At Bodija Health Hub, we\'ve built an ecosystem where every service connects, every specialist coordinates, and every patient benefits from truly integrated healthcare.'],
-    // Partners
     ['partners_headline', 'Our Partner Network'],
     ['partners_description', 'The Bodija Health Hub ecosystem is powered by a network of specialized healthcare organizations — each bringing expertise, trust, and commitment to community wellness.'],
-    // Platforms
     ['platforms_headline', 'Our Platforms'],
     ['platforms_description', 'BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls — connecting patients to providers, families to peace of mind, and communities to wellness.'],
-    // Contact
     ['contact_headline', 'Ready to Be Part of Something Bigger?'],
     ['contact_description', 'Whether you\'re a patient, a family member, a healthcare provider, or a caregiver — we\'re here to connect you with the care, the partners, and the community you need.'],
     ['contact_phone', '+234 801 234 5678'],
@@ -400,7 +389,6 @@ const insertContentDefaults = () => {
     ['contact_address', '12 Bodija Road, Ibadan, Oyo State, Nigeria'],
     ['contact_whatsapp', '+234 801 234 5678'],
     ['contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'],
-    // Footer
     ['footer_tagline', 'Your Trusted Healthcare Partner in Ibadan. Providing compassionate, comprehensive medical services for individuals and families.'],
     ['footer_copyright', '© 2025 Bodija Health Hub. All rights reserved.'],
     ['footer_quick_links', JSON.stringify([
@@ -421,11 +409,9 @@ const insertContentDefaults = () => {
       linkedin: 'https://linkedin.com/company/bodijahealthhub',
       youtube: '',
     })],
-    // SEO
     ['seo_title', 'Bodija Health Hub - Quality Healthcare in Ibadan'],
     ['seo_description', 'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.'],
     ['seo_keywords', 'healthcare, hospital, Ibadan, Nigeria, doctor, consultation, audiology, laboratory'],
-    // Navigation
     ['nav_logo', ''],
     ['nav_logo_text', 'Bodija Health Hub'],
     ['nav_links', JSON.stringify([
@@ -442,11 +428,10 @@ const insertContentDefaults = () => {
     ['nav_phone', '+234 801 234 5678'],
   ];
   for (const [key, value] of siteContentDefaults) {
-    insertSiteContent.run(key, value);
+    await insertSiteContent.run(key, value);
   }
 
-  // SEO page settings defaults
-  const insertSeo = db.prepare(`INSERT OR IGNORE INTO seo_settings (page_id, meta_title, meta_description, canonical) VALUES (?, ?, ?, ?)`);
+  const insertSeo = db.prepare('INSERT OR IGNORE INTO seo_settings (page_id, meta_title, meta_description, canonical) VALUES (?, ?, ?, ?)');
   const seoPages = [
     ['home', 'Bodija Health Hub - Quality Healthcare in Ibadan', 'Bodija Health Hub provides comprehensive healthcare services in Ibadan, Nigeria.', 'https://bodijahealthhub.com/'],
     ['about', 'About Us - Bodija Health Hub', 'Learn about Bodija Health Hub, an integrated healthcare network in Ibadan.', 'https://bodijahealthhub.com/about'],
@@ -460,11 +445,10 @@ const insertContentDefaults = () => {
     ['faq', 'FAQ - Bodija Health Hub', 'Frequently asked questions.', 'https://bodijahealthhub.com/faq'],
   ];
   for (const [pageId, title, desc, canonical] of seoPages) {
-    insertSeo.run(pageId, title, desc, canonical);
+    await insertSeo.run(pageId, title, desc, canonical);
   }
 
-  // Site settings defaults
-  const insertSiteSetting = db.prepare(`INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)`);
+  const insertSiteSetting = db.prepare('INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)');
   const siteSettingsDefaults = [
     ['site_name', 'Bodija Health Hub'],
     ['site_tagline', 'Your Trusted Healthcare Partner'],
@@ -483,20 +467,31 @@ const insertContentDefaults = () => {
     ['maintenance_mode', 'false'],
   ];
   for (const [key, value] of siteSettingsDefaults) {
-    insertSiteSetting.run(key, value);
+    await insertSiteSetting.run(key, value);
   }
-};
+}
 
-// Seed data if empty
-const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-if (userCount === 0) {
-  insertUsersAndDoctors();
-  insertContentDefaults();
+async function seedIfEmpty() {
+  const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
+  if (userCount.count === 0) {
+    await insertUsersAndDoctors();
+    await insertContentDefaults();
+  }
+}
+
+async function init() {
+  await impl.ready;
+  if (impl.backend === 'sqlite') {
+    impl.pragma('journal_mode = WAL');
+    impl.pragma('foreign_keys = ON');
+  }
+  await impl.exec(SCHEMA);
+  await seedIfEmpty();
 }
 
 // Reset all content to the original defaults (used by the admin backup/reset endpoint).
 // Users, doctors, appointments, patients, messages, and uploads are preserved.
-function resetContentToDefaults() {
+async function resetContentToDefaults() {
   const contentTables = [
     'services',
     'blog_posts',
@@ -511,20 +506,33 @@ function resetContentToDefaults() {
     'site_settings',
   ];
 
-  db.pragma('foreign_keys = OFF');
+  if (impl.backend === 'sqlite') db.pragma('foreign_keys = OFF');
   try {
-    const del = db.transaction(() => {
+    await db.transaction(async () => {
       for (const table of contentTables) {
-        db.prepare(`DELETE FROM ${table}`).run();
+        await db.prepare(`DELETE FROM ${table}`).run();
       }
     });
-    del();
-    insertContentDefaults();
+    await insertContentDefaults();
   } finally {
-    db.pragma('foreign_keys = ON');
+    if (impl.backend === 'sqlite') db.pragma('foreign_keys = ON');
   }
 }
 
-db.resetContentToDefaults = resetContentToDefaults;
+const db = {
+  backend: impl.backend,
+  prepare(sql) {
+    return {
+      get: (...params) => impl.get(sql, params),
+      all: (...params) => impl.all(sql, params),
+      run: (...params) => impl.run(sql, params),
+    };
+  },
+  transaction: (fn) => impl.transaction(fn),
+  pragma: (p) => impl.pragma(p),
+  resetContentToDefaults,
+};
+
+db.ready = init();
 
 module.exports = db;
