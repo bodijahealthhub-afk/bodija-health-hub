@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { PatientAuthProvider } from './portal/PatientAuthContext'
 import useSeo from './hooks/useSeo'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -56,6 +57,15 @@ const AdminSiteSettings = lazy(() => import('./admin/SiteSettings'))
 const AdminMediaLibrary = lazy(() => import('./admin/MediaLibrary'))
 const AdminSeoSettings = lazy(() => import('./admin/SeoSettings'))
 const AdminBackupRestore = lazy(() => import('./admin/BackupRestore'))
+const AdminPayments = lazy(() => import('./admin/Payments'))
+
+// Patient portal
+const PortalLayout = lazy(() => import('./portal/PortalLayout'))
+const PortalLogin = lazy(() => import('./portal/Login'))
+const PortalRegister = lazy(() => import('./portal/Register'))
+const PortalDashboard = lazy(() => import('./portal/Dashboard'))
+const PortalAppointments = lazy(() => import('./portal/Appointments'))
+const PortalPayments = lazy(() => import('./portal/Payments'))
 
 const DEFAULT_WHATSAPP = '2348012345678'
 
@@ -190,8 +200,18 @@ export default function App() {
               <Route path="media" element={<AdminMediaLibrary />} />
               <Route path="seo" element={<AdminSeoSettings />} />
               <Route path="backup" element={<AdminBackupRestore />} />
+              <Route path="payments" element={<AdminPayments />} />
               <Route path="admin-users" element={<AdminManagement />} />
             </Route>
+          </Route>
+
+          {/* Patient portal routes */}
+          <Route path="/portal/login" element={<PortalLogin />} />
+          <Route path="/portal/register" element={<PortalRegister />} />
+          <Route path="/portal" element={<PatientAuthProvider><PortalLayout /></PatientAuthProvider>}>
+            <Route index element={<PortalDashboard />} />
+            <Route path="appointments" element={<PortalAppointments />} />
+            <Route path="payments" element={<PortalPayments />} />
           </Route>
         </Routes>
       </Suspense>

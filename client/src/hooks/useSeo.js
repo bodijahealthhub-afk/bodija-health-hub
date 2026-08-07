@@ -26,6 +26,18 @@ function setCanonical(href) {
   el.setAttribute('href', href)
 }
 
+// Upsert a single page-level JSON-LD script block (replaces any previous one).
+function setJsonLd(script) {
+  const tag = 'application/ld+json'
+  const prev = document.head.querySelector(`script[data-seo-jsonld]`)
+  const el = document.createElement('script')
+  el.type = tag
+  el.setAttribute('data-seo-jsonld', 'true')
+  el.textContent = JSON.stringify(script)
+  if (prev) prev.replaceWith(el)
+  else document.head.appendChild(el)
+}
+
 export default function useSeo(pathname) {
   useEffect(() => {
     const pageId = pathname === '/' ? 'home' : pathname.replace(/^\//, '').replace(/\//g, '-')
@@ -38,16 +50,35 @@ export default function useSeo(pathname) {
       .then(res => (res.ok ? res.json() : {}))
       .then(seo => {
         if (!active) return
+        const title = seo.metaTitle || DEFAULT_TITLE
+        const description = seo.metaDescription || DEFAULT_DESCRIPTION
+        const url = seo.canonical || `${window.location.origin}${pathname === '/' ? '/' : pathname}`
         if (seo.metaTitle) document.title = seo.metaTitle
-        setMeta('name', 'description', seo.metaDescription || DEFAULT_DESCRIPTION)
+        setMeta('name', 'description', description)
         setMeta('property', 'og:title', seo.ogTitle || seo.metaTitle)
         setMeta('property', 'og:description', seo.ogDescription || seo.metaDescription)
         setMeta('property', 'og:image', seo.ogImage)
-        setMeta('name', 'twitter:card', seo.twitterCard)
+        setMeta('property', 'og:url', url)
+        setMeta('property', 'og:type', 'website')
+        setMeta('property', 'og:site_name', 'Bodija Health Hub')
+        setMeta('name', 'twitter:card', seo.twitterCard || 'summary_large_image')
         setMeta('name', 'twitter:title', seo.twitterTitle || seo.metaTitle)
         setMeta('name', 'twitter:description', seo.twitterDescription || seo.metaDescription)
         setMeta('name', 'twitter:image', seo.twitterImage)
         setCanonical(seo.canonical)
+
+        setJsonLd({
+          '@context': 'https://schema.org',
+          '@type': 'WebPage',
+          '@id': url,
+          name: title,
+          description,
+          url,
+          inLanguage: 'en',
+          isPartOf: { '@id': 'https://bodijahealthhub.com/#website' },
+          about: { '@id': 'https://bodijahealthhub.com/#organization' },
+        })
+
         if (seo.noindex) {
           let el = document.head.querySelector('meta[name="robots"]')
           if (!el) {

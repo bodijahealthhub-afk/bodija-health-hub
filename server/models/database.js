@@ -240,6 +240,29 @@ const SCHEMA = `
     status TEXT DEFAULT 'new',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reference TEXT UNIQUE NOT NULL,
+    appointment_id INTEGER REFERENCES appointments(id),
+    email TEXT NOT NULL,
+    amount REAL NOT NULL,
+    currency TEXT DEFAULT 'NGN',
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending','paid','failed','cancelled')),
+    paystack_reference TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    paid_at DATETIME
+  );
+
+  CREATE TABLE IF NOT EXISTS patient_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    phone TEXT,
+    password_hash TEXT NOT NULL,
+    patient_id INTEGER REFERENCES patients(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `;
 
 async function insertUsersAndDoctors() {

@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { sendMail } = require('../utils/email');
 
 const router = express.Router();
 
@@ -22,6 +23,11 @@ router.post('/subscribe', async (req, res) => {
     }
 
     await db.prepare('INSERT INTO newsletter_subscribers (email) VALUES (?)').run(email);
+    sendMail({
+      to: email,
+      subject: 'Welcome to Bodija Health Hub',
+      text: `Welcome to the Bodija Health Hub community!\n\nYou have been subscribed to our newsletter. You'll receive health tips, service updates, and news from our ecosystem in Ibadan.\n\nIf you did not request this subscription, you can unsubscribe at any time.\n\nWarm regards,\nBodija Health Hub`,
+    });
     res.status(201).json({ success: true, message: 'Subscribed successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to subscribe' });

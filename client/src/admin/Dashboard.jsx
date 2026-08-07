@@ -1,45 +1,73 @@
 import { useState, useEffect } from 'react';
 import StatsCard from './StatsCard';
 import StatusBadge from './StatusBadge';
+import { BarChart, LineChart, Donut } from './AdminCharts';
+
+const STATUS_COLORS = {
+  pending: '#F59E0B',
+  confirmed: '#0D9488',
+  completed: '#10B981',
+  cancelled: '#EF4444',
+};
+
+const formatNaira = (n) => `₦${Number(n || 0).toLocaleString('en-US')}`;
+
+function dayLabel(dateStr, range) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (range === 7) return d.toLocaleDateString('en-US', { weekday: 'short' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    todayAppointments: 12,
-    totalPatients: 348,
-    totalDoctors: 18,
-    monthlyRevenue: '₦2,450,000',
-  });
+  const [stats, setStats] = useState(null);
   const [recentAppointments, setRecentAppointments] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [range, setRange] = useState(30);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
+    const token = localStorage.getItem('adminToken');
     const fetchDashboard = async () => {
       try {
-        const token = localStorage.getItem('adminToken');
         const response = await fetch('/api/admin/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
-          setStats(data.stats || stats);
+          setStats(data.stats);
           setRecentAppointments(data.recentAppointments || []);
         }
-      } catch {
-        // Use mock data
-        setRecentAppointments([
-          { id: 1, patient: 'Adebayo Oladipo', doctor: 'Dr. Adewale', service: 'General Checkup', date: '2026-07-14', time: '09:00 AM', status: 'confirmed' },
-          { id: 2, patient: 'Chioma Nwosu', doctor: 'Dr. Olumide', service: 'Dental Cleaning', date: '2026-07-14', time: '10:30 AM', status: 'pending' },
-          { id: 3, patient: 'Fatima Abubakar', doctor: 'Dr. Amina', service: 'Prenatal Checkup', date: '2026-07-14', time: '11:00 AM', status: 'completed' },
-          { id: 4, patient: 'Emeka Okonkwo', doctor: 'Dr. Adewale', service: 'Blood Test', date: '2026-07-14', time: '02:00 PM', status: 'cancelled' },
-          { id: 5, patient: 'Aisha Bello', doctor: 'Dr. Olumide', service: 'Eye Examination', date: '2026-07-14', time: '03:30 PM', status: 'confirmed' },
-        ]);
-      } finally {
-        setLoading(false);
-      }
+      } catch {}
     };
-    fetchDashboard();
-  }, []);
+    const fetchAnalytics = async () => {
+      try {
+        const response = await fetch(`/api/admin/dashboard/analytics?days=${range}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAnalytics(data);
+        }
+      } catch {}
+    };
+    Promise.all([fetchDashboard(), fetchAnalytics()]).finally(() => setLoading(false));
+  }, [range]);
+
+  const appointmentSeries = analytics
+    ? analytics.daily.map((d) => ({ label: dayLabel(d.date, range), value: d.appointments }))
+    : [];
+  const revenueSeries = analytics
+    ? analytics.daily.map((d) => ({ label: dayLabel(d.date, range), value: d.revenue }))
+    : [];
+  const statusSegments = analytics
+    ? (analytics.statusBreakdown || []).map((s) => ({
+        label: s.status,
+        value: Number(s.count || 0),
+        color: STATUS_COLORS[s.status] || '#9CA3AF',
+      }))
+    : [];
+
+  const summary = analytics?.rangeSummary || null;
 
   // Mini calendar
   const today = new Date();
@@ -49,55 +77,88 @@ const Dashboard = () => {
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
   for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
 
-  // Simple bar chart data
-  const weeklyData = [
-    { day: 'Mon', count: 8 },
-    { day: 'Tue', count: 12 },
-    { day: 'Wed', count: 6 },
-    { day: 'Thu', count: 15 },
-    { day: 'Fri', count: 10 },
-    { day: 'Sat', count: 4 },
-  ];
-  const maxCount = Math.max(...weeklyData.map((d) => d.count));
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">Welcome back! Here's what's happening.</p>
+        </div>
+        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
+          {[7, 30, 90].map((d) => (
+            <button
+              key={d}
+              onClick={() => setRange(d)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                range === d ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           icon={<svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-          value={stats.todayAppointments}
+          value={loading ? '—' : (stats?.todayAppointments ?? 0)}
           label="Today's Appointments"
-          trend="+2 from yesterday"
+          trend={summary ? `${summary.totalAppointments} in last ${range} days` : 'Live'}
           trendUp={true}
         />
         <StatsCard
           icon={<svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-          value={stats.totalPatients}
+          value={loading ? '—' : (stats?.totalPatients ?? 0)}
           label="Total Patients"
-          trend="+12 this month"
+          trend={summary ? `+${summary.newPatients} new in period` : 'Total'}
           trendUp={true}
         />
         <StatsCard
           icon={<svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>}
-          value={stats.totalDoctors}
+          value={loading ? '—' : (stats?.totalDoctors ?? 0)}
           label="Total Doctors"
           trend="All active"
           trendUp={true}
         />
         <StatsCard
           icon={<svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-          value={stats.monthlyRevenue}
+          value={loading ? '—' : (stats?.monthlyRevenue || '₦0')}
           label="Monthly Revenue"
-          trend="+18% from last month"
+          trend={summary ? `${formatNaira(summary.totalRevenue)} in period` : 'This month'}
           trendUp={true}
         />
+      </div>
+
+      {/* Summary strip */}
+      {summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { label: 'Appointments', value: summary.totalAppointments },
+            { label: 'Completed', value: summary.totalCompleted },
+            { label: 'Completion rate', value: `${summary.completionRate}%` },
+            { label: 'Revenue', value: formatNaira(summary.totalRevenue) },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
+              <p className="text-xs font-medium text-gray-500">{s.label}</p>
+              <p className="text-lg font-bold text-gray-900 mt-0.5">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="font-semibold text-gray-900 mb-4">Appointments — last {range} days</h2>
+          <BarChart data={appointmentSeries} />
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="font-semibold text-gray-900 mb-4">Revenue — last {range} days</h2>
+          <LineChart data={revenueSeries} format={formatNaira} />
+        </div>
       </div>
 
       {/* Main Content Grid */}
@@ -119,6 +180,9 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
+                {recentAppointments.length === 0 && !loading && (
+                  <tr><td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-400">No appointments yet</td></tr>
+                )}
                 {recentAppointments.map((apt, idx) => (
                   <tr key={apt.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{apt.patient}</td>
@@ -134,46 +198,44 @@ const Dashboard = () => {
 
         {/* Right Column */}
         <div className="space-y-6">
-          {/* Mini Calendar */}
+          {/* Status breakdown */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-4">
-              {today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </h2>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                <div key={i} className="py-1 font-medium text-gray-500">{d}</div>
-              ))}
-              {calendarDays.map((day, i) => (
-                <div
-                  key={i}
-                  className={`py-1.5 rounded-lg ${
-                    day === today.getDate()
-                      ? 'bg-teal-600 text-white font-medium'
-                      : day
-                      ? 'text-gray-700 hover:bg-gray-100 cursor-pointer'
-                      : ''
-                  }`}
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
+            <h2 className="font-semibold text-gray-900 mb-4">Appointments by Status</h2>
+            <Donut segments={statusSegments} />
           </div>
 
-          {/* Weekly Chart */}
+          {/* Top services */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-4">This Week</h2>
-            <div className="flex items-end justify-between h-40 gap-2">
-              {weeklyData.map((item) => (
-                <div key={item.day} className="flex flex-col items-center flex-1">
-                  <div
-                    className="w-full bg-teal-500 rounded-t-md transition-all hover:bg-teal-600"
-                    style={{ height: `${(item.count / maxCount) * 100}%`, minHeight: '8px' }}
-                  />
-                  <span className="text-xs text-gray-500 mt-2">{item.day}</span>
-                </div>
-              ))}
-            </div>
+            <h2 className="font-semibold text-gray-900 mb-4">Top Services</h2>
+            {(!analytics?.topServices || analytics.topServices.length === 0) ? (
+              <p className="text-sm text-gray-400">No bookings in this period</p>
+            ) : (
+              <div className="space-y-3">
+                {analytics.topServices.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700 truncate mr-3">{s.name}</span>
+                    <span className="font-semibold text-gray-900 flex-shrink-0">{s.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Doctor load */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="font-semibold text-gray-900 mb-4">Doctor Workload</h2>
+            {(!analytics?.topDoctors || analytics.topDoctors.length === 0) ? (
+              <p className="text-sm text-gray-400">No bookings in this period</p>
+            ) : (
+              <div className="space-y-3">
+                {analytics.topDoctors.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700 truncate mr-3">{d.name}</span>
+                    <span className="font-semibold text-gray-900 flex-shrink-0">{d.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Actions */}
@@ -186,11 +248,11 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm font-medium text-gray-700">New Appointment</span>
               </a>
-              <a href="/admin/patients/new" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+              <a href="/admin/payments" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 </div>
-                <span className="text-sm font-medium text-gray-700">Add Patient</span>
+                <span className="text-sm font-medium text-gray-700">View Payments</span>
               </a>
               <a href="/admin/messages" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">

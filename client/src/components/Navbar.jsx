@@ -65,6 +65,12 @@ export default function Navbar() {
               </Link>
             ))}
             <Link
+              to="/portal"
+              className="text-sm font-medium text-primary border border-primary/30 px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors"
+            >
+              Patient Portal
+            </Link>
+            <Link
               to={ctaUrl}
               className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
             >
@@ -106,6 +112,13 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
+            <Link
+              to="/portal"
+              onClick={() => setIsOpen(false)}
+              className="block text-primary border border-primary/30 px-5 py-2 rounded-lg text-sm font-medium text-center"
+            >
+              Patient Portal
+            </Link>
             <Link
               to={ctaUrl}
               onClick={() => setIsOpen(false)}

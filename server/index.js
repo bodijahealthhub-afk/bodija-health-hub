@@ -36,7 +36,12 @@ app.use(cors({
   },
 }));
 
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const apiLimiter = rateLimit({
@@ -108,6 +113,10 @@ app.use('/api/page-content', require('./routes/pageContent'));
 app.use('/api/careers', require('./routes/careers'));
 app.use('/api/upcoming-registrations', require('./routes/upcoming'));
 app.use('/api/search', require('./routes/search'));
+const paymentsRouter = require('./routes/payments');
+app.use('/api/payments', paymentsRouter);
+app.use('/api/admin/payments', paymentsRouter);
+app.use('/api/patient', require('./routes/patient'));
 
 // Admin routes
 app.use('/api/admin/site-content', require('./routes/siteContent'));

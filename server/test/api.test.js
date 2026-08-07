@@ -130,3 +130,70 @@ test('unknown route returns 404', async () => {
   const { status } = await request('GET', '/api/does-not-exist');
   assert.strictEqual(status, 404);
 });
+
+test('dashboard analytics returns trend data', async () => {
+  const { status, json } = await request('GET', '/api/admin/dashboard/analytics?days=7', { token: adminToken });
+  assert.strictEqual(status, 200);
+  assert.strictEqual(json.days, 7);
+  assert.ok(Array.isArray(json.daily));
+  assert.strictEqual(json.daily.length, 7);
+  assert.ok('appointments' in json.daily[0]);
+  assert.ok('revenue' in json.daily[0]);
+  assert.ok(Array.isArray(json.statusBreakdown));
+  assert.ok(Array.isArray(json.topServices));
+  assert.ok(json.rangeSummary && typeof json.rangeSummary.totalAppointments === 'number');
+});
+
+test('patient can register, log in, and see own appointments', async () => {
+  const registered = await request('POST', '/api/patient/register', {
+    body: { name: 'Portal Patient', email: 'portal@example.com', phone: '08077777777', password: 'secret123' },
+  });
+  assert.strictEqual(registered.status, 201);
+  assert.ok(registered.json.token);
+
+  const book = await request('POST', '/api/appointments', {
+    body: { patient_name: 'Portal Patient', patient_email: 'portal@example.com', patient_phone: '08077777777', date: '2026-12-02', time: '11:00' },
+  });
+  assert.strictEqual(book.status, 201);
+
+  const list = await request('GET', '/api/patient/appointments', { token: registered.json.token });
+  assert.strictEqual(list.status, 200);
+  assert.ok(list.json.appointments.some((a) => a.id === book.json.id));
+
+  const cancelled = await request('POST', `/api/patient/appointments/${book.json.id}/cancel`, { token: registered.json.token });
+  assert.strictEqual(cancelled.status, 200);
+
+  const login = await request('POST', '/api/patient/login', {
+    body: { email: 'portal@example.com', password: 'secret123' },
+  });
+  assert.strictEqual(login.status, 200);
+  assert.ok(login.json.token);
+});
+
+test('payments initialize works in mock mode and marks appointment paid', async () => {
+  const created = await request('POST', '/api/appointments', {
+    body: {
+      patient_name: 'Paying Patient', patient_email: 'payer@example.com', patient_phone: '08055555555',
+      doctor_id: 1, date: '2026-12-03', time: '09:00',
+    },
+  });
+  assert.strictEqual(created.status, 201);
+  assert.ok(created.json.amount > 0);
+
+  const pay = await request('POST', '/api/payments/initialize', { body: { appointment_id: created.json.id } });
+  assert.strictEqual(pay.status, 201);
+  assert.strictEqual(pay.json.status, 'paid');
+  assert.ok(pay.json.reference);
+
+  const verify = await request('GET', `/api/payments/${pay.json.reference}`);
+  assert.strictEqual(verify.status, 200);
+  assert.strictEqual(verify.json.status, 'paid');
+  assert.strictEqual(verify.json.appointment_id, created.json.id);
+
+  const list = await request('GET', '/api/admin/payments', { token: adminToken });
+  assert.strictEqual(list.status, 200);
+  assert.ok(list.json.payments.some((p) => p.reference === pay.json.reference));
+
+  const doublePay = await request('POST', '/api/payments/initialize', { body: { appointment_id: created.json.id } });
+  assert.strictEqual(doublePay.status, 409);
+});

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
-import { FiCalendar, FiClock, FiUser, FiCheck } from 'react-icons/fi'
+import { FiCheck } from 'react-icons/fi'
 
 export default function Appointments() {
   const [services, setServices] = useState([])
@@ -19,6 +19,9 @@ export default function Appointments() {
   const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [bookedAppointment, setBookedAppointment] = useState(null)
+  const [paying, setPaying] = useState(false)
+  const [paymentNote, setPaymentNote] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,8 +37,53 @@ export default function Appointments() {
     fetchData()
   }, [])
 
+  // Verify a payment when the user returns from the Paystack checkout page.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const reference = params.get('reference') || params.get('trxref')
+    if (params.get('payment') === 'verify' && reference) {
+      fetch(`/api/payments/${encodeURIComponent(reference)}`)
+        .then(res => (res.ok ? res.json() : null))
+        .then(payment => {
+          if (payment && payment.status === 'paid') {
+            toast.success('Payment received. Thank you!')
+            setPaymentNote('Your payment was confirmed.')
+          } else if (payment) {
+            toast.info('Payment not confirmed yet. You can try again from your confirmation.')
+          }
+        })
+        .catch(() => {})
+      window.history.replaceState({}, document.title, '/appointments')
+    }
+  }, [])
+
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  const handlePayNow = async () => {
+    if (!bookedAppointment) return
+    setPaying(true)
+    try {
+      const res = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appointment_id: bookedAppointment.id }),
+      })
+      const data = await res.json()
+      if (res.ok && data.authorization_url) {
+        window.location.href = data.authorization_url
+      } else if (res.ok && data.mock) {
+        setPaymentNote(data.message || 'Payment recorded.')
+        toast.success('Payment recorded.')
+      } else {
+        toast.error(data.error || 'Failed to start payment')
+      }
+    } catch {
+      toast.error('Something went wrong starting payment')
+    } finally {
+      setPaying(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -52,6 +100,8 @@ export default function Appointments() {
         body: JSON.stringify(formData),
       })
       if (res.ok) {
+        const created = await res.json()
+        setBookedAppointment(created)
         setSubmitted(true)
         toast.success('Appointment booked successfully!')
       } else {
@@ -73,17 +123,44 @@ export default function Appointments() {
   ]
 
   if (submitted) {
+    const canPay = bookedAppointment && Number(bookedAppointment.amount) > 0 && bookedAppointment.paymentStatus !== 'paid'
     return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-warm-white flex items-center justify-center px-4 py-16">
         <div className="bg-white rounded-3xl p-12 shadow-sm border border-gray-100 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <FiCheck className="w-8 h-8 text-emerald-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">Appointment Booked!</h1>
-          <p className="text-gray-500 mb-8">
+          <p className="text-gray-500 mb-6">
             We've received your appointment request. Our team will contact you shortly to confirm.
           </p>
-          <button onClick={() => { setSubmitted(false); setFormData({ service_id: '', doctor_id: '', date: '', time: '', patient_name: '', patient_email: '', patient_phone: '', patient_age: '', notes: '' }); setStep(1) }}
+
+          {bookedAppointment && (
+            <div className="bg-gray-50 rounded-2xl p-4 text-left text-sm space-y-2 mb-6">
+              <p className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium text-gray-900">{bookedAppointment.date}</span></p>
+              <p className="flex justify-between"><span className="text-gray-500">Time</span><span className="font-medium text-gray-900">{bookedAppointment.time}</span></p>
+              <p className="flex justify-between"><span className="text-gray-500">Doctor</span><span className="font-medium text-gray-900">{bookedAppointment.doctor || 'To be assigned'}</span></p>
+              {Number(bookedAppointment.amount) > 0 && (
+                <p className="flex justify-between"><span className="text-gray-500">Fee</span><span className="font-medium text-gray-900">₦{Number(bookedAppointment.amount).toLocaleString()}</span></p>
+              )}
+            </div>
+          )}
+
+          {paymentNote && (
+            <p className="text-sm text-emerald-600 font-medium mb-6">{paymentNote}</p>
+          )}
+
+          {canPay && (
+            <button
+              onClick={handlePayNow}
+              disabled={paying}
+              className="w-full mb-3 py-3 bg-emerald-600 text-white font-semibold rounded-full hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {paying ? 'Starting payment...' : `Pay ₦${Number(bookedAppointment.amount).toLocaleString()} now`}
+            </button>
+          )}
+
+          <button onClick={() => { setSubmitted(false); setBookedAppointment(null); setPaymentNote(''); setFormData({ service_id: '', doctor_id: '', date: '', time: '', patient_name: '', patient_email: '', patient_phone: '', patient_age: '', notes: '' }); setStep(1) }}
             className="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/90 transition-colors">
             Book Another
           </button>

@@ -16,6 +16,7 @@ const toClient = (a) => ({
   doctor: a.doctor_name || '',
   service: a.service_name || '',
   paymentStatus: a.payment_status,
+  amount: a.consultation_fee || null,
 });
 
 // POST /api/appointments (public booking)
@@ -45,7 +46,7 @@ router.post('/', async (req, res) => {
       doctor_id || null, service_id || null, date, time, notes || null);
 
     const appointment = await db.prepare(
-      `SELECT a.*, d.name as doctor_name, s.name as service_name
+      `SELECT a.*, d.name as doctor_name, d.consultation_fee, s.name as service_name, s.price as service_price
        FROM appointments a
        LEFT JOIN doctors d ON a.doctor_id = d.id
        LEFT JOIN services s ON a.service_id = s.id
@@ -57,6 +58,15 @@ router.post('/', async (req, res) => {
         to: patient_email,
         subject: 'Appointment Booking Confirmation - Bodija Health Hub',
         text: `Dear ${patient_name},\n\nYour appointment has been booked successfully.\n\nDate: ${date}\nTime: ${time}\nDoctor: ${appointment.doctor_name || 'To be assigned'}\nService: ${appointment.service_name || ''}\n\nThank you for choosing Bodija Health Hub.\n\nWarm regards,\nBodija Health Hub`,
+      });
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      sendMail({
+        to: adminEmail,
+        subject: `New appointment booking from ${patient_name}`,
+        text: `A new appointment has been booked on the website.\n\nPatient: ${patient_name}\nEmail: ${patient_email || 'N/A'}\nPhone: ${patient_phone || 'N/A'}\nDoctor: ${appointment.doctor_name || 'To be assigned'}\nService: ${appointment.service_name || ''}\nDate: ${date}\nTime: ${time}\n\nReview it in the admin panel.`,
       });
     }
 
@@ -148,6 +158,22 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
        LEFT JOIN services s ON a.service_id = s.id
        WHERE a.id = ?`
     ).get(req.params.id);
+
+    if (updated.patient_email) {
+      const statusText = {
+        confirmed: 'Your appointment has been confirmed.',
+        completed: 'Your appointment has been marked as completed. Thank you for visiting Bodija Health Hub.',
+        cancelled: 'Your appointment has been cancelled. Please contact us if you would like to reschedule.',
+      }[status];
+      if (statusText) {
+        sendMail({
+          to: updated.patient_email,
+          subject: `Appointment Update - Bodija Health Hub (${status})`,
+          text: `Dear ${updated.patient_name},\n\n${statusText}\n\nDate: ${updated.date}\nTime: ${updated.time}\nDoctor: ${updated.doctor_name || 'To be assigned'}\n\nWarm regards,\nBodija Health Hub`,
+        });
+      }
+    }
+
     res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update appointment status' });

@@ -98,4 +98,84 @@ router.get('/stats', authenticateToken, requireRole('admin', 'super_admin', 'acc
   }
 });
 
+// Build a date-series (YYYY-MM-DD strings) covering the last `days` days.
+function dateSeries(days) {
+  const out = [];
+  for (let i = days - 1; i >= 0; i--) {
+    out.push(new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  }
+  return out;
+}
+
+// GET /api/dashboard/analytics?days=30 (admin — trend data for the dashboard charts)
+router.get('/analytics', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), async (req, res) => {
+  try {
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days, 10) || 30));
+    const start = dateSeries(days)[0];
+
+    // Daily aggregates (missing days are zero-filled in JS for cross-DB compatibility).
+    const dailyRows = await db.prepare(
+      `SELECT date,
+              COUNT(*) AS count,
+              SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
+              COALESCE(SUM(CASE WHEN a.payment_status = 'paid' THEN d.consultation_fee ELSE 0 END), 0) AS revenue
+       FROM appointments a
+       LEFT JOIN doctors d ON a.doctor_id = d.id
+       WHERE a.date >= ?
+       GROUP BY a.date`
+    ).all(start);
+
+    const dailyMap = new Map(dailyRows.map((r) => [r.date, r]));
+    const daily = dateSeries(days).map((date) => {
+      const r = dailyMap.get(date) || {};
+      return { date, appointments: Number(r.count || 0), completed: Number(r.completed || 0), revenue: Number(r.revenue || 0) };
+    });
+
+    const totalAppointments = daily.reduce((s, d) => s + d.appointments, 0);
+    const totalCompleted = daily.reduce((s, d) => s + d.completed, 0);
+    const totalRevenue = daily.reduce((s, d) => s + d.revenue, 0);
+
+    const statusBreakdown = await db.prepare(
+      `SELECT status, COUNT(*) AS count FROM appointments WHERE date >= ? GROUP BY status`
+    ).all(start);
+
+    const topServices = await db.prepare(
+      `SELECT s.name, COUNT(*) AS count
+       FROM appointments a
+       LEFT JOIN services s ON a.service_id = s.id
+       WHERE a.date >= ? AND s.name IS NOT NULL
+       GROUP BY a.service_id
+       ORDER BY count DESC
+       LIMIT 5`
+    ).all(start);
+
+    const topDoctors = await db.prepare(
+      `SELECT d.name, COUNT(*) AS count
+       FROM appointments a
+       LEFT JOIN doctors d ON a.doctor_id = d.id
+       WHERE a.date >= ? AND d.name IS NOT NULL
+       GROUP BY a.doctor_id
+       ORDER BY count DESC
+       LIMIT 5`
+    ).all(start);
+
+    const newPatients = await db.prepare(
+      `SELECT COUNT(*) AS count FROM patients WHERE created_at >= ?`
+    ).get(start);
+
+    const rangeSummary = {
+      totalAppointments,
+      totalCompleted,
+      totalRevenue,
+      completionRate: totalAppointments ? Math.round((totalCompleted / totalAppointments) * 100) : 0,
+      newPatients: Number(newPatients.count || 0),
+    };
+
+    res.json({ days, daily, statusBreakdown, topServices, topDoctors, rangeSummary });
+  } catch (err) {
+    console.error('Error building analytics:', err);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
 module.exports = router;
