@@ -6,13 +6,16 @@ import 'react-toastify/dist/ReactToastify.css'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
+import { FeatureProvider } from './context/FeatureContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
-        <ToastContainer position="top-right" autoClose={3000} />
+        <FeatureProvider>
+          <App />
+          <ToastContainer position="top-right" autoClose={3000} />
+        </FeatureProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

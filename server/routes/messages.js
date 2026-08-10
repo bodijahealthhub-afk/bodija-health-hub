@@ -1,12 +1,13 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
 
 const router = express.Router();
 
-// POST /api/messages (public contact form)
-router.post('/', async (req, res) => {
+// POST /api/messages (public contact form) — gated behind the contact_form feature
+router.post('/', requireFeature('contact_form'), async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
     if (!name || !email || !message) {

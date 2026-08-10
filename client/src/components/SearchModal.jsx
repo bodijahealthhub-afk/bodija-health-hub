@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FiSearch, FiX, FiFileText, FiUsers, FiCalendar, FiActivity, FiArrowRight } from 'react-icons/fi'
+import { useFeatures } from '../context/FeatureContext'
+import { isPathHidden } from '../utils/featureRoutes'
 
 const builtinPages = [
   { title: 'Home', path: '/', category: 'Pages' },
@@ -40,6 +42,9 @@ export default function SearchModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false)
   const inputRef = useRef(null)
   const navigate = useNavigate()
+  const { isEnabled } = useFeatures()
+
+  const visibleBuiltinPages = builtinPages.filter((p) => !isPathHidden(p.path, isEnabled))
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -77,19 +82,19 @@ export default function SearchModal({ isOpen, onClose }) {
           if (data.blog) data.blog.forEach(b => apiResults.push({ ...b, category: 'Blog', path: `/blog/${b.slug || b.id}` }))
           if (data.events) data.events.forEach(e => apiResults.push({ ...e, category: 'Events', path: `/events/${e.slug || e.id}` }))
           // Filter builtin pages
-          const pageResults = builtinPages
+          const pageResults = visibleBuiltinPages
             .filter(p => p.title.toLowerCase().includes(query.toLowerCase()))
             .map(p => ({ ...p, category: 'Pages' }))
           setResults([...pageResults, ...apiResults].slice(0, 10))
         } else {
           // Fallback to builtin pages only
-          const pageResults = builtinPages
+          const pageResults = visibleBuiltinPages
             .filter(p => p.title.toLowerCase().includes(query.toLowerCase()))
             .map(p => ({ ...p, category: 'Pages' }))
           setResults(pageResults.slice(0, 10))
         }
       } catch {
-        const pageResults = builtinPages
+        const pageResults = visibleBuiltinPages
           .filter(p => p.title.toLowerCase().includes(query.toLowerCase()))
           .map(p => ({ ...p, category: 'Pages' }))
         setResults(pageResults.slice(0, 10))

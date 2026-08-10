@@ -35,6 +35,8 @@ const ALL_TABLES = [
   'backups',
   'career_applications',
   'upcoming_registrations',
+  'feature_flags',
+  'audit_logs',
 ];
 
 const exportAll = async () => {

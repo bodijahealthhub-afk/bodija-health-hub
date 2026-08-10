@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { getFlag } = require('../utils/features');
 
 const router = express.Router();
 
@@ -8,7 +9,10 @@ const router = express.Router();
 router.get('/', (req, res, next) => {
   const isAdmin = req.baseUrl.includes('/admin');
   if (!isAdmin) {
-    handlePublicList(req, res).catch(next);
+    getFlag('blog').then((flag) => {
+      if (!flag || !flag.enabled) return res.status(404).json({ error: 'Not Found' });
+      return handlePublicList(req, res).catch(next);
+    }).catch(next);
     return;
   }
   return authenticateToken(req, res, async () => {
@@ -106,6 +110,12 @@ router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'con
 // GET /api/blog/:slug (public)
 router.get('/:slug', async (req, res) => {
   try {
+    if (!req.baseUrl.includes('/admin')) {
+      const flag = await getFlag('blog');
+      if (!flag || !flag.enabled) {
+        return res.status(404).json({ error: 'Not Found' });
+      }
+    }
     const post = await db.prepare(
       `SELECT bp.*, u.name as author_name
        FROM blog_posts bp

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiHeart, FiLink, FiClock, FiArrowRight, FiActivity, FiZap, FiCheckCircle, FiUsers } from 'react-icons/fi'
+import { useFeatures } from '../context/FeatureContext'
+import WelcomeModal from '../components/WelcomeModal'
 
 const defaultCoreValues = [
   {
@@ -32,6 +34,7 @@ const defaultServices = [
 ]
 
 export default function Home() {
+  const { isEnabled } = useFeatures()
   const [content, setContent] = useState({
     hero_headline: 'Wellness Starts Here.',
     hero_subtext: 'Bodija Health Hub is a community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together — making accessible, connected, and continuous care a reality for every family in Ibadan.',
@@ -59,7 +62,8 @@ export default function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white overflow-hidden">
+      {isEnabled('home_hero') && (
+        <section className="relative bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="max-w-3xl">
@@ -90,9 +94,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* About Ecosystem Section */}
-      <section className="py-20 bg-white">
+      {isEnabled('ecosystem_section') && (
+        <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -118,9 +124,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Core Values */}
-      <section className="py-20 bg-warm-white">
+      {isEnabled('ecosystem_section') && (
+        <section className="py-20 bg-warm-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
@@ -143,9 +151,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Ecosystem Overview */}
-      <section className="py-20 bg-white">
+      {isEnabled('services') && (
+        <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
@@ -172,9 +182,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary to-teal-700 text-white">
+      {isEnabled('cta_section') && (
+        <section className="py-20 bg-gradient-to-br from-primary to-teal-700 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
             Ready to Be Part of Something Bigger?
@@ -199,6 +211,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
+
+      <WelcomeModal />
     </div>
   )
 }

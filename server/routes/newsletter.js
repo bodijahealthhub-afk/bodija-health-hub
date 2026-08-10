@@ -1,12 +1,13 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
 
 const router = express.Router();
 
-// POST /api/newsletter/subscribe
-router.post('/subscribe', async (req, res) => {
+// POST /api/newsletter/subscribe — gated behind the newsletter feature
+router.post('/subscribe', requireFeature('newsletter'), async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {

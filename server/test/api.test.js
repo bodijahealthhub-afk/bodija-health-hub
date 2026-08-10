@@ -23,6 +23,10 @@ let base;
 
 before(async () => {
   await db.ready;
+  // Some content features are seeded disabled; enable the ones existing tests
+  // exercise so the public contract tests remain green. Feature behaviour is
+  // covered explicitly by the feature-flag tests below.
+  await db.prepare("UPDATE feature_flags SET enabled = 1 WHERE key IN ('events', 'payment_system')").run();
   server = app.listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -112,6 +116,63 @@ test('admin can create and delete an appointment', async () => {
 
   const gone = await request('GET', `/api/admin/appointments/${id}`, { token: adminToken });
   assert.strictEqual(gone.status, 404);
+});
+
+test('feature flags: public list, admin CRUD, API gating, and audit logs', async () => {
+  // Public list only exposes visible features
+  const publicList = await request('GET', '/api/features');
+  assert.strictEqual(publicList.status, 200);
+  assert.ok(Array.isArray(publicList.json));
+  assert.ok(publicList.json.some((f) => f.key === 'appointments'));
+
+  // Admin endpoints require auth
+  assert.strictEqual((await request('GET', '/api/admin/features')).status, 401);
+  assert.strictEqual((await request('GET', '/api/admin/audit-logs')).status, 401);
+
+  // Admin sees the full flag list
+  const adminList = await request('GET', '/api/admin/features', { token: adminToken });
+  assert.strictEqual(adminList.status, 200);
+  const servicesFlag = adminList.json.find((f) => f.key === 'services');
+  assert.ok(servicesFlag);
+  assert.strictEqual(typeof servicesFlag.enabled, 'boolean');
+
+  // Disable the services feature via the admin API
+  const disabled = await request('PUT', '/api/admin/features/services', {
+    token: adminToken,
+    body: { enabled: false },
+  });
+  assert.strictEqual(disabled.status, 200);
+  assert.strictEqual(disabled.json.enabled, false);
+
+  // Public API for the disabled feature returns 404, admin still works
+  assert.strictEqual((await request('GET', '/api/services')).status, 404);
+  assert.strictEqual((await request('GET', '/api/services/1')).status, 404);
+  assert.strictEqual((await request('GET', '/api/admin/services', { token: adminToken })).status, 200);
+
+  // Search excludes results from disabled features
+  const search = await request('GET', '/api/search?q=clinic');
+  assert.strictEqual(search.status, 200);
+  assert.ok(Array.isArray(search.json.services));
+  assert.strictEqual(search.json.services.length, 0);
+
+  // Toggle endpoint flips the flag back on
+  const toggled = await request('POST', '/api/admin/features/services/toggle', { token: adminToken });
+  assert.strictEqual(toggled.status, 200);
+  assert.strictEqual(toggled.json.enabled, true);
+  assert.strictEqual((await request('GET', '/api/services')).status, 200);
+
+  // Audit log records the changes
+  const audit = await request('GET', '/api/admin/audit-logs', { token: adminToken });
+  assert.strictEqual(audit.status, 200);
+  assert.ok(Array.isArray(audit.json));
+  assert.ok(audit.json.some((e) => e.action === 'FEATURE_FLAG_TOGGLED' && e.entity_id === 'services'));
+
+  // Creating a duplicate key is rejected
+  const duplicate = await request('POST', '/api/admin/features', {
+    token: adminToken,
+    body: { key: 'services', name: 'Duplicate' },
+  });
+  assert.strictEqual(duplicate.status, 409);
 });
 
 test('public write endpoints rate limited config is active', async () => {

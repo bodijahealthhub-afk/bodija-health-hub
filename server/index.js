@@ -112,8 +112,8 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/page-content', require('./routes/pageContent'));
 app.use('/api/careers', require('./routes/careers'));
 app.use('/api/upcoming-registrations', require('./routes/upcoming'));
-app.use('/api/search', require('./routes/search'));
-const paymentsRouter = require('./routes/payments');
+app.use('/api/features', require('./routes/features'));
+app.use('/api/search', require('./routes/search'));const paymentsRouter = require('./routes/payments');
 app.use('/api/payments', paymentsRouter);
 app.use('/api/admin/payments', paymentsRouter);
 app.use('/api/patient', require('./routes/patient'));
@@ -136,6 +136,8 @@ app.use('/api/admin/appointments', require('./routes/appointments'));
 app.use('/api/admin/patients', require('./routes/patients'));
 app.use('/api/admin/notifications', require('./routes/notifications'));
 app.use('/api/admin/dashboard', require('./routes/dashboard'));
+app.use('/api/admin/features', require('./routes/features').router);
+app.use('/api/admin/audit-logs', require('./routes/features').auditRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

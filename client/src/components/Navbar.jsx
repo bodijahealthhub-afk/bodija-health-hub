@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useFeatures } from '../context/FeatureContext'
+import { isPathHidden } from '../utils/featureRoutes'
 
 const defaultLinks = [
   { name: 'Home', path: '/' },
@@ -17,6 +19,11 @@ export default function Navbar() {
   const [navLinks, setNavLinks] = useState(defaultLinks)
   const [ctaText, setCtaText] = useState('Get Started')
   const [ctaUrl, setCtaUrl] = useState('/contact')
+  const { isEnabled } = useFeatures()
+
+  const visibleLinks = navLinks.filter((link) => !isPathHidden(link.path, isEnabled))
+  const showPortal = isEnabled('patient_portal')
+  const showCta = !isPathHidden(ctaUrl, isEnabled)
 
   useEffect(() => {
     const fetchNav = async () => {
@@ -51,7 +58,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-6">
-            {navLinks.map((link) => (
+            {visibleLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -64,18 +71,22 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
-            <Link
-              to="/portal"
-              className="text-sm font-medium text-primary border border-primary/30 px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors"
-            >
-              Patient Portal
-            </Link>
-            <Link
-              to={ctaUrl}
-              className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-            >
-              {ctaText}
-            </Link>
+            {showPortal && (
+              <Link
+                to="/portal"
+                className="text-sm font-medium text-primary border border-primary/30 px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors"
+              >
+                Patient Portal
+              </Link>
+            )}
+            {showCta && (
+              <Link
+                to={ctaUrl}
+                className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+              >
+                {ctaText}
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -98,7 +109,7 @@ export default function Navbar() {
       {isOpen && (
         <div className="lg:hidden bg-white border-t">
           <div className="px-4 py-3 space-y-2">
-            {navLinks.map((link) => (
+            {visibleLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -112,20 +123,24 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
-            <Link
-              to="/portal"
-              onClick={() => setIsOpen(false)}
-              className="block text-primary border border-primary/30 px-5 py-2 rounded-lg text-sm font-medium text-center"
-            >
-              Patient Portal
-            </Link>
-            <Link
-              to={ctaUrl}
-              onClick={() => setIsOpen(false)}
-              className="block bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium text-center mt-3"
-            >
-              {ctaText}
-            </Link>
+            {showPortal && (
+              <Link
+                to="/portal"
+                onClick={() => setIsOpen(false)}
+                className="block text-primary border border-primary/30 px-5 py-2 rounded-lg text-sm font-medium text-center"
+              >
+                Patient Portal
+              </Link>
+            )}
+            {showCta && (
+              <Link
+                to={ctaUrl}
+                onClick={() => setIsOpen(false)}
+                className="block bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium text-center mt-3"
+              >
+                {ctaText}
+              </Link>
+            )}
           </div>
         </div>
       )}

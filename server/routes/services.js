@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { getFlag } = require('../utils/features');
 
 const router = express.Router();
 
@@ -9,9 +10,19 @@ const toClient = (s) => ({
   status: s.is_active ? 'active' : 'inactive',
 });
 
+// Returns true for public (non-admin) requests whose feature is disabled.
+const featureDisabled = async (req, key) => {
+  if (req.baseUrl.includes('/admin')) return false;
+  const flag = await getFlag(key);
+  return !flag || !flag.enabled;
+};
+
 // GET /api/services (public — active only) or /api/admin/services (admin — all)
 router.get('/', async (req, res) => {
   try {
+    if (await featureDisabled(req, 'services')) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
     const isAdmin = req.baseUrl.includes('/admin');
     const { category } = req.query;
     let query = 'SELECT * FROM services';
@@ -37,6 +48,9 @@ router.get('/', async (req, res) => {
 // GET /api/services/:id
 router.get('/:id', async (req, res) => {
   try {
+    if (await featureDisabled(req, 'services')) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
     const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });

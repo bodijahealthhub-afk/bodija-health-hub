@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
 
 const router = express.Router();
@@ -19,8 +20,8 @@ const toClient = (a) => ({
   amount: a.consultation_fee || null,
 });
 
-// POST /api/appointments (public booking)
-router.post('/', async (req, res) => {
+// POST /api/appointments (public booking) — gated behind the appointments feature
+router.post('/', requireFeature('appointments'), async (req, res) => {
   try {
     const { patient_name, patient_email, patient_phone, patient_age, doctor_id, service_id, date, time, notes } = req.body;
 

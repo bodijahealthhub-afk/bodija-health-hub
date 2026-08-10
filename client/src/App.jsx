@@ -2,9 +2,11 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { PatientAuthProvider } from './portal/PatientAuthContext'
+import { useFeatures } from './context/FeatureContext'
 import useSeo from './hooks/useSeo'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import FeatureUnavailable from './components/FeatureUnavailable'
 
 // Core public pages (loaded eagerly for fast landing)
 import Home from './pages/Home'
@@ -58,6 +60,7 @@ const AdminMediaLibrary = lazy(() => import('./admin/MediaLibrary'))
 const AdminSeoSettings = lazy(() => import('./admin/SeoSettings'))
 const AdminBackupRestore = lazy(() => import('./admin/BackupRestore'))
 const AdminPayments = lazy(() => import('./admin/Payments'))
+const AdminFeatures = lazy(() => import('./admin/Features'))
 
 // Patient portal
 const PortalLayout = lazy(() => import('./portal/PortalLayout'))
@@ -109,6 +112,29 @@ function WhatsAppButton() {
   )
 }
 
+// Maps public routes to the feature flag that controls them. When a flag is
+// disabled, the route renders a "Coming Soon" page instead.
+const FEATURE_ROUTES = {
+  '/appointments': { key: 'appointments', name: 'Appointments' },
+  '/contact': { key: 'contact_form', name: 'Contact' },
+  '/faq': { key: 'faq', name: 'FAQ' },
+  '/careers': { key: 'careers', name: 'Careers' },
+  '/upcoming': { key: 'upcoming_projects', name: 'Upcoming Projects' },
+  '/partners': { key: 'partners_section', name: 'Partner Network' },
+  '/platforms': { key: 'platforms_section', name: 'Platforms' },
+  '/newsroom': { key: 'blog', name: 'Newsroom' },
+  '/livecare': { key: 'livecare', name: 'LiveCare' },
+  '/hear-menders': { key: 'hear_menders', name: 'hEar Menders' },
+}
+
+function FeatureGate({ featureKey, featureName, children }) {
+  const { isEnabled } = useFeatures()
+  if (!isEnabled(featureKey)) {
+    return <FeatureUnavailable featureName={featureName} />
+  }
+  return children
+}
+
 function PageLoader() {
   return (
     <div className="min-h-[40vh] flex items-center justify-center">
@@ -139,24 +165,24 @@ function PublicLayout() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/ecosystem" element={<Ecosystem />} />
-            <Route path="/partners" element={<Partners />} />
-            <Route path="/platforms" element={<Platforms />} />
-            <Route path="/upcoming" element={<Upcoming />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/appointments" element={<Appointments />} />
+            <Route path="/partners" element={<FeatureGate {...FEATURE_ROUTES['/partners']}><Partners /></FeatureGate>} />
+            <Route path="/platforms" element={<FeatureGate {...FEATURE_ROUTES['/platforms']}><Platforms /></FeatureGate>} />
+            <Route path="/upcoming" element={<FeatureGate {...FEATURE_ROUTES['/upcoming']}><Upcoming /></FeatureGate>} />
+            <Route path="/contact" element={<FeatureGate {...FEATURE_ROUTES['/contact']}><Contact /></FeatureGate>} />
+            <Route path="/appointments" element={<FeatureGate {...FEATURE_ROUTES['/appointments']}><Appointments /></FeatureGate>} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/careers" element={<Careers />} />
+            <Route path="/faq" element={<FeatureGate {...FEATURE_ROUTES['/faq']}><FAQ /></FeatureGate>} />
+            <Route path="/careers" element={<FeatureGate {...FEATURE_ROUTES['/careers']}><Careers /></FeatureGate>} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/sitemap" element={<Sitemap />} />
-            <Route path="/livecare" element={<LiveCare />} />
-            <Route path="/hear-menders" element={<HearMenders />} />
+            <Route path="/livecare" element={<FeatureGate {...FEATURE_ROUTES['/livecare']}><LiveCare /></FeatureGate>} />
+            <Route path="/hear-menders" element={<FeatureGate {...FEATURE_ROUTES['/hear-menders']}><HearMenders /></FeatureGate>} />
             <Route path="/bacr" element={<BACR />} />
             <Route path="/partner/:id" element={<PartnerDetail />} />
             <Route path="/community" element={<Community />} />
             <Route path="/success-stories" element={<SuccessStories />} />
-            <Route path="/newsroom" element={<Newsroom />} />
+            <Route path="/newsroom" element={<FeatureGate {...FEATURE_ROUTES['/newsroom']}><Newsroom /></FeatureGate>} />
           </Routes>
         </Suspense>
       </main>
@@ -201,6 +227,7 @@ export default function App() {
               <Route path="seo" element={<AdminSeoSettings />} />
               <Route path="backup" element={<AdminBackupRestore />} />
               <Route path="payments" element={<AdminPayments />} />
+              <Route path="features" element={<AdminFeatures />} />
               <Route path="admin-users" element={<AdminManagement />} />
             </Route>
           </Route>

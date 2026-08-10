@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { requireFeature } = require('../middleware/features');
 
 const router = express.Router();
 
@@ -15,8 +16,8 @@ function makeReference() {
 }
 
 // POST /api/payments/initialize — create a payment intent for an appointment and
-// return the Paystack checkout URL.
-router.post('/initialize', async (req, res) => {
+// return the Paystack checkout URL. Gated behind the payment_system feature flag.
+router.post('/initialize', requireFeature('payment_system'), async (req, res) => {
   try {
     const { appointment_id } = req.body;
     if (!appointment_id) {
@@ -131,7 +132,7 @@ async function markPaid(paymentId, appointmentId, paystackRef) {
 }
 
 // GET /api/payments/:reference — verify a payment against Paystack (or the DB in mock mode).
-router.get('/:reference', async (req, res) => {
+router.get('/:reference', requireFeature('payment_system'), async (req, res) => {
   try {
     const payment = await db.prepare('SELECT * FROM payments WHERE reference = ?').get(req.params.reference);
     if (!payment) {

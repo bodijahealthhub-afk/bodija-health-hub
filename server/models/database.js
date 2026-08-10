@@ -263,6 +263,35 @@ const SCHEMA = `
     patient_id INTEGER REFERENCES patients(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS feature_flags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'disabled' CHECK(status IN ('active','draft','coming_soon','disabled','archived')),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    public_visible INTEGER NOT NULL DEFAULT 1,
+    navigation_visible INTEGER NOT NULL DEFAULT 1,
+    admin_visible INTEGER NOT NULL DEFAULT 1,
+    requires_admin_confirmation INTEGER NOT NULL DEFAULT 0,
+    config TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_by TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT,
+    actor TEXT,
+    before_state TEXT,
+    after_state TEXT,
+    ip TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `;
 
 async function insertUsersAndDoctors() {
@@ -414,6 +443,10 @@ async function insertContentDefaults() {
     ['contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'],
     ['footer_tagline', 'Your Trusted Healthcare Partner in Ibadan. Providing compassionate, comprehensive medical services for individuals and families.'],
     ['footer_copyright', '© 2025 Bodija Health Hub. All rights reserved.'],
+    ['welcome_modal_title', 'Welcome to Bodija Health Hub'],
+    ['welcome_modal_subtitle', 'Discover quality, coordinated healthcare for your whole family — right here in the heart of Ibadan.'],
+    ['welcome_modal_cta_text', 'Explore Our Services'],
+    ['welcome_modal_cta_link', '/services'],
     ['footer_quick_links', JSON.stringify([
       { label: 'Home', url: '/' },
       { label: 'About Us', url: '/about' },
@@ -499,6 +532,48 @@ async function seedIfEmpty() {
   if (userCount.count === 0) {
     await insertUsersAndDoctors();
     await insertContentDefaults();
+  }
+  await insertFeatureFlags();
+  await insertAuditSeeds();
+}
+
+const featureFlagSeeds = [
+  { key: 'appointments', name: 'Appointments & Scheduling', description: 'Online appointment booking form and management.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'contact_form', name: 'Contact & Inquiry Form', description: 'Contact page form for patient inquiries.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
+  { key: 'welcome_modal', name: 'Welcome Popup', description: 'Show a welcome popup on the homepage for first-time visitors.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
+  { key: 'home_hero', name: 'Homepage Hero Section', description: 'Show the hero banner on the homepage.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
+  { key: 'services', name: 'Services Section', description: 'Show the services section and services page.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'cta_section', name: 'Call-to-Action Sections', description: 'Show call-to-action banners across the site.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
+  { key: 'ecosystem_section', name: 'Ecosystem Section', description: 'Show the about-ecosystem and core values sections on the homepage.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
+  { key: 'partners_section', name: 'Partner Network Section', description: 'Show the partner network section on the homepage.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
+  { key: 'platforms_section', name: 'Platforms Section', description: 'Show the platforms section on the homepage.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
+  { key: 'upcoming_projects', name: 'Upcoming Projects', description: 'Upcoming projects page and section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'blog', name: 'Blog & News', description: 'Blog and news section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'events', name: 'Events', description: 'Events and health talk schedules.', status: 'draft', enabled: 0, public_visible: 1, navigation_visible: 0 },
+  { key: 'testimonials', name: 'Testimonials', description: 'Patient testimonials section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
+  { key: 'gallery', name: 'Gallery', description: 'Facility photo gallery.', status: 'draft', enabled: 0, public_visible: 0, navigation_visible: 0 },
+  { key: 'careers', name: 'Careers', description: 'Careers page and job listings.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'faq', name: 'FAQ', description: 'Frequently asked questions section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'newsletter', name: 'Newsletter Signup', description: 'Email newsletter signup form in the footer.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
+  { key: 'payment_system', name: 'Payment System', description: 'Online payment processing for bookings and services.', status: 'disabled', enabled: 0, public_visible: 0, navigation_visible: 0, requires_admin_confirmation: 1 },
+  { key: 'patient_portal', name: 'Patient Portal', description: 'Patient portal for bookings, records, and messaging.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 1 },
+  { key: 'audio_consultation', name: 'Audio Consultation', description: 'Audio consultation service.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 0 },
+  { key: 'video_consultation', name: 'Video Consultation', description: 'Video consultation service.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 0 },
+  { key: 'chatbot', name: 'Chatbot Support', description: 'AI-powered chatbot for visitor support.', status: 'draft', enabled: 0, public_visible: 0, navigation_visible: 0 },
+  { key: 'livecare', name: 'LiveCare Platform', description: 'LiveCare telemedicine platform.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 1, config: '{"launchDate":""}' },
+  { key: 'hear_menders', name: 'hEar Menders Platform', description: 'hEar Menders hearing care platform.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 1 },
+];
+async function insertFeatureFlags() {
+  const insert = db.prepare('INSERT OR IGNORE INTO feature_flags (key, name, description, status, enabled, public_visible, navigation_visible, admin_visible, requires_admin_confirmation, config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  for (const f of featureFlagSeeds) {
+    await insert.run(f.key, f.name, f.description, f.status, f.enabled, f.public_visible, f.navigation_visible, f.admin_visible !== undefined ? f.admin_visible : 1, f.requires_admin_confirmation || 0, f.config || null);
+  }
+}
+
+async function insertAuditSeeds() {
+  const auditCount = await db.prepare('SELECT COUNT(*) as count FROM audit_logs').get();
+  if (auditCount.count === 0) {
+    await db.prepare("INSERT INTO audit_logs (action, entity_type, entity_id, actor, after_state, ip, created_at) VALUES ('FEATURE_FLAG_INITIALIZED', 'feature_flag', 'system', 'system', 'Feature flags initialized with defaults.', 'system', '2025-01-01 00:00:00')").run();
   }
 }
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useFeatures } from '../context/FeatureContext'
+import { isPathHidden } from '../utils/featureRoutes'
 
 const defaultQuickLinks = [
   { label: 'Home', url: '/' },
@@ -27,6 +29,10 @@ export default function Footer() {
     linkedin: '#',
     whatsapp: 'https://wa.me/2348000000000',
   })
+  const { isEnabled } = useFeatures()
+
+  const visibleQuickLinks = quickLinks.filter((link) => !isPathHidden(link.url, isEnabled))
+  const visiblePlatformLinks = platformLinks.filter((link) => !isPathHidden(link.url, isEnabled))
 
   useEffect(() => {
     const fetchFooter = async () => {
@@ -68,7 +74,7 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              {quickLinks.map((link, i) => (
+              {visibleQuickLinks.map((link, i) => (
                 <li key={i}>
                   <Link to={link.url} className="text-gray-400 hover:text-white text-sm transition-colors">
                     {link.label}
@@ -82,7 +88,7 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Our Platforms</h3>
             <ul className="space-y-2">
-              {platformLinks.map((link, i) => (
+              {visiblePlatformLinks.map((link, i) => (
                 <li key={i}>
                   <Link to={link.url} className="text-gray-400 hover:text-white text-sm transition-colors">
                     {link.label}
@@ -145,7 +151,9 @@ export default function Footer() {
           <div className="flex gap-6">
             <Link to="/privacy" className="text-gray-500 hover:text-gray-400 text-sm">Privacy Policy</Link>
             <Link to="/terms" className="text-gray-500 hover:text-gray-400 text-sm">Terms of Use</Link>
-            <Link to="/faq" className="text-gray-500 hover:text-gray-400 text-sm">FAQ</Link>
+            {!isPathHidden('/faq', isEnabled) && (
+              <Link to="/faq" className="text-gray-500 hover:text-gray-400 text-sm">FAQ</Link>
+            )}
             <Link to="/sitemap" className="text-gray-500 hover:text-gray-400 text-sm">Sitemap</Link>
           </div>
         </div>

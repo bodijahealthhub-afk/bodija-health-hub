@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { FiMapPin, FiPhone, FiMail, FiClock, FiArrowRight, FiDownload, FiUsers, FiActivity, FiBell, FiInstagram, FiFacebook, FiTwitter, FiLinkedin } from 'react-icons/fi'
+import { FiMapPin, FiPhone, FiMail, FiClock, FiArrowRight, FiDownload, FiUsers, FiActivity, FiBell, FiInstagram, FiFacebook, FiTwitter, FiLinkedin, FiClock as FiSoon } from 'react-icons/fi'
+import { useFeatures } from '../context/FeatureContext'
 
 const actionCards = [
   {
@@ -42,6 +43,7 @@ const defaultContactDetails = [
 ]
 
 export default function Contact() {
+  const { isEnabled } = useFeatures()
   const [contactDetails, setContactDetails] = useState(defaultContactDetails)
   const [headline, setHeadline] = useState('Ready to Be Part of Something Bigger?')
   const [subtext, setSubtext] = useState('Whether you\'re a patient, a family member, a healthcare provider, or a caregiver — we\'re here to connect you with the care, the partners, and the community you need.')
@@ -228,7 +230,16 @@ export default function Contact() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Send Us a Message</h2>
               <p className="text-gray-500 mb-8">We'll get back to you within 24 hours.</p>
 
-              {submitted ? (
+              {!isEnabled('contact_form') ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FiSoon className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Message form temporarily unavailable</h3>
+                  <p className="text-gray-500 mb-6">You can still reach us by phone or email using the contact details on this page.</p>
+                  <Link to="/" className="text-primary font-medium hover:underline">Back to Home</Link>
+                </div>
+              ) : submitted ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <FiArrowRight className="w-8 h-8 text-emerald-600 rotate-[-45deg]" />
