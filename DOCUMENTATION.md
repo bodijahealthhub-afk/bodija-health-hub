@@ -11,6 +11,16 @@ Bodija Health Hub (BHH) is a community-based integrated healthcare ecosystem web
 
 ---
 
+## How the website and admin panel connect to the API
+
+The website and the admin panel are the **same React app** — the admin lives at `/admin`. Every API call uses same-origin relative paths (`/api/...`), so the browser never talks cross-origin:
+
+- **Local dev:** `npm run dev` starts Express (`server/index.js`, port `PORT` from `.env`, default 5000) and Vite on port 5173. Vite forwards `/api`, `/uploads`, `/robots.txt`, `/sitemap.xml` to the Express server via `client/vite.config.js`. Override the target with `VITE_API_TARGET` (e.g. `VITE_API_TARGET=http://localhost:10000`).
+- **Production:** Vercel serves the built app and proxies `/api/*` → the Railway backend via `client/vercel.json` rewrites.
+- **Port rule:** `PORT` in the root `.env` must match the Vite proxy target. If `PORT` is changed, update `client/vite.config.js` (or set `VITE_API_TARGET`).
+
+Default local credentials: `admin@bodijahealthhub.com` / `admin123` (seeded on first run).
+
 ## Tech Stack
 
 | Layer | Technology | Purpose |
