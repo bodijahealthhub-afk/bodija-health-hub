@@ -7,6 +7,7 @@ import { isPathHidden } from '../utils/featureRoutes'
 const builtinPages = [
   { title: 'Home', path: '/', category: 'Pages' },
   { title: 'About Us', path: '/about', category: 'Pages' },
+  { title: 'Services', path: '/services', category: 'Pages' },
   { title: 'The Ecosystem', path: '/ecosystem', category: 'Pages' },
   { title: 'Our Partners', path: '/partners', category: 'Pages' },
   { title: 'Our Platforms', path: '/platforms', category: 'Pages' },
@@ -31,7 +32,7 @@ const categoryIcons = {
   Stories: FiFileText,
   News: FiFileText,
   Partners: FiUsers,
-  Doctors: FiUsers,
+  Services: FiActivity,
   Blog: FiFileText,
   Events: FiCalendar,
 }
@@ -77,8 +78,8 @@ export default function SearchModal({ isOpen, onClose }) {
         if (res.ok) {
           const data = await res.json()
           const apiResults = []
-          if (data.services) data.services.forEach(s => apiResults.push({ ...s, category: 'Services' }))
-          if (data.doctors) data.doctors.forEach(d => apiResults.push({ ...d, category: 'Doctors' }))
+          if (data.services) data.services.forEach(s => apiResults.push({ ...s, category: 'Services', path: `/services` }))
+          if (data.providers) data.providers.forEach(p => apiResults.push({ ...p, category: 'Partners', path: `/partner/${p.id}` }))
           if (data.blog) data.blog.forEach(b => apiResults.push({ ...b, category: 'Blog', path: `/blog/${b.slug || b.id}` }))
           if (data.events) data.events.forEach(e => apiResults.push({ ...e, category: 'Events', path: `/events/${e.slug || e.id}` }))
           // Filter builtin pages
@@ -128,7 +129,7 @@ export default function SearchModal({ isOpen, onClose }) {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search services, doctors, articles, events..."
+            placeholder="Search services, partners, articles, events..."
             className="flex-1 text-lg text-gray-900 placeholder-gray-400 outline-none bg-transparent"
           />
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
@@ -141,7 +142,7 @@ export default function SearchModal({ isOpen, onClose }) {
           {query.length < 2 && (
             <div className="px-6 py-8 text-center text-gray-400">
               <FiSearch className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-              <p className="text-sm">Type to search across services, doctors, blog posts, and more</p>
+              <p className="text-sm">Type to search across services, partners, blog posts, and more</p>
             </div>
           )}
 

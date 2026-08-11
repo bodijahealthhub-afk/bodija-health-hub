@@ -324,7 +324,7 @@ const SCHEMA = `
   );
 `;
 
-async function insertUsersAndDoctors() {
+async function insertUsers() {
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
   const isHosted = process.env.NODE_ENV === 'production' || Boolean(process.env.DATABASE_URL);
@@ -341,100 +341,12 @@ async function insertUsersAndDoctors() {
   await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
     'Admin User', seededAdminEmail, adminHash, 'admin', '+234 801 234 5678'
   );
-
-  const doctorUsers = [
-    { name: 'Dr. Adaeze Okafor', email: 'adaeze@bodijahealthhub.com', phone: '+234 802 345 6789' },
-    { name: 'Dr. Emeka Adeyemi', email: 'emeka@bodijahealthhub.com', phone: '+234 803 456 7890' },
-    { name: 'Dr. Fatima Bello', email: 'fatima@bodijahealthhub.com', phone: '+234 804 567 8901' },
-    { name: 'Dr. Olumide Olatunji', email: 'olumide@bodijahealthhub.com', phone: '+234 805 678 9012' },
-    { name: 'Dr. Ngozi Eze', email: 'ngozi@bodijahealthhub.com', phone: '+234 806 789 0123' },
-    { name: 'Dr. Tunde Bakare', email: 'tunde@bodijahealthhub.com', phone: '+234 807 890 1234' },
-  ];
-
-  const insertUser = db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, \'doctor\', ?)');
-  const doctorIds = [];
-  for (const doc of doctorUsers) {
-    const doctorPassword = process.env.DOCTOR_PASSWORD || crypto.randomBytes(12).toString('base64url');
-    const docHash = bcrypt.hashSync(doctorPassword, 10);
-    const result = await insertUser.run(doc.name, doc.email, docHash, doc.phone);
-    doctorIds.push(result.lastInsertRowid);
-    console.log(`[seed] Doctor account created: ${doc.email} (password: ${doctorPassword})`);
-  }
-
-  const insertDoctor = db.prepare('INSERT INTO doctors (user_id, name, specialization, bio, experience_years, department, available_days, consultation_fee) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  const doctorData = [
-    [doctorIds[0], 'Dr. Adaeze Okafor', 'Audiology', 'Specialist in hearing disorders and auditory assessment with over 12 years of clinical experience.', 12, 'Audiology', 'Mon,Tue,Wed,Thu,Fri', 15000],
-    [doctorIds[1], 'Dr. Emeka Adeyemi', 'General Practice', 'Experienced general practitioner dedicated to comprehensive family healthcare.', 8, 'General Medicine', 'Mon,Tue,Wed,Thu,Fri', 10000],
-    [doctorIds[2], 'Dr. Fatima Bello', 'Pediatrics', 'Compassionate pediatrician specializing in child health and developmental milestones.', 10, 'Child Health', 'Mon,Tue,Thu,Fri', 12000],
-    [doctorIds[3], 'Dr. Olumide Olatunji', 'Internal Medicine', 'Expert in managing chronic diseases including hypertension and diabetes.', 15, 'Internal Medicine', 'Mon,Wed,Fri', 15000],
-    [doctorIds[4], 'Dr. Ngozi Eze', 'Speech Therapy', 'Certified speech-language pathologist helping patients overcome communication challenges.', 7, 'Speech Therapy', 'Mon,Tue,Wed,Thu', 12000],
-    [doctorIds[5], 'Dr. Tunde Bakare', 'Nephrology', 'Specialist in kidney care and dialysis management.', 11, 'Kidney Care', 'Tue,Wed,Thu,Fri', 18000],
-  ];
-  for (const doc of doctorData) {
-    await insertDoctor.run(...doc);
-  }
 }
 
 async function insertContentDefaults() {
-  const insertService = db.prepare('INSERT INTO services (name, description, category, price, icon) VALUES (?, ?, ?, ?, ?)');
-  const services = [
-    ['General Consultation', 'Comprehensive health assessment and medical consultation with our experienced doctors.', 'Primary Care', 10000, 'stethoscope'],
-    ['Audiology', 'Complete hearing health services including diagnosis, treatment, and prevention of hearing disorders.', 'Specialized Care', 15000, 'ear'],
-    ['Hearing Tests', 'Professional audiometric testing to evaluate hearing ability and identify hearing loss.', 'Diagnostics', 8000, 'hearing'],
-    ['Hearing Aids', 'Premium hearing aid fitting, programming, and after-sales support services.', 'Devices', 50000, 'volume-up'],
-    ['Speech Therapy', 'Expert speech and language therapy for children and adults with communication disorders.', 'Therapy', 12000, 'comments'],
-    ['Laboratory Services', 'Full-range diagnostic laboratory services with quick and accurate results.', 'Diagnostics', 5000, 'flask'],
-    ['Hypertension Clinic', 'Specialized monitoring and management of high blood pressure and related conditions.', 'Chronic Care', 8000, 'heart'],
-    ['Diabetes Care', 'Comprehensive diabetes management including monitoring, counseling, and treatment.', 'Chronic Care', 8000, 'tint'],
-    ['Kidney Care', 'Expert nephrology services for kidney disease prevention, diagnosis, and management.', 'Specialized Care', 18000, 'kidneys'],
-    ['Elderly Care', 'Compassionate healthcare services tailored for senior citizens and age-related conditions.', 'Primary Care', 10000, 'users'],
-    ['Child Health', 'Complete pediatric care from immunizations to developmental assessments.', 'Primary Care', 8000, 'baby'],
-    ['Wellness Screening', 'Preventive health screenings to detect potential health issues early.', 'Preventive', 15000, 'clipboard-check'],
-    ['Home Care LiveCare', 'Professional healthcare services delivered in the comfort of your home.', 'Home Care', 25000, 'home'],
-    ['Preventive Health', 'Health programs focused on disease prevention through lifestyle modification.', 'Preventive', 10000, 'shield'],
-    ['Vaccination', 'Full range of vaccinations for children and adults to prevent infectious diseases.', 'Preventive', 5000, 'syringe'],
-    ['Health Outreach Programs', 'Community health education, screening camps, and wellness outreach events.', 'Community', 0, 'hand-holding-heart'],
-  ];
-  for (const svc of services) {
-    await insertService.run(...svc);
-  }
-
-  const insertBlog = db.prepare('INSERT INTO blog_posts (title, slug, content, excerpt, category, author_id, status) VALUES (?, ?, ?, ?, ?, 1, \'published\')');
-  await insertBlog.run(
-    'Understanding Hearing Loss: Causes, Symptoms, and Treatment Options',
-    'understanding-hearing-loss',
-    'Hearing loss affects millions of people worldwide and can significantly impact quality of life. In this comprehensive guide, we explore the common causes of hearing loss, from age-related degeneration to exposure to loud noise. Learn about the early warning signs, including difficulty following conversations, turning up the volume on devices, and withdrawing from social situations. Our audiology team explains the latest treatment options, from hearing aids to cochlear implants, and shares preventive measures you can take today to protect your hearing health. Regular hearing screenings are recommended for adults over 50, and early detection is key to effective treatment.',
-    'Hearing loss affects millions worldwide. Learn about causes, early warning signs, and the latest treatment options from our audiology experts.',
-    'Audiology'
-  );
-  await insertBlog.run(
-    'Managing Hypertension: A Guide to Healthy Blood Pressure',
-    'managing-hypertension',
-    'Hypertension, often called the "silent killer," affects nearly half of all adults. This article covers essential strategies for managing blood pressure through lifestyle changes and, when necessary, medication. Discover the DASH diet approach, learn about the importance of regular exercise, and understand how stress management plays a role in blood pressure control. Our internal medicine specialists share practical tips for daily monitoring at home, understanding your readings, and knowing when to seek medical attention. We also discuss the connection between hypertension and other conditions like diabetes and kidney disease.',
-    'Hypertension is a leading cause of heart disease. Our experts share practical strategies for managing your blood pressure effectively.',
-    'Heart Health'
-  );
-  await insertBlog.run(
-    'Child Health: Essential Vaccinations Every Parent Should Know About',
-    'child-health-vaccinations',
-    'Vaccinations remain one of the most important tools in protecting children from serious diseases. This guide provides parents with a comprehensive overview of the vaccination schedule, from birth through adolescence. Learn about the diseases vaccines prevent, common side effects, and why timely vaccination is crucial. Our pediatric team addresses common concerns and misconceptions about vaccines, explains the difference between routine and optional vaccinations, and provides tips for making vaccination visits less stressful for both children and parents. Stay informed about the latest additions to the national immunization program.',
-    'Protect your child with the right vaccinations at the right time. Our pediatric guide covers everything parents need to know about immunization.',
-    'Child Health'
-  );
-  await insertBlog.run(
-    'Diabetes Management: Living Well with Diabetes',
-    'diabetes-management',
-    'Managing diabetes effectively requires a comprehensive approach that combines medical care, nutrition, exercise, and self-monitoring. This article explores evidence-based strategies for blood sugar control, including meal planning with Nigerian food options, the role of physical activity, and proper medication adherence. Our diabetes care team shares insights on monitoring techniques, recognizing complications early, and maintaining emotional well-being while managing a chronic condition. Learn about the latest advancements in diabetes care and how our multidisciplinary team supports patients in achieving their health goals.',
-    'Effective diabetes management is possible with the right knowledge and support. Learn practical tips for living well with diabetes.',
-    'Diabetes Care'
-  );
-
-  const insertTestimonial = db.prepare('INSERT INTO testimonials (patient_name, content, rating, is_active) VALUES (?, ?, ?, 1)');
-  await insertTestimonial.run('Adebayo Johnson', 'The audiology team at Bodija Health Hub changed my life. After years of struggling with hearing loss, I can finally enjoy conversations with my family again. The hearing aid fitting was professional and the follow-up care has been excellent.', 5);
-  await insertTestimonial.run('Chinwe Okonkwo', 'Dr. Bello is an amazing pediatrician. She is patient, thorough, and genuinely cares about her young patients. My children actually look forward to their check-ups! The facility is clean and welcoming.', 5);
-  await insertTestimonial.run('Ibrahim Mohammed', 'I have been managing my hypertension at Bodija Health Hub for two years now. The doctors are knowledgeable and the staff are always friendly. The hypertension clinic has helped me understand and control my blood pressure properly.', 4);
-  await insertTestimonial.run('Funke Adeyemi', 'The home care service has been a blessing for my elderly mother. The nurses are professional, compassionate, and highly skilled. It gives our family peace of mind knowing she receives quality care at home.', 5);
-  await insertTestimonial.run('Oluwaseun Akinola', 'I visited for a wellness screening and was impressed by the thoroughness of the check-up. The staff took time to explain every result and provided practical health advice. Highly recommend their preventive health services!', 5);
+  // NOTE: No fake services, blog posts, or testimonials are seeded.
+  // The spec requires real, admin-created content only — fresh installs start with
+  // empty content (empty states) rather than fabricated entries.
 
   const insertContact = db.prepare('INSERT INTO contact_info (key, value) VALUES (?, ?)');
   await insertContact.run('phone', '+234 801 234 5678');
@@ -660,7 +572,7 @@ async function migrateBookings() {
 async function seedIfEmpty() {
   const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (userCount.count === 0) {
-    await insertUsersAndDoctors();
+    await insertUsers();
     await insertContentDefaults();
   }
   await insertProviderSeeds();
@@ -670,6 +582,7 @@ async function seedIfEmpty() {
 
 const featureFlagSeeds = [
   { key: 'appointments', name: 'Appointments & Scheduling (Legacy)', description: 'Legacy doctor-based booking form — superseded by appointment_booking.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
+  { key: 'doctors', name: 'Doctors Directory (Future)', description: 'Doctor directory and profiles — future module, not presented publicly.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
   { key: 'appointment_booking', name: 'Book a Service / Appointment', description: 'Request-based booking for BHH services, partner providers, programmes, events, and training.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1, requires_admin_confirmation: 1, config: '{"mode":"request_based"}' },
   { key: 'programme_registration', name: 'Programme Registration', description: 'Registration for BHH community programmes and initiatives.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'event_registration', name: 'Event Registration', description: 'Registration for BHH events and health talks.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
@@ -715,6 +628,56 @@ async function insertAuditSeeds() {
   }
 }
 
+// ARCHIVE (not delete) any content that was created by earlier seed versions with
+// fabricated data — fake doctors, priced hospital-style services, fake testimonials,
+// and seeded blog posts that claim nonexistent teams. This is idempotent and runs on
+// every init so existing databases (including production) are cleaned up safely while
+// real admin-created content is left untouched.
+const FAKE_DOCTOR_NAMES = [
+  'Dr. Adaeze Okafor', 'Dr. Emeka Adeyemi', 'Dr. Fatima Bello',
+  'Dr. Olumide Olatunji', 'Dr. Ngozi Eze', 'Dr. Tunde Bakare',
+];
+
+const FAKE_SERVICE_NAMES = [
+  'General Consultation', 'Audiology', 'Hearing Tests', 'Hearing Aids',
+  'Speech Therapy', 'Laboratory Services', 'Hypertension Clinic', 'Diabetes Care',
+  'Kidney Care', 'Elderly Care', 'Child Health', 'Wellness Screening',
+  'Home Care LiveCare', 'Preventive Health', 'Vaccination', 'Health Outreach Programs',
+];
+
+const FAKE_TESTIMONIALS = [
+  'The audiology team at Bodija Health Hub changed my life. After years of struggling with hearing loss, I can finally enjoy conversations with my family again. The hearing aid fitting was professional and the follow-up care has been excellent.',
+  'Dr. Bello is an amazing pediatrician. She is patient, thorough, and genuinely cares about her young patients. My children actually look forward to their check-ups! The facility is clean and welcoming.',
+  'I have been managing my hypertension at Bodija Health Hub for two years now. The doctors are knowledgeable and the staff are always friendly. The hypertension clinic has helped me understand and control my blood pressure properly.',
+  'The home care service has been a blessing for my elderly mother. The nurses are professional, compassionate, and highly skilled. It gives our family peace of mind knowing she receives quality care at home.',
+  'I visited for a wellness screening and was impressed by the thoroughness of the check-up. The staff took time to explain every result and provided practical health advice. Highly recommend their preventive health services!',
+];
+
+const FAKE_BLOG_SLUGS = [
+  'understanding-hearing-loss', 'managing-hypertension',
+  'child-health-vaccinations', 'diabetes-management',
+];
+
+async function archiveFakeSeedData() {
+  const placeholders = (n) => new Array(n).fill('?').join(',');
+  const doctorPh = placeholders(FAKE_DOCTOR_NAMES.length);
+  await db.prepare(`UPDATE doctors SET is_active = 0 WHERE is_active = 1 AND name IN (${doctorPh})`).run(...FAKE_DOCTOR_NAMES);
+
+  const servicePh = placeholders(FAKE_SERVICE_NAMES.length);
+  await db.prepare(`UPDATE services SET is_active = 0 WHERE is_active = 1 AND name IN (${servicePh})`).run(...FAKE_SERVICE_NAMES);
+
+  const testPh = placeholders(FAKE_TESTIMONIALS.length);
+  await db.prepare(`UPDATE testimonials SET is_active = 0 WHERE is_active = 1 AND content IN (${testPh})`).run(...FAKE_TESTIMONIALS);
+
+  const blogPh = placeholders(FAKE_BLOG_SLUGS.length);
+  await db.prepare(`UPDATE blog_posts SET status = 'draft' WHERE status = 'published' AND slug IN (${blogPh})`).run(...FAKE_BLOG_SLUGS);
+
+  const archivedCount = await db.prepare(
+    "SELECT (SELECT COUNT(*) FROM doctors WHERE is_active = 0 AND name IN (" + doctorPh + ")) + (SELECT COUNT(*) FROM services WHERE is_active = 0 AND name IN (" + servicePh + ")) AS total"
+  ).get(...FAKE_DOCTOR_NAMES, ...FAKE_SERVICE_NAMES);
+  console.log(`[migrate] Archived fabricated seed content (doctors + services = ${archivedCount.total} affected rows).`);
+}
+
 async function init() {
   await impl.ready;
   if (impl.backend === 'sqlite') {
@@ -724,6 +687,7 @@ async function init() {
   await impl.exec(SCHEMA);
   await migrateBookings();
   await seedIfEmpty();
+  await archiveFakeSeedData();
 }
 
 // Reset all content to the original defaults (used by the admin backup/reset endpoint).

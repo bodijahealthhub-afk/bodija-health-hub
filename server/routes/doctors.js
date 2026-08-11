@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { getFlag } = require('../utils/features');
 
 const router = express.Router();
 
@@ -13,10 +14,22 @@ const toClient = (d) => ({
   status: d.is_active ? 'active' : 'inactive',
 });
 
+// Public requests are blocked unless the "doctors" feature is enabled.
+// The doctors directory is a future module (currently archived), so the public
+// endpoint returns 404 while admin management keeps working.
+const doctorsPubliclyDisabled = async (req) => {
+  if (req.baseUrl.includes('/admin')) return false;
+  const flag = await getFlag('doctors');
+  return !flag || !flag.enabled;
+};
+
 // GET /api/doctors (public — active only) or /api/admin/doctors (admin — all)
 router.get('/', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
+    if (!isAdmin && (await doctorsPubliclyDisabled(req))) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
     const { specialization, department, available_day } = req.query;
     let query = `SELECT d.*, u.email, u.avatar
                  FROM doctors d
@@ -51,6 +64,9 @@ router.get('/', async (req, res) => {
 // GET /api/doctors/:id (public)
 router.get('/:id', async (req, res) => {
   try {
+    if (await doctorsPubliclyDisabled(req)) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
     const doctor = await db.prepare(
       `SELECT d.*, u.email, u.avatar
        FROM doctors d

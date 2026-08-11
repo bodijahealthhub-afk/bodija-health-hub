@@ -64,11 +64,14 @@ test('health endpoint', async () => {
   assert.strictEqual(json.status, 'ok');
 });
 
-test('public endpoints return 200', async () => {
-  for (const url of ['/api/doctors', '/api/services', '/api/blog', '/api/events', '/api/testimonials', '/api/gallery', '/api/media', '/api/site-content', '/api/seo/home']) {
+test('public endpoints return 200 (archived modules return 404)', async () => {
+  for (const url of ['/api/services', '/api/blog', '/api/events', '/api/testimonials', '/api/gallery', '/api/media', '/api/site-content', '/api/seo/home']) {
     const { status } = await request('GET', url);
     assert.strictEqual(status, 200, `${url} -> ${status}`);
   }
+  // The doctors directory is an archived future module — it must not be publicly accessible
+  assert.strictEqual((await request('GET', '/api/doctors')).status, 404);
+  assert.strictEqual((await request('GET', '/api/doctors/1')).status, 404);
 });
 
 test('robots.txt and sitemap.xml served', async () => {
@@ -232,10 +235,18 @@ test('patient can register, log in, and see own appointments', async () => {
 });
 
 test('payments initialize works in mock mode and marks appointment paid', async () => {
+  // No fabricated doctors/services are seeded, so create a real service with a price
+  // and attach the appointment to it (doctor-based pricing is a legacy future module).
+  const svc = await request('POST', '/api/admin/services', {
+    token: adminToken,
+    body: { name: 'Test Service', category: 'Testing', price: 2500 },
+  });
+  assert.strictEqual(svc.status, 201);
+
   const created = await request('POST', '/api/appointments', {
     body: {
       patient_name: 'Paying Patient', patient_email: 'payer@example.com', patient_phone: '08055555555',
-      doctor_id: 1, date: '2026-12-03', time: '09:00',
+      service_id: svc.json.id, date: '2026-12-03', time: '09:00',
     },
   });
   assert.strictEqual(created.status, 201);

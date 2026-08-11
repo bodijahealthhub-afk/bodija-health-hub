@@ -4,12 +4,13 @@ const { getFlag } = require('../utils/features');
 
 const router = express.Router();
 
-// GET /api/search?q=term — results respect disabled feature flags
+// GET /api/search?q=term — results respect disabled feature flags and only include
+// public (active) content. Doctors are never exposed publicly (future module).
 router.get('/', async (req, res) => {
   try {
     const q = (req.query.q || '').trim();
     if (q.length < 2) {
-      return res.json({ services: [], doctors: [], blog: [], events: [] });
+      return res.json({ services: [], providers: [], blog: [], events: [] });
     }
     const like = `%${q}%`;
 
@@ -18,7 +19,7 @@ router.get('/', async (req, res) => {
       return Boolean(flag && flag.enabled);
     };
 
-    const results = { services: [], doctors: [], blog: [], events: [] };
+    const results = { services: [], providers: [], blog: [], events: [] };
 
     if (await featureIsOn('services')) {
       results.services = await db.prepare(
@@ -26,9 +27,9 @@ router.get('/', async (req, res) => {
       ).all(like, like, like);
     }
 
-    if (await featureIsOn('appointments')) {
-      results.doctors = await db.prepare(
-        "SELECT id, name, specialization, department, photo FROM doctors WHERE is_active = 1 AND (name LIKE ? OR specialization LIKE ? OR department LIKE ?) LIMIT 5"
+    if (await featureIsOn('partners_section')) {
+      results.providers = await db.prepare(
+        "SELECT id, name, description, provider_type, location FROM providers WHERE is_active = 1 AND (name LIKE ? OR description LIKE ? OR location LIKE ?) LIMIT 5"
       ).all(like, like, like);
     }
 
