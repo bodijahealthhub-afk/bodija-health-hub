@@ -56,20 +56,50 @@ const SCHEMA = `
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS providers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    provider_type TEXT DEFAULT 'BHH' CHECK(provider_type IN ('BHH','PARTNER','INDEPENDENT','EXTERNAL')),
+    description TEXT,
+    logo TEXT,
+    location TEXT,
+    contact_email TEXT,
+    contact_phone TEXT,
+    website TEXT,
+    booking_method TEXT DEFAULT 'BHH_MANAGED' CHECK(booking_method IN ('BHH_MANAGED','PARTNER_REQUEST','EXTERNAL')),
+    booking_url TEXT,
+    external_booking_url TEXT,
+    config TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS appointments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    booking_reference TEXT UNIQUE,
+    booking_type TEXT DEFAULT 'appointment' CHECK(booking_type IN ('appointment','partner_appointment','programme','event','training','external')),
+    category TEXT,
     patient_name TEXT NOT NULL,
     patient_email TEXT,
     patient_phone TEXT,
     patient_age INTEGER,
     doctor_id INTEGER REFERENCES doctors(id),
     service_id INTEGER REFERENCES services(id),
+    provider_id INTEGER REFERENCES providers(id),
+    provider_type TEXT DEFAULT 'BHH',
     date TEXT NOT NULL,
     time TEXT NOT NULL,
-    status TEXT DEFAULT 'pending' CHECK(status IN ('pending','confirmed','completed','cancelled')),
+    preferred_date TEXT,
+    preferred_time TEXT,
+    booking_method TEXT DEFAULT 'BHH_MANAGED' CHECK(booking_method IN ('BHH_MANAGED','PARTNER_REQUEST','EXTERNAL')),
+    external_booking_url TEXT,
+    contact_method TEXT,
     notes TEXT,
-    payment_status TEXT DEFAULT 'unpaid',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending','requested','confirmed','completed','cancelled','declined','expired','archived')),
+    payment_status TEXT DEFAULT 'not_required' CHECK(payment_status IN ('not_required','unpaid','pending','paid','failed','refunded')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS patients (
@@ -527,18 +557,123 @@ async function insertContentDefaults() {
   }
 }
 
+async function insertProviderSeeds() {
+  const count = await db.prepare('SELECT COUNT(*) as count FROM providers').get();
+  if (count.count > 0) return;
+
+  const insert = db.prepare(`INSERT INTO providers
+    (name, provider_type, description, location, booking_method, is_active)
+    VALUES (?, ?, ?, ?, ?, ?)`);
+  await insert.run(
+    'Bodija Health Hub (BHH)',
+    'BHH',
+    'Bodija Health Hub is a health and wellness ecosystem hub in Ibadan connecting the community with quality healthcare services, programmes, training, and partner providers.',
+    'Ibadan, Oyo State',
+    'BHH_MANAGED',
+    1
+  );
+}
+
+const APPOINTMENT_NEW_SCHEMA = `
+  CREATE TABLE appointments_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    booking_reference TEXT UNIQUE,
+    booking_type TEXT DEFAULT 'appointment' CHECK(booking_type IN ('appointment','partner_appointment','programme','event','training','external')),
+    category TEXT,
+    patient_name TEXT NOT NULL,
+    patient_email TEXT,
+    patient_phone TEXT,
+    patient_age INTEGER,
+    doctor_id INTEGER REFERENCES doctors(id),
+    service_id INTEGER REFERENCES services(id),
+    provider_id INTEGER REFERENCES providers(id),
+    provider_type TEXT DEFAULT 'BHH',
+    date TEXT NOT NULL,
+    time TEXT NOT NULL,
+    preferred_date TEXT,
+    preferred_time TEXT,
+    booking_method TEXT DEFAULT 'BHH_MANAGED' CHECK(booking_method IN ('BHH_MANAGED','PARTNER_REQUEST','EXTERNAL')),
+    external_booking_url TEXT,
+    contact_method TEXT,
+    notes TEXT,
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending','requested','confirmed','completed','cancelled','declined','expired','archived')),
+    payment_status TEXT DEFAULT 'not_required' CHECK(payment_status IN ('not_required','unpaid','pending','paid','failed','refunded')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`;
+
+async function migrateBookings() {
+  if (db.backend === 'sqlite') {
+    const cols = await db.prepare('PRAGMA table_info(appointments)').all();
+    if (cols.some((c) => c.name === 'booking_type')) return;
+
+    db.pragma('foreign_keys = OFF');
+    try {
+      await db.transaction(async () => {
+        await db.prepare(APPOINTMENT_NEW_SCHEMA).run();
+        await db.prepare(`
+          INSERT INTO appointments_new (
+            id, patient_name, patient_email, patient_phone, patient_age,
+            doctor_id, service_id, date, time, status, notes, payment_status, created_at
+          )
+          SELECT id, patient_name, patient_email, patient_phone, patient_age,
+            doctor_id, service_id, date, time, status, notes, payment_status, created_at
+          FROM appointments
+        `).run();
+        await db.prepare('DROP TABLE appointments').run();
+        await db.prepare('ALTER TABLE appointments_new RENAME TO appointments').run();
+      });
+    } finally {
+      db.pragma('foreign_keys = ON');
+    }
+    return;
+  }
+
+  const col = await db.prepare(
+    "SELECT column_name FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'booking_type'"
+  ).get();
+  if (col) return;
+
+  await db.transaction(async () => {
+    const adds = [
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS booking_reference TEXT',
+      "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS booking_type TEXT DEFAULT 'appointment'",
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS category TEXT',
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS provider_id INTEGER REFERENCES providers(id)',
+      "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS provider_type TEXT DEFAULT 'BHH'",
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS preferred_date TEXT',
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS preferred_time TEXT',
+      "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS booking_method TEXT DEFAULT 'BHH_MANAGED'",
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS external_booking_url TEXT',
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS contact_method TEXT',
+      'ALTER TABLE appointments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    ];
+    for (const stmt of adds) await db.prepare(stmt).run();
+    await db.prepare('ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_status_check').run();
+    await db.prepare('ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_payment_status_check').run();
+    await db.prepare("ALTER TABLE appointments ALTER COLUMN payment_status SET DEFAULT 'not_required'").run();
+  });
+}
+
 async function seedIfEmpty() {
   const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (userCount.count === 0) {
     await insertUsersAndDoctors();
     await insertContentDefaults();
   }
+  await insertProviderSeeds();
   await insertFeatureFlags();
   await insertAuditSeeds();
 }
 
 const featureFlagSeeds = [
   { key: 'appointments', name: 'Appointments & Scheduling', description: 'Online appointment booking form and management.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'appointment_booking', name: 'Book a Service / Appointment', description: 'Request-based booking for BHH services, partner providers, programmes, events, and training.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1, requires_admin_confirmation: 1, config: '{"mode":"request_based"}' },
+  { key: 'programme_registration', name: 'Programme Registration', description: 'Registration for BHH community programmes and initiatives.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
+  { key: 'event_registration', name: 'Event Registration', description: 'Registration for BHH events and health talks.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
+  { key: 'training_registration', name: 'Training Registration', description: 'Registration for BHH trainings and capacity-building programmes.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
+  { key: 'external_partner_booking', name: 'External Partner Booking', description: 'Route bookings to partner external booking portals when enabled.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'contact_form', name: 'Contact & Inquiry Form', description: 'Contact page form for patient inquiries.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'welcome_modal', name: 'Welcome Popup', description: 'Show a welcome popup on the homepage for first-time visitors.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'home_hero', name: 'Homepage Hero Section', description: 'Show the hero banner on the homepage.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
@@ -568,6 +703,7 @@ async function insertFeatureFlags() {
   for (const f of featureFlagSeeds) {
     await insert.run(f.key, f.name, f.description, f.status, f.enabled, f.public_visible, f.navigation_visible, f.admin_visible !== undefined ? f.admin_visible : 1, f.requires_admin_confirmation || 0, f.config || null);
   }
+  await db.prepare("UPDATE feature_flags SET status = 'archived', enabled = 0, public_visible = 0 WHERE key = 'patient_portal'").run();
 }
 
 async function insertAuditSeeds() {
@@ -584,6 +720,7 @@ async function init() {
     impl.pragma('foreign_keys = ON');
   }
   await impl.exec(SCHEMA);
+  await migrateBookings();
   await seedIfEmpty();
 }
 

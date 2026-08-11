@@ -155,7 +155,7 @@ router.post('/appointments/:id/cancel', authenticatePatient, async (req, res) =>
     if (!ownsAppointment) {
       return res.status(403).json({ error: 'Not your appointment' });
     }
-    if (!['pending', 'confirmed'].includes(appointment.status)) {
+    if (!['pending', 'requested', 'confirmed'].includes(appointment.status)) {
       return res.status(400).json({ error: 'This appointment can no longer be cancelled' });
     }
 

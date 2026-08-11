@@ -42,6 +42,7 @@ const AdminAppointments = lazy(() => import('./admin/Appointments'))
 const AdminPatients = lazy(() => import('./admin/Patients'))
 const AdminDoctors = lazy(() => import('./admin/Doctors'))
 const AdminServices = lazy(() => import('./admin/Services'))
+const AdminProviders = lazy(() => import('./admin/Providers'))
 const AdminBlog = lazy(() => import('./admin/Blog'))
 const AdminEvents = lazy(() => import('./admin/Events'))
 const AdminGallery = lazy(() => import('./admin/Gallery'))
@@ -115,7 +116,7 @@ function WhatsAppButton() {
 // Maps public routes to the feature flag that controls them. When a flag is
 // disabled, the route renders a "Coming Soon" page instead.
 const FEATURE_ROUTES = {
-  '/appointments': { key: 'appointments', name: 'Appointments' },
+  '/appointments': { key: 'appointment_booking', name: 'Book a Service / Appointment' },
   '/contact': { key: 'contact_form', name: 'Contact' },
   '/faq': { key: 'faq', name: 'FAQ' },
   '/careers': { key: 'careers', name: 'Careers' },
@@ -210,6 +211,7 @@ export default function App() {
               <Route path="patients" element={<AdminPatients />} />
               <Route path="doctors" element={<AdminDoctors />} />
               <Route path="services" element={<AdminServices />} />
+              <Route path="providers" element={<AdminProviders />} />
               <Route path="blog" element={<AdminBlog />} />
               <Route path="events" element={<AdminEvents />} />
               <Route path="gallery" element={<AdminGallery />} />

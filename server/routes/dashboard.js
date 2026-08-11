@@ -19,7 +19,7 @@ const buildStats = async () => {
   const totalAppointments = (await db.prepare('SELECT COUNT(*) as count FROM appointments').get()).count;
 
   const pendingAppointments = (await db.prepare(
-    "SELECT COUNT(*) as count FROM appointments WHERE status = 'pending'"
+    "SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending','requested')"
   ).get()).count;
 
   const completedAppointments = (await db.prepare(

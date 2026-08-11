@@ -1,7 +1,7 @@
 // Maps site paths to the feature flag that controls them.
 // Used by Navbar, Footer, and SearchModal to hide links to disabled features.
 const PATH_FEATURES = {
-  '/appointments': 'appointments',
+  '/appointments': 'appointment_booking',
   '/contact': 'contact_form',
   '/faq': 'faq',
   '/careers': 'careers',

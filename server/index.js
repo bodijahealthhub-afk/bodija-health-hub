@@ -95,6 +95,7 @@ app.get('/sitemap.xml', async (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/doctors', require('./routes/doctors'));
 app.use('/api/services', require('./routes/services'));
+app.use('/api/providers', require('./routes/providers'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/patients', require('./routes/patients'));
 app.use('/api/blog', require('./routes/blog'));
@@ -132,6 +133,7 @@ app.use('/api/admin/messages', require('./routes/messages'));
 app.use('/api/admin/events', require('./routes/events'));
 app.use('/api/admin/gallery', require('./routes/gallery'));
 app.use('/api/admin/doctors', require('./routes/doctors'));
+app.use('/api/admin/providers', require('./routes/providers'));
 app.use('/api/admin/appointments', require('./routes/appointments'));
 app.use('/api/admin/patients', require('./routes/patients'));
 app.use('/api/admin/notifications', require('./routes/notifications'));

@@ -10,9 +10,9 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
     if (unreadMessages.count > 0) {
       notifications.push({ id: 1, text: `You have ${unreadMessages.count} unread message${unreadMessages.count > 1 ? 's' : ''}`, time: 'New', read: false, type: 'message', link: '/admin/messages' });
     }
-    const pendingAppts = await db.prepare("SELECT COUNT(*) as count FROM appointments WHERE status = 'pending'").get();
+    const pendingAppts = await db.prepare("SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending','requested')").get();
     if (pendingAppts.count > 0) {
-      notifications.push({ id: 2, text: `${pendingAppts.count} pending appointment${pendingAppts.count > 1 ? 's' : ''} need review`, time: 'Action needed', read: false, type: 'appointment', link: '/admin/appointments' });
+      notifications.push({ id: 2, text: `${pendingAppts.count} booking${pendingAppts.count > 1 ? 's' : ''} need review`, time: 'Action needed', read: false, type: 'appointment', link: '/admin/appointments' });
     }
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const newSubscribers = await db.prepare('SELECT COUNT(*) as count FROM newsletter_subscribers WHERE created_at > ?').get(weekAgo);
@@ -33,7 +33,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
 router.get('/count', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const unreadMessages = await db.prepare('SELECT COUNT(*) as count FROM messages WHERE is_read = 0').get();
-    const pendingAppts = await db.prepare("SELECT COUNT(*) as count FROM appointments WHERE status = 'pending'").get();
+    const pendingAppts = await db.prepare("SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending','requested')").get();
     res.json({ unread: unreadMessages.count + pendingAppts.count });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch count' });

@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
 
+const TYPE_LABELS = {
+  appointment: 'Healthcare',
+  partner_appointment: 'Partner',
+  programme: 'Programme',
+  event: 'Event',
+  training: 'Training',
+  external: 'External',
+};
+
 const AppointmentDetail = ({ appointment, isOpen, onClose, onStatusChange }) => {
   const [notes, setNotes] = useState('');
 
@@ -12,6 +21,8 @@ const AppointmentDetail = ({ appointment, isOpen, onClose, onStatusChange }) => 
   }, [appointment]);
 
   if (!appointment) return null;
+
+  const actionable = ['requested', 'pending'].includes(appointment.status);
 
   const handleSaveNotes = async () => {
     try {
@@ -30,19 +41,39 @@ const AppointmentDetail = ({ appointment, isOpen, onClose, onStatusChange }) => 
     onClose();
   };
 
+  const DetailRow = ({ label, value }) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-500 mb-1">{label}</label>
+      <p className="text-gray-900">{value || '—'}</p>
+    </div>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Appointment Details" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Booking Details" size="lg">
       <div className="space-y-6">
         {/* Status and Actions */}
         <div className="flex items-center justify-between">
-          <StatusBadge status={appointment.status} />
           <div className="flex items-center gap-2">
-            {appointment.status === 'pending' && (
+            <StatusBadge status={appointment.status} />
+            {appointment.bookingReference && (
+              <span className="font-mono text-xs text-gray-500">{appointment.bookingReference}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {actionable && (
               <button
                 onClick={() => onStatusChange(appointment.id, 'confirmed')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
               >
                 Confirm
+              </button>
+            )}
+            {actionable && (
+              <button
+                onClick={() => onStatusChange(appointment.id, 'declined')}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+              >
+                Decline
               </button>
             )}
             {appointment.status === 'confirmed' && (
@@ -53,7 +84,7 @@ const AppointmentDetail = ({ appointment, isOpen, onClose, onStatusChange }) => 
                 Complete
               </button>
             )}
-            {appointment.status !== 'cancelled' && appointment.status !== 'completed' && (
+            {!['cancelled', 'completed', 'declined', 'expired', 'archived'].includes(appointment.status) && (
               <button
                 onClick={() => onStatusChange(appointment.id, 'cancelled')}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
@@ -64,33 +95,32 @@ const AppointmentDetail = ({ appointment, isOpen, onClose, onStatusChange }) => 
           </div>
         </div>
 
-        {/* Appointment Info */}
+        {/* Booking Info */}
         <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Patient</label>
-            <p className="text-gray-900">{appointment.patientName}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-            <p className="text-gray-900">{appointment.email}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
-            <p className="text-gray-900">{appointment.phone}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Doctor</label>
-            <p className="text-gray-900">{appointment.doctor}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Service</label>
-            <p className="text-gray-900">{appointment.service}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">Date & Time</label>
-            <p className="text-gray-900">{appointment.date} at {appointment.time}</p>
-          </div>
+          <DetailRow label="Type" value={TYPE_LABELS[appointment.bookingType] || appointment.bookingType} />
+          <DetailRow label="Category" value={appointment.category} />
+          <DetailRow label="Name" value={appointment.patientName} />
+          <DetailRow label="Email" value={appointment.email} />
+          <DetailRow label="Phone" value={appointment.phone} />
+          <DetailRow label="Provider" value={appointment.providerName || appointment.doctor || 'Bodija Health Hub'} />
+          <DetailRow label="Service" value={appointment.service} />
+          <DetailRow label="Preferred Date & Time" value={`${appointment.preferredDate || appointment.date || 'Flexible'}${appointment.preferredTime || appointment.time ? ` at ${appointment.preferredTime || appointment.time}` : ''}`} />
+          <DetailRow label="Booking Method" value={appointment.bookingMethod} />
         </div>
+
+        {appointment.externalBookingUrl && (
+          <div>
+            <label className="block text-sm font-medium text-gray-500 mb-1">External Booking Link</label>
+            <a
+              href={appointment.externalBookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-600 hover:underline text-sm break-all"
+            >
+              {appointment.externalBookingUrl}
+            </a>
+          </div>
+        )}
 
         {/* Notes */}
         <div>
@@ -100,7 +130,7 @@ const AppointmentDetail = ({ appointment, isOpen, onClose, onStatusChange }) => 
             onChange={(e) => setNotes(e.target.value)}
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
-            placeholder="Add notes about this appointment..."
+            placeholder="Add notes about this booking..."
           />
         </div>
 

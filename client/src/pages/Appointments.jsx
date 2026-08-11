@@ -1,168 +1,210 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'react-toastify'
-import { FiCheck } from 'react-icons/fi'
+import { FiCheck, FiArrowLeft, FiExternalLink, FiHeart, FiUsers, FiCalendar, FiBookOpen, FiLink, FiActivity } from 'react-icons/fi'
+import { useFeatures } from '../context/FeatureContext'
+
+const CATEGORIES = [
+  {
+    value: 'appointment',
+    title: 'Healthcare Service',
+    description: 'Book a service with Bodija Health Hub. Our team will reach out to confirm a time that suits you.',
+    icon: FiHeart,
+    feature: 'appointment_booking',
+  },
+  {
+    value: 'partner_appointment',
+    title: 'Partner Provider',
+    description: 'Request an appointment with one of our trusted partner providers.',
+    icon: FiUsers,
+    feature: 'appointment_booking',
+  },
+  {
+    value: 'programme',
+    title: 'Community Programme',
+    description: 'Register your interest in a BHH community programme or initiative.',
+    icon: FiActivity,
+    feature: 'programme_registration',
+  },
+  {
+    value: 'event',
+    title: 'Event / Health Talk',
+    description: 'Register for an upcoming BHH event or health talk.',
+    icon: FiCalendar,
+    feature: 'event_registration',
+  },
+  {
+    value: 'training',
+    title: 'Training',
+    description: 'Register for BHH trainings and capacity building programmes.',
+    icon: FiBookOpen,
+    feature: 'training_registration',
+  },
+  {
+    value: 'external',
+    title: 'External Partner Portal',
+    description: 'Book directly on a partner external booking portal.',
+    icon: FiLink,
+    feature: 'external_partner_booking',
+  },
+]
+
+const TITLES = {
+  appointment: 'Book a Healthcare Service',
+  partner_appointment: 'Request a Partner Appointment',
+  programme: 'Register for a Programme',
+  event: 'Register for an Event',
+  training: 'Register for Training',
+  external: 'External Partner Booking',
+}
+
+const emptyForm = {
+  service_id: '',
+  provider_id: '',
+  category: '',
+  preferred_date: '',
+  preferred_time: '',
+  patient_name: '',
+  patient_email: '',
+  patient_phone: '',
+  patient_age: '',
+  notes: '',
+}
 
 export default function Appointments() {
+  const { isEnabled } = useFeatures()
   const [services, setServices] = useState([])
-  const [doctors, setDoctors] = useState([])
-  const [formData, setFormData] = useState({
-    service_id: '',
-    doctor_id: '',
-    date: '',
-    time: '',
-    patient_name: '',
-    patient_email: '',
-    patient_phone: '',
-    patient_age: '',
-    notes: '',
-  })
-  const [step, setStep] = useState(1)
+  const [providers, setProviders] = useState([])
+  const [bookingType, setBookingType] = useState(null)
+  const [form, setForm] = useState(emptyForm)
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [bookedAppointment, setBookedAppointment] = useState(null)
-  const [paying, setPaying] = useState(false)
-  const [paymentNote, setPaymentNote] = useState('')
+  const [submitted, setSubmitted] = useState(null)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchOptions = async () => {
       try {
-        const [servicesRes, doctorsRes] = await Promise.all([
-          fetch('/api/services'),
-          fetch('/api/doctors'),
-        ])
-        if (servicesRes.ok) setServices(await servicesRes.json())
-        if (doctorsRes.ok) setDoctors(await doctorsRes.json())
+        const res = await fetch('/api/appointments/booking-options')
+        if (res.ok) {
+          const data = await res.json()
+          setServices(Array.isArray(data.services) ? data.services : [])
+          setProviders(Array.isArray(data.providers) ? data.providers : [])
+        }
       } catch {}
     }
-    fetchData()
+    fetchOptions()
   }, [])
 
-  // Verify a payment when the user returns from the Paystack checkout page.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const reference = params.get('reference') || params.get('trxref')
-    if (params.get('payment') === 'verify' && reference) {
-      fetch(`/api/payments/${encodeURIComponent(reference)}`)
-        .then(res => (res.ok ? res.json() : null))
-        .then(payment => {
-          if (payment && payment.status === 'paid') {
-            toast.success('Payment received. Thank you!')
-            setPaymentNote('Your payment was confirmed.')
-          } else if (payment) {
-            toast.info('Payment not confirmed yet. You can try again from your confirmation.')
-          }
-        })
-        .catch(() => {})
-      window.history.replaceState({}, document.title, '/appointments')
-    }
-  }, [])
+  const categories = useMemo(
+    () => CATEGORIES.filter((c) => isEnabled(c.feature)),
+    [isEnabled]
+  )
+
+  const selected = CATEGORIES.find((c) => c.value === bookingType)
+  const externalProviders = useMemo(
+    () => providers.filter((p) => p.external_booking_url),
+    [providers]
+  )
+  const typeProviders = useMemo(() => {
+    if (bookingType === 'external') return externalProviders
+    if (bookingType === 'partner_appointment') return providers.filter((p) => p.booking_method === 'EXTERNAL')
+    return providers
+  }, [bookingType, providers, externalProviders])
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handlePayNow = async () => {
-    if (!bookedAppointment) return
-    setPaying(true)
-    try {
-      const res = await fetch('/api/payments/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appointment_id: bookedAppointment.id }),
-      })
-      const data = await res.json()
-      if (res.ok && data.authorization_url) {
-        window.location.href = data.authorization_url
-      } else if (res.ok && data.mock) {
-        setPaymentNote(data.message || 'Payment recorded.')
-        toast.success('Payment recorded.')
-      } else {
-        toast.error(data.error || 'Failed to start payment')
-      }
-    } catch {
-      toast.error('Something went wrong starting payment')
-    } finally {
-      setPaying(false)
-    }
+  const reset = () => {
+    setBookingType(null)
+    setForm(emptyForm)
+    setSubmitted(null)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.patient_name || !formData.patient_email || !formData.date || !formData.time) {
-      toast.error('Please fill in all required fields')
+    if (!form.patient_name || !form.patient_email) {
+      toast.error('Please provide your name and email')
       return
     }
+    if ((bookingType === 'partner_appointment' || bookingType === 'external') && !form.provider_id) {
+      toast.error('Please choose a provider')
+      return
+    }
+
+    const payload = {
+      booking_type: bookingType,
+      patient_name: form.patient_name,
+      patient_email: form.patient_email,
+      patient_phone: form.patient_phone || null,
+      patient_age: form.patient_age ? Number(form.patient_age) : null,
+      service_id: form.service_id ? Number(form.service_id) : null,
+      provider_id: form.provider_id ? Number(form.provider_id) : null,
+      category: form.category || null,
+      preferred_date: form.preferred_date || null,
+      preferred_time: form.preferred_time || null,
+      notes: form.notes || null,
+    }
+
     setSubmitting(true)
     try {
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
       if (res.ok) {
         const created = await res.json()
-        setBookedAppointment(created)
-        setSubmitted(true)
-        toast.success('Appointment booked successfully!')
+        setSubmitted(created)
+        toast.success('Booking submitted successfully!')
       } else {
         const err = await res.json()
-        toast.error(err.error || 'Failed to book appointment')
+        toast.error(err.error || 'Failed to submit booking')
       }
     } catch {
-      toast.error('Something went wrong')
+      toast.error('Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const steps = [
-    { num: 1, label: 'Service' },
-    { num: 2, label: 'Doctor' },
-    { num: 3, label: 'Date & Time' },
-    { num: 4, label: 'Your Info' },
-  ]
-
   if (submitted) {
-    const canPay = bookedAppointment && Number(bookedAppointment.amount) > 0 && bookedAppointment.paymentStatus !== 'paid'
+    const canRedirect = submitted.bookingType === 'external' && submitted.externalBookingUrl
     return (
       <div className="min-h-screen bg-warm-white flex items-center justify-center px-4 py-16">
         <div className="bg-white rounded-3xl p-12 shadow-sm border border-gray-100 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <FiCheck className="w-8 h-8 text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Appointment Booked!</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Booking Submitted!</h1>
           <p className="text-gray-500 mb-6">
-            We've received your appointment request. Our team will contact you shortly to confirm.
+            We've received your request. Our team will contact you shortly to confirm.
           </p>
 
-          {bookedAppointment && (
-            <div className="bg-gray-50 rounded-2xl p-4 text-left text-sm space-y-2 mb-6">
-              <p className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium text-gray-900">{bookedAppointment.date}</span></p>
-              <p className="flex justify-between"><span className="text-gray-500">Time</span><span className="font-medium text-gray-900">{bookedAppointment.time}</span></p>
-              <p className="flex justify-between"><span className="text-gray-500">Doctor</span><span className="font-medium text-gray-900">{bookedAppointment.doctor || 'To be assigned'}</span></p>
-              {Number(bookedAppointment.amount) > 0 && (
-                <p className="flex justify-between"><span className="text-gray-500">Fee</span><span className="font-medium text-gray-900">₦{Number(bookedAppointment.amount).toLocaleString()}</span></p>
-              )}
-            </div>
-          )}
+          <div className="bg-gray-50 rounded-2xl p-4 text-left text-sm space-y-2 mb-6">
+            <p className="flex justify-between"><span className="text-gray-500">Reference</span><span className="font-medium text-gray-900">{submitted.bookingReference}</span></p>
+            <p className="flex justify-between"><span className="text-gray-500">Type</span><span className="font-medium text-gray-900">{TITLES[submitted.bookingType] || 'Booking'}</span></p>
+            {(submitted.providerName || submitted.service) && (
+              <p className="flex justify-between"><span className="text-gray-500">Details</span><span className="font-medium text-gray-900 text-right">{submitted.providerName || ''}{submitted.providerName && submitted.service ? ' — ' : ''}{submitted.service || ''}</span></p>
+            )}
+            <p className="flex justify-between"><span className="text-gray-500">Preferred date</span><span className="font-medium text-gray-900">{submitted.preferredDate || 'Flexible'}</span></p>
+            <p className="flex justify-between"><span className="text-gray-500">Preferred time</span><span className="font-medium text-gray-900">{submitted.preferredTime || 'Flexible'}</span></p>
+          </div>
 
-          {paymentNote && (
-            <p className="text-sm text-emerald-600 font-medium mb-6">{paymentNote}</p>
-          )}
-
-          {canPay && (
-            <button
-              onClick={handlePayNow}
-              disabled={paying}
-              className="w-full mb-3 py-3 bg-emerald-600 text-white font-semibold rounded-full hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          {canRedirect && (
+            <a
+              href={submitted.externalBookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full mb-3 py-3 bg-emerald-600 text-white font-semibold rounded-full hover:bg-emerald-700 transition-colors inline-flex items-center justify-center gap-2"
             >
-              {paying ? 'Starting payment...' : `Pay ₦${Number(bookedAppointment.amount).toLocaleString()} now`}
-            </button>
+              Continue on Partner Portal <FiExternalLink className="w-4 h-4" />
+            </a>
           )}
 
-          <button onClick={() => { setSubmitted(false); setBookedAppointment(null); setPaymentNote(''); setFormData({ service_id: '', doctor_id: '', date: '', time: '', patient_name: '', patient_email: '', patient_phone: '', patient_age: '', notes: '' }); setStep(1) }}
-            className="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/90 transition-colors">
-            Book Another
+          <button
+            onClick={reset}
+            className="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/90 transition-colors"
+          >
+            Make Another Booking
           </button>
         </div>
       </div>
@@ -172,166 +214,188 @@ export default function Appointments() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white py-24">
+      <section className="relative bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Book Appointment</span>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-6">Schedule Your Visit</h1>
+          <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Book &amp; Register</span>
+          <h1 className="text-4xl sm:text-5xl font-bold mb-6">Book a Service, Programme, or Event</h1>
           <p className="text-lg text-teal-100 max-w-2xl mx-auto">
-            Book an appointment with our healthcare professionals. Quick, easy, and convenient.
+            Choose what you'd like to book. For healthcare appointments, tell us what you need and we'll confirm a time with you.
           </p>
         </div>
       </section>
 
-      {/* Booking Form */}
       <section className="py-20 bg-warm-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-12">
-            {steps.map((s, i) => (
-              <div key={s.num} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-colors ${
-                  step >= s.num ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
-                }`}>
-                  {step > s.num ? <FiCheck className="w-5 h-5" /> : s.num}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {!bookingType ? (
+            <>
+              {categories.length === 0 ? (
+                <div className="bg-white rounded-3xl p-10 text-center shadow-sm border border-gray-100">
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">Online booking is temporarily unavailable</h2>
+                  <p className="text-gray-500">Please contact us directly and our team will be happy to help.</p>
                 </div>
-                <span className={`ml-2 text-sm font-medium ${step >= s.num ? 'text-gray-900' : 'text-gray-400'}`}>{s.label}</span>
-                {i < steps.length - 1 && <div className={`w-12 h-0.5 mx-4 ${step > s.num ? 'bg-primary' : 'bg-gray-200'}`} />}
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100">
-            <form onSubmit={handleSubmit}>
-              {/* Step 1: Service */}
-              {step === 1 && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">Select Service</h2>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {services.map(service => (
-                      <button key={service.id} type="button" onClick={() => { setFormData(prev => ({ ...prev, service_id: service.id })); setStep(2) }}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${
-                          formData.service_id == service.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
-                        }`}>
-                        <p className="font-semibold text-gray-900">{service.name}</p>
-                        <p className="text-sm text-gray-500 mt-1">{service.category}</p>
-                        {service.price > 0 && <p className="text-sm text-primary font-medium mt-2">₦{service.price.toLocaleString()}</p>}
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {categories.map((cat) => {
+                    const Icon = cat.icon
+                    return (
+                      <button
+                        key={cat.value}
+                        onClick={() => setBookingType(cat.value)}
+                        className="bg-white rounded-2xl p-6 text-left border border-gray-100 shadow-sm hover:shadow-md hover:border-primary/30 transition-all"
+                      >
+                        <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                          <Icon className="w-6 h-6 text-primary" />
+                        </div>
+                        <h3 className="font-bold text-gray-900 mb-1">{cat.title}</h3>
+                        <p className="text-sm text-gray-500">{cat.description}</p>
                       </button>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
               )}
+            </>
+          ) : (
+            <div className="max-w-3xl mx-auto">
+              <button
+                onClick={() => setBookingType(null)}
+                className="inline-flex items-center gap-2 text-primary font-medium text-sm mb-6 hover:underline"
+              >
+                <FiArrowLeft /> All booking options
+              </button>
 
-              {/* Step 2: Doctor */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">Select Doctor</h2>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {doctors.map(doctor => (
-                      <button key={doctor.id} type="button" onClick={() => { setFormData(prev => ({ ...prev, doctor_id: doctor.id })); setStep(3) }}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${
-                          formData.doctor_id == doctor.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
-                        }`}>
-                        <p className="font-semibold text-gray-900">{doctor.name}</p>
-                        <p className="text-sm text-gray-500">{doctor.specialization}</p>
-                        <p className="text-xs text-gray-400 mt-1">{doctor.experience_years} years experience</p>
-                      </button>
-                    ))}
-                  </div>
-                  <button type="button" onClick={() => setStep(1)} className="text-primary font-medium text-sm">← Back</button>
-                </div>
-              )}
+              <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{TITLES[bookingType]}</h2>
+                <p className="text-gray-500 mb-8">{selected ? selected.description : ''}</p>
 
-              {/* Step 3: Date & Time */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">Select Date & Time</h2>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                    <input type="date" name="date" value={formData.date} onChange={handleChange} min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Time *</label>
-                    <select name="time" value={formData.time} onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
-                      <option value="">Select time</option>
-                      <option value="09:00">9:00 AM</option>
-                      <option value="09:30">9:30 AM</option>
-                      <option value="10:00">10:00 AM</option>
-                      <option value="10:30">10:30 AM</option>
-                      <option value="11:00">11:00 AM</option>
-                      <option value="11:30">11:30 AM</option>
-                      <option value="12:00">12:00 PM</option>
-                      <option value="13:00">1:00 PM</option>
-                      <option value="13:30">1:30 PM</option>
-                      <option value="14:00">2:00 PM</option>
-                      <option value="14:30">2:30 PM</option>
-                      <option value="15:00">3:00 PM</option>
-                      <option value="15:30">3:30 PM</option>
-                      <option value="16:00">4:00 PM</option>
-                      <option value="16:30">4:30 PM</option>
-                      <option value="17:00">5:00 PM</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
-                    <textarea name="notes" value={formData.notes} onChange={handleChange} rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                      placeholder="Any specific concerns or requests?" />
-                  </div>
-                  <button type="button" onClick={() => setStep(2)} className="text-primary font-medium text-sm">← Back</button>
-                </div>
-              )}
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {(bookingType === 'appointment' || bookingType === 'partner_appointment') && (
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {bookingType === 'partner_appointment' && (
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Provider *</label>
+                          <select name="provider_id" value={form.provider_id} onChange={handleChange} required
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Select a partner provider</option>
+                            {typeProviders.map((p) => (
+                              <option key={p.id} value={p.id}>{p.name}{p.location ? ` — ${p.location}` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Service (optional)</label>
+                        <select name="service_id" value={form.service_id} onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+                          <option value="">I'm not sure yet / General enquiry</option>
+                          {services.map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}{s.category ? ` — ${s.category}` : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Step 4: Patient Info */}
-              {step === 4 && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">Your Information</h2>
+                  {(bookingType === 'programme' || bookingType === 'event' || bookingType === 'training') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {bookingType === 'programme' ? 'Which programme are you interested in?' : bookingType === 'event' ? 'Which event or health talk?' : 'Which training?'} *
+                      </label>
+                      <input
+                        type="text"
+                        name="category"
+                        value={form.category}
+                        onChange={handleChange}
+                        required
+                        placeholder={
+                          bookingType === 'programme' ? 'e.g. Community Nutrition Programme'
+                            : bookingType === 'event' ? 'e.g. Monthly Health Talk'
+                            : 'e.g. First Aid & CPR Training'
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                  )}
+
+                  {bookingType === 'external' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Partner Portal *</label>
+                      <select name="provider_id" value={form.provider_id} onChange={handleChange} required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="">Select a partner to continue on their portal</option>
+                        {externalProviders.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Preferred date (optional)</label>
+                      <input type="date" name="preferred_date" value={form.preferred_date} onChange={handleChange} min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Preferred time (optional)</label>
+                      <select name="preferred_time" value={form.preferred_time} onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="">Flexible</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                      <input type="text" name="patient_name" value={formData.patient_name} onChange={handleChange}
+                      <input type="text" name="patient_name" value={form.patient_name} onChange={handleChange} required
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Your name" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                      <input type="email" name="patient_email" value={formData.patient_email} onChange={handleChange}
+                      <input type="email" name="patient_email" value={form.patient_email} onChange={handleChange} required
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" placeholder="your@email.com" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                      <input type="tel" name="patient_phone" value={formData.patient_phone} onChange={handleChange}
+                      <input type="tel" name="patient_phone" value={form.patient_phone} onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" placeholder="0801 234 5678" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
-                      <input type="number" name="patient_age" value={formData.patient_age} onChange={handleChange}
+                      <input type="number" name="patient_age" value={form.patient_age} onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Age" />
                     </div>
                   </div>
-                  <button type="button" onClick={() => setStep(3)} className="text-primary font-medium text-sm">← Back</button>
-                </div>
-              )}
 
-              {/* Navigation */}
-              <div className="flex justify-between mt-8">
-                {step < 4 ? (
-                  <button type="button" onClick={() => setStep(step + 1)}
-                    className="w-full py-3 bg-primary text-white font-semibold rounded-full hover:bg-primary/90 transition-colors">
-                    Next
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
+                    <textarea name="notes" value={form.notes} onChange={handleChange} rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder="Anything we should know?" />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full py-3 bg-emerald-600 text-white font-semibold rounded-full hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {submitting ? 'Submitting...' : 'Submit Booking Request'}
                   </button>
-                ) : (
-                  <button type="submit" disabled={submitting}
-                    className="w-full py-3 bg-emerald-600 text-white font-semibold rounded-full hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                    {submitting ? 'Booking...' : 'Confirm Appointment'}
-                  </button>
-                )}
+                </form>
               </div>
-            </form>
-          </div>
+            </div>
+          )}
         </div>
       </section>
     </div>
   )
 }
-

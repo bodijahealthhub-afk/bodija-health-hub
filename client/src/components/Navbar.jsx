@@ -23,6 +23,7 @@ export default function Navbar() {
 
   const visibleLinks = navLinks.filter((link) => !isPathHidden(link.path, isEnabled))
   const showPortal = isEnabled('patient_portal')
+  const showBooking = isEnabled('appointment_booking')
   const showCta = !isPathHidden(ctaUrl, isEnabled)
 
   useEffect(() => {
@@ -79,6 +80,14 @@ export default function Navbar() {
                 Patient Portal
               </Link>
             )}
+            {showBooking && (
+              <Link
+                to="/appointments"
+                className="text-sm font-medium text-primary border border-primary/30 px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors"
+              >
+                Book Now
+              </Link>
+            )}
             {showCta && (
               <Link
                 to={ctaUrl}
@@ -130,6 +139,15 @@ export default function Navbar() {
                 className="block text-primary border border-primary/30 px-5 py-2 rounded-lg text-sm font-medium text-center"
               >
                 Patient Portal
+              </Link>
+            )}
+            {showBooking && (
+              <Link
+                to="/appointments"
+                onClick={() => setIsOpen(false)}
+                className="block text-primary border border-primary/30 px-5 py-2 rounded-lg text-sm font-medium text-center"
+              >
+                Book Now
               </Link>
             )}
             {showCta && (
