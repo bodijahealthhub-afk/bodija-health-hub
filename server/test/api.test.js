@@ -123,7 +123,7 @@ test('feature flags: public list, admin CRUD, API gating, and audit logs', async
   const publicList = await request('GET', '/api/features');
   assert.strictEqual(publicList.status, 200);
   assert.ok(Array.isArray(publicList.json));
-  assert.ok(publicList.json.some((f) => f.key === 'appointments'));
+  assert.ok(publicList.json.some((f) => f.key === 'appointment_booking'));
 
   // Admin endpoints require auth
   assert.strictEqual((await request('GET', '/api/admin/features')).status, 401);
@@ -257,4 +257,125 @@ test('payments initialize works in mock mode and marks appointment paid', async 
 
   const doublePay = await request('POST', '/api/payments/initialize', { body: { appointment_id: created.json.id } });
   assert.strictEqual(doublePay.status, 409);
+});
+
+test('website contact message reaches the admin panel (full round-trip)', async () => {
+  // Website sends the contact form
+  const sent = await request('POST', '/api/messages', {
+    body: { name: 'Website Visitor', email: 'visitor@example.com', phone: '08090000000', subject: 'Enquiry', message: 'Round-trip test message' },
+  });
+  assert.strictEqual(sent.status, 201);
+  assert.ok(sent.json.id);
+
+  // Admin panel can read, mark as read, and delete it
+  const list = await request('GET', '/api/messages', { token: adminToken });
+  assert.strictEqual(list.status, 200);
+  const found = list.json.find((m) => m.id === sent.json.id);
+  assert.ok(found, 'admin did not receive the website message');
+  assert.strictEqual(found.name, 'Website Visitor');
+
+  const read = await request('PUT', `/api/messages/${sent.json.id}/read`, { token: adminToken });
+  assert.strictEqual(read.status, 200);
+
+  const del = await request('DELETE', `/api/messages/${sent.json.id}`, { token: adminToken });
+  assert.strictEqual(del.status, 200);
+
+  const after = await request('GET', '/api/messages', { token: adminToken });
+  assert.ok(!after.json.some((m) => m.id === sent.json.id));
+});
+
+test('contact form gate blocks messages when the feature is disabled', async () => {
+  const disabled = await request('PUT', '/api/admin/features/contact_form', {
+    token: adminToken,
+    body: { enabled: false },
+  });
+  assert.strictEqual(disabled.status, 200);
+
+  const blocked = await request('POST', '/api/messages', {
+    body: { name: 'Blocked', email: 'blocked@example.com', message: 'should not persist' },
+  });
+  assert.strictEqual(blocked.status, 404);
+
+  const reEnabled = await request('PUT', '/api/admin/features/contact_form', {
+    token: adminToken,
+    body: { enabled: true },
+  });
+  assert.strictEqual(reEnabled.status, 200);
+});
+
+test('request-based booking engine: public booking options, booking, and admin review', async () => {
+  // Public booking-options endpoint lists the bookable categories
+  const options = await request('GET', '/api/appointments/booking-options');
+  assert.strictEqual(options.status, 200);
+  assert.ok(Array.isArray(options.json.bookingTypes));
+  assert.ok(options.json.bookingTypes.some((t) => t.value === 'appointment'));
+  assert.ok(Array.isArray(options.json.providers));
+
+  // Public POST uses the new engine: type-aware, with booking reference
+  const booked = await request('POST', '/api/appointments', {
+    body: {
+      booking_type: 'appointment',
+      patient_name: 'Engine Test', patient_email: 'engine@example.com', patient_phone: '08091111111',
+      preferred_date: '2026-12-05', preferred_time: '12:00', category: 'General Consultation',
+    },
+  });
+  assert.strictEqual(booked.status, 201);
+  assert.ok(booked.json.booking_reference);
+  assert.match(booked.json.booking_reference, /^BHH-\d{8}-[A-F0-9]{6}$/);
+  assert.strictEqual(booked.json.status, 'requested');
+
+  // The admin panel sees it with the booking reference and type
+  const list = await request('GET', '/api/admin/appointments', { token: adminToken });
+  const row = list.json.appointments.find((a) => a.id === booked.json.id);
+  assert.ok(row, 'admin did not receive the booking');
+  assert.strictEqual(row.bookingReference, booked.json.booking_reference);
+  assert.strictEqual(row.bookingType, 'appointment');
+
+  // Admin confirms it and the status reflects in the patient-facing record
+  const confirm = await request('PATCH', `/api/admin/appointments/${booked.json.id}/status`, {
+    token: adminToken,
+    body: { status: 'confirmed' },
+  });
+  assert.strictEqual(confirm.status, 200);
+  assert.strictEqual(confirm.json.status, 'confirmed');
+
+  // Cleanup
+  const del = await request('DELETE', `/api/admin/appointments/${booked.json.id}`, { token: adminToken });
+  assert.strictEqual(del.status, 200);
+});
+
+test('external partner booking requires an external link', async () => {
+  const external = await request('POST', '/api/appointments', {
+    body: {
+      booking_type: 'external',
+      patient_name: 'External Test', patient_email: 'external@example.com',
+    },
+  });
+  assert.strictEqual(external.status, 400);
+});
+
+test('providers: public list, admin CRUD, and status toggle', async () => {
+  const publicList = await request('GET', '/api/providers');
+  assert.strictEqual(publicList.status, 200);
+  assert.ok(Array.isArray(publicList.json));
+  assert.ok(publicList.json.some((p) => p.name === 'Bodija Health Hub (BHH)'));
+
+  const created = await request('POST', '/api/admin/providers', {
+    token: adminToken,
+    body: { name: 'Test Partner Clinic', provider_type: 'PARTNER', booking_method: 'PARTNER_REQUEST' },
+  });
+  assert.strictEqual(created.status, 201);
+  assert.ok(created.json.id);
+
+  const toggle = await request('PATCH', `/api/admin/providers/${created.json.id}/status`, {
+    token: adminToken,
+    body: { status: 'inactive' },
+  });
+  assert.strictEqual(toggle.status, 200);
+
+  const list = await request('GET', '/api/admin/providers', { token: adminToken });
+  assert.ok(list.json.providers.some((p) => p.id === created.json.id));
+
+  const del = await request('DELETE', `/api/admin/providers/${created.json.id}`, { token: adminToken });
+  assert.strictEqual(del.status, 200);
 });

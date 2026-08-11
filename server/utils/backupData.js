@@ -1,11 +1,18 @@
 const db = require('../models/database');
 
 const IMPORTABLE_TABLES = [
+  'doctors',
   'services',
+  'providers',
+  'appointments',
   'blog_posts',
   'events',
   'gallery',
   'testimonials',
+  'messages',
+  'newsletter_subscribers',
+  'career_applications',
+  'upcoming_registrations',
   'contact_info',
   'site_content',
   'page_sections',
@@ -17,6 +24,7 @@ const IMPORTABLE_TABLES = [
 const ALL_TABLES = [
   'users',
   'doctors',
+  'providers',
   'services',
   'appointments',
   'patients',

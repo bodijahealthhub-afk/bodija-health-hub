@@ -327,8 +327,9 @@ const SCHEMA = `
 async function insertUsersAndDoctors() {
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
+  const isHosted = process.env.NODE_ENV === 'production' || Boolean(process.env.DATABASE_URL);
   if (!adminEmail || !adminPassword) {
-    if (process.env.NODE_ENV === 'production') {
+    if (isHosted) {
       throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required in production');
     }
     console.warn('[seed] ADMIN_EMAIL/ADMIN_PASSWORD not set — using default dev credentials (production will fail fast).');
@@ -668,7 +669,7 @@ async function seedIfEmpty() {
 }
 
 const featureFlagSeeds = [
-  { key: 'appointments', name: 'Appointments & Scheduling', description: 'Online appointment booking form and management.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
+  { key: 'appointments', name: 'Appointments & Scheduling (Legacy)', description: 'Legacy doctor-based booking form — superseded by appointment_booking.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
   { key: 'appointment_booking', name: 'Book a Service / Appointment', description: 'Request-based booking for BHH services, partner providers, programmes, events, and training.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1, requires_admin_confirmation: 1, config: '{"mode":"request_based"}' },
   { key: 'programme_registration', name: 'Programme Registration', description: 'Registration for BHH community programmes and initiatives.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'event_registration', name: 'Event Registration', description: 'Registration for BHH events and health talks.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
@@ -704,6 +705,7 @@ async function insertFeatureFlags() {
     await insert.run(f.key, f.name, f.description, f.status, f.enabled, f.public_visible, f.navigation_visible, f.admin_visible !== undefined ? f.admin_visible : 1, f.requires_admin_confirmation || 0, f.config || null);
   }
   await db.prepare("UPDATE feature_flags SET status = 'archived', enabled = 0, public_visible = 0 WHERE key = 'patient_portal'").run();
+  await db.prepare("UPDATE feature_flags SET status = 'archived', enabled = 0, public_visible = 0 WHERE key = 'appointments'").run();
 }
 
 async function insertAuditSeeds() {

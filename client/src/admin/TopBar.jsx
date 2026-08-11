@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
+import { getAdminToken, clearAdminSession } from '../utils/api';
 
 const TopBar = ({ onMenuToggle, user }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -20,8 +21,7 @@ const TopBar = ({ onMenuToggle, user }) => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
+    clearAdminSession();
     navigate('/admin/login');
   };
 
@@ -31,10 +31,10 @@ const TopBar = ({ onMenuToggle, user }) => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const token = localStorage.getItem('adminToken');
+        const token = getAdminToken();
         if (!token) return;
         const res = await fetch('/api/notifications', {
-          headers: { Authorization: Bearer  }
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();

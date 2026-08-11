@@ -21,6 +21,23 @@ The website and the admin panel are the **same React app** — the admin lives a
 
 Default local credentials: `admin@bodijahealthhub.com` / `admin123` (seeded on first run).
 
+## Production environment variables (Railway)
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `PORT` | — | Set automatically by Railway |
+| `JWT_SECRET` | ✅ | JWT signing secret — use `openssl rand -hex 32` |
+| `ADMIN_EMAIL` | ✅ | Bootstrap admin email; also receives new-message / new-booking alerts |
+| `ADMIN_PASSWORD` | ✅ | Bootstrap admin password. Server fails fast on hosted deploys if missing |
+| `CORS_ORIGINS` | ✅ | Browser origins allowed to call the API directly (your Vercel URL(s)) |
+| `DATABASE_URL` | — | Set to switch from SQLite to Postgres |
+| `DB_PATH` | — | SQLite file path (default `./data/database.sqlite`) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | — | Enables booking + admin alert emails |
+| `SENTRY_DSN` | — | Error tracking |
+| `AUTO_BACKUP_ENABLED` / `BACKUP_CRON` / `BACKUP_RETENTION` | — | Auto-backup schedule (default nightly 3am UTC, keep 14) |
+
+**Required on any hosted deploy:** `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGINS`. The API refuses to start on a hosted environment (Postgres/`NODE_ENV=production`) without admin credentials.
+
 ## Tech Stack
 
 | Layer | Technology | Purpose |

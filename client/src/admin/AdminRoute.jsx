@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { getAdminToken, clearAdminSession, apiFetch } from '../utils/api';
 
 const AdminRoute = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -7,25 +8,44 @@ const AdminRoute = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
+    let active = true;
+    const token = getAdminToken();
     const storedUser = localStorage.getItem('adminUser');
 
-    if (!token || !storedUser) {
-      setIsAuthenticated(false);
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      if (parsedUser.role !== 'admin' && parsedUser.role !== 'super_admin') {
-        setIsAuthenticated(false);
+    const validate = async () => {
+      if (!token || !storedUser) {
+        if (active) setIsAuthenticated(false);
         return;
       }
-      setUser(parsedUser);
-      setIsAuthenticated(true);
-    } catch {
-      setIsAuthenticated(false);
-    }
+
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.role !== 'admin' && parsedUser.role !== 'super_admin') {
+          if (active) setIsAuthenticated(false);
+          return;
+        }
+
+        // Validate the token server-side so an expired/invalid token (or one
+        // signed under a different JWT_SECRET) is caught here instead of
+        // failing every save with "Invalid or expired token".
+        const res = await apiFetch('/api/auth/me');
+        if (!res.ok) {
+          clearAdminSession();
+          if (active) setIsAuthenticated(false);
+          return;
+        }
+
+        const data = await res.json();
+        if (!active) return;
+        setUser(data.user || parsedUser);
+        setIsAuthenticated(true);
+      } catch {
+        if (active) setIsAuthenticated(false);
+      }
+    };
+
+    validate();
+    return () => { active = false; };
   }, []);
 
   if (isAuthenticated === null) {
