@@ -78,8 +78,8 @@ export default function SearchModal({ isOpen, onClose }) {
         if (res.ok) {
           const data = await res.json()
           const apiResults = []
-          if (data.services) data.services.forEach(s => apiResults.push({ ...s, category: 'Services', path: `/services` }))
-          if (data.providers) data.providers.forEach(p => apiResults.push({ ...p, category: 'Partners', path: `/partner/${p.id}` }))
+          if (data.services) data.services.forEach(s => apiResults.push({ ...s, category: 'Services', path: `/services/${s.slug || s.id}` }))
+          if (data.providers) data.providers.forEach(p => apiResults.push({ ...p, category: 'Partners', path: `/partner/${p.slug || p.id}` }))
           if (data.blog) data.blog.forEach(b => apiResults.push({ ...b, category: 'Blog', path: `/blog/${b.slug || b.id}` }))
           if (data.events) data.events.forEach(e => apiResults.push({ ...e, category: 'Events', path: `/events/${e.slug || e.id}` }))
           // Filter builtin pages

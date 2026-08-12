@@ -117,10 +117,10 @@ const Dashboard = () => {
           trendUp={true}
         />
         <StatsCard
-          icon={<svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>}
-          value={loading ? '—' : (stats?.totalDoctors ?? 0)}
-          label="Total Doctors"
-          trend="All active"
+          icon={<svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          value={loading ? '—' : (stats?.pendingAppointments ?? 0)}
+          label="Pending Appointments"
+          trend="Awaiting confirmation"
           trendUp={true}
         />
         <StatsCard
@@ -174,7 +174,7 @@ const Dashboard = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Doctor</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 </tr>
@@ -186,7 +186,7 @@ const Dashboard = () => {
                 {recentAppointments.map((apt, idx) => (
                   <tr key={apt.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{apt.patient}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{apt.doctor}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{apt.service}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{apt.time}</td>
                     <td className="px-6 py-4"><StatusBadge status={apt.status} /></td>
                   </tr>
@@ -221,21 +221,13 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* Doctor load */}
+          {/* Unread messages */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-4">Doctor Workload</h2>
-            {(!analytics?.topDoctors || analytics.topDoctors.length === 0) ? (
-              <p className="text-sm text-gray-400">No bookings in this period</p>
-            ) : (
-              <div className="space-y-3">
-                {analytics.topDoctors.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700 truncate mr-3">{d.name}</span>
-                    <span className="font-semibold text-gray-900 flex-shrink-0">{d.count}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <h2 className="font-semibold text-gray-900 mb-4">Unread Messages</h2>
+            <div className="flex items-center justify-between">
+              <span className="text-3xl font-bold text-gray-900">{stats?.unreadMessages ?? 0}</span>
+              <a href="/admin/messages" className="text-sm text-teal-600 hover:text-teal-700">View inbox</a>
+            </div>
           </div>
 
           {/* Quick Actions */}

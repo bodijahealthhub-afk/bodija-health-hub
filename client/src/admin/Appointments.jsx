@@ -120,7 +120,7 @@ const Appointments = () => {
       key: 'providerName',
       label: 'Provider / Service',
       render: (val, row) => (
-        <span>{row.providerName || row.doctor || 'Bodija Health Hub'}{row.service ? ` · ${row.service}` : ''}</span>
+        <span>{row.providerName || 'Bodija Health Hub'}{row.service ? ` · ${row.service}` : ''}</span>
       ),
     },
     {

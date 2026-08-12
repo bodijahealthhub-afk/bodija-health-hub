@@ -19,14 +19,40 @@ export default function Partners() {
   const [partners, setPartners] = useState([])
 
   useEffect(() => {
-    const fetchContent = async () => {
+    const fetchData = async () => {
+      // Load heading/description from site content (kept for compatibility)
       try {
         const res = await fetch('/api/site-content')
         if (res.ok) {
           const data = await res.json()
           setContent(prev => ({ ...prev, ...data }))
-          
-          // Build partners from API data
+        }
+      } catch {}
+
+      // Load the actual provider/partner list from the providers API
+      try {
+        const provRes = await fetch('/api/providers')
+        if (provRes.ok) {
+          const data = await provRes.json()
+          if (Array.isArray(data) && data.length) {
+            setPartners(data.map(p => ({
+              id: p.id,
+              slug: p.slug,
+              name: p.name,
+              description: p.description,
+              services: p.servicesOffered || [],
+              image: p.logo || '',
+            })))
+            return
+          }
+        }
+      } catch {}
+
+      // Fallback: build partners from site-content fields
+      try {
+        const res = await fetch('/api/site-content')
+        if (res.ok) {
+          const data = await res.json()
           const partnerList = []
           for (let i = 1; i <= 4; i++) {
             if (data[`partner${i}_name`]) {
@@ -42,7 +68,7 @@ export default function Partners() {
         }
       } catch {}
     }
-    fetchContent()
+    fetchData()
   }, [])
 
   return (
@@ -66,8 +92,13 @@ export default function Partners() {
               const Icon = icons[i % icons.length]
               const color = colors[i % colors.length]
               const colors2 = colorMap[color]
+              const partnerLink = `/partner/${partner.slug || partner.id}`
               return (
-                <div key={i} className="bg-warm-white rounded-3xl p-8 border border-gray-100 hover:shadow-lg transition-shadow">
+                <Link
+                  key={partner.slug || partner.id || i}
+                  to={partnerLink}
+                  className="bg-warm-white rounded-3xl p-8 border border-gray-100 hover:shadow-lg transition-shadow block"
+                >
                   <div className="flex items-start gap-4 mb-6">
                     {partner.image ? (
                       <img src={partner.image} alt={partner.name} className="w-14 h-14 rounded-2xl object-cover" />
@@ -82,13 +113,13 @@ export default function Partners() {
                   </div>
                   <p className="text-gray-500 leading-relaxed mb-6">{partner.description}</p>
                   <div className="flex flex-wrap gap-2">
-                    {partner.services.map((service) => (
-                      <span key={service} className={`px-3 py-1 ${colors2.bg} ${colors2.text} text-xs font-medium rounded-full`}>
-                        {service}
+                    {partner.services.map((service, si) => (
+                      <span key={si} className={`px-3 py-1 ${colors2.bg} ${colors2.text} text-xs font-medium rounded-full`}>
+                        {typeof service === 'string' ? service : service.name}
                       </span>
                     ))}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>

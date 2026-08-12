@@ -5,9 +5,9 @@ const PatientDetail = ({ patient, isOpen, onClose }) => {
   if (!patient) return null;
 
   const mockVisits = [
-    { id: 1, date: '2026-07-10', doctor: 'Dr. Adewale', service: 'General Checkup', status: 'completed', notes: 'All vitals normal' },
-    { id: 2, date: '2026-06-15', doctor: 'Dr. Olumide', service: 'Blood Test', status: 'completed', notes: 'Results within range' },
-    { id: 3, date: '2026-05-20', doctor: 'Dr. Amina', service: 'Consultation', status: 'completed', notes: 'Prescribed vitamins' },
+    { id: 1, date: '2026-07-10', provider: 'Bodija Health Hub', service: 'General Checkup', status: 'completed', notes: 'All vitals normal' },
+    { id: 2, date: '2026-06-15', provider: 'Bodija Health Hub', service: 'Blood Test', status: 'completed', notes: 'Results within range' },
+    { id: 3, date: '2026-05-20', provider: 'Bodija Health Hub', service: 'Consultation', status: 'completed', notes: 'Prescribed vitamins' },
   ];
 
   return (
@@ -54,7 +54,7 @@ const PatientDetail = ({ patient, isOpen, onClose }) => {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Doctor</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provider</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
@@ -64,7 +64,7 @@ const PatientDetail = ({ patient, isOpen, onClose }) => {
                 {mockVisits.map((visit) => (
                   <tr key={visit.id}>
                     <td className="px-4 py-3 text-sm text-gray-900">{visit.date}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{visit.doctor}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{visit.provider}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{visit.service}</td>
                     <td className="px-4 py-3"><StatusBadge status={visit.status} /></td>
                     <td className="px-4 py-3 text-sm text-gray-600">{visit.notes}</td>

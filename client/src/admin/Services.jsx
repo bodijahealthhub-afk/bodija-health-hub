@@ -49,8 +49,8 @@ const Services = () => {
         services.filter(
           (s) =>
             s.name.toLowerCase().includes(q) ||
-            s.category.toLowerCase().includes(q) ||
-            s.description.toLowerCase().includes(q)
+            (s.category || '').toLowerCase().includes(q) ||
+            (s.description || '').toLowerCase().includes(q)
         )
       );
     } else {
@@ -65,7 +65,7 @@ const Services = () => {
         ? `/api/admin/services/${editingService.id}`
         : '/api/admin/services';
       const method = editingService ? 'PUT' : 'POST';
-      await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -73,6 +73,17 @@ const Services = () => {
         },
         body: JSON.stringify(serviceData),
       });
+      if (res.ok) {
+        const saved = await res.json();
+        setServices((prev) =>
+          editingService
+            ? prev.map((s) => (s.id === editingService.id ? saved : s))
+            : [...prev, saved]
+        );
+        setShowForm(false);
+        setEditingService(null);
+        return;
+      }
     } catch {
       // Update locally
     }
@@ -155,7 +166,14 @@ const Services = () => {
                     <p className="text-sm text-gray-500">{service.category}</p>
                   </div>
                 </div>
-                <StatusBadge status={service.status} />
+                <div className="flex items-center gap-2">
+                  {service.featured && (
+                    <span className="text-xs font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full" title="Featured">
+                      ★ Featured
+                    </span>
+                  )}
+                  <StatusBadge status={service.status} />
+                </div>
               </div>
               <p className="text-sm text-gray-600 mb-4 line-clamp-2">{service.description}</p>
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">

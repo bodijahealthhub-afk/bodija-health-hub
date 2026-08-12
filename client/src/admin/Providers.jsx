@@ -8,15 +8,19 @@ const BOOKING_METHODS = ['BHH_MANAGED', 'PARTNER_REQUEST', 'EXTERNAL'];
 
 const emptyForm = {
   name: '',
+  slug: '',
   provider_type: 'PARTNER',
   description: '',
   location: '',
   contact_email: '',
   contact_phone: '',
   website: '',
+  services_offered: '',
   booking_method: 'PARTNER_REQUEST',
   booking_url: '',
   external_booking_url: '',
+  featured: false,
+  display_order: 0,
 };
 
 const Providers = () => {
@@ -75,21 +79,29 @@ const Providers = () => {
     setEditing(p);
     setForm({
       name: p.name || '',
+      slug: p.slug || '',
       provider_type: p.provider_type || 'PARTNER',
       description: p.description || '',
       location: p.location || '',
       contact_email: p.contact_email || '',
       contact_phone: p.contact_phone || '',
       website: p.website || '',
+      services_offered: (p.servicesOffered || []).join(', '),
       booking_method: p.booking_method || 'PARTNER_REQUEST',
       booking_url: p.booking_url || '',
       external_booking_url: p.external_booking_url || '',
+      featured: Boolean(p.featured),
+      display_order: p.displayOrder || p.display_order || 0,
     });
     setShowForm(true);
   };
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleCheck = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.checked }));
   };
 
   const handleSave = async () => {
@@ -267,9 +279,15 @@ const Providers = () => {
         size="lg"
       >
         <div className="space-y-4">
-          <div>
-            <label className={labelCls}>Provider Name *</label>
-            <input type="text" name="name" value={form.name} onChange={handleChange} className={inputCls} placeholder="e.g. TOSC Hearing Clinic" />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Provider Name *</label>
+              <input type="text" name="name" value={form.name} onChange={handleChange} className={inputCls} placeholder="e.g. TOSC Hearing Clinic" />
+            </div>
+            <div>
+              <label className={labelCls}>Slug</label>
+              <input type="text" name="slug" value={form.slug} onChange={handleChange} className={inputCls} placeholder="Leave blank to auto-generate" />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -314,6 +332,20 @@ const Providers = () => {
           <div>
             <label className={labelCls}>External Booking Portal URL</label>
             <input type="url" name="external_booking_url" value={form.external_booking_url} onChange={handleChange} className={inputCls} placeholder="https://partner-portal.example.com/book" />
+          </div>
+          <div>
+            <label className={labelCls}>Services Offered</label>
+            <textarea name="services_offered" value={form.services_offered} onChange={handleChange} rows={2} className={inputCls} placeholder="Comma-separated list, e.g. Hearing Tests, Hearing Aids, Audiology" />
+          </div>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="featured" checked={form.featured} onChange={handleCheck} className="w-4 h-4 text-teal-600" />
+              <span className="text-sm text-gray-700">Featured partner</span>
+            </label>
+            <div className="w-48">
+              <label className={labelCls}>Display Order</label>
+              <input type="number" name="display_order" value={form.display_order} onChange={handleChange} min="0" className={inputCls} />
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button onClick={() => { setShowForm(false); setEditing(null); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm">

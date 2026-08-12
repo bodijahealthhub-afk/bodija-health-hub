@@ -47,11 +47,30 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS services (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    short_description TEXT,
     description TEXT,
     category TEXT,
     price REAL DEFAULT 0,
     image TEXT,
     icon TEXT,
+    featured INTEGER DEFAULT 0,
+    display_order INTEGER DEFAULT 0,
+    booking_type TEXT,
+    booking_url TEXT,
+    provider_id INTEGER REFERENCES providers(id),
+    location TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS service_categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    description TEXT,
+    icon TEXT,
+    display_order INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -59,6 +78,7 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS providers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    slug TEXT UNIQUE,
     provider_type TEXT DEFAULT 'BHH' CHECK(provider_type IN ('BHH','PARTNER','INDEPENDENT','EXTERNAL')),
     description TEXT,
     logo TEXT,
@@ -66,9 +86,12 @@ const SCHEMA = `
     contact_email TEXT,
     contact_phone TEXT,
     website TEXT,
+    services_offered TEXT,
     booking_method TEXT DEFAULT 'BHH_MANAGED' CHECK(booking_method IN ('BHH_MANAGED','PARTNER_REQUEST','EXTERNAL')),
     booking_url TEXT,
     external_booking_url TEXT,
+    featured INTEGER DEFAULT 0,
+    display_order INTEGER DEFAULT 0,
     config TEXT,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -475,10 +498,11 @@ async function insertProviderSeeds() {
   if (count.count > 0) return;
 
   const insert = db.prepare(`INSERT INTO providers
-    (name, provider_type, description, location, booking_method, is_active)
-    VALUES (?, ?, ?, ?, ?, ?)`);
+    (name, slug, provider_type, description, location, booking_method, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`);
   await insert.run(
     'Bodija Health Hub (BHH)',
+    'bodija-health-hub',
     'BHH',
     'Bodija Health Hub is a health and wellness ecosystem hub in Ibadan connecting the community with quality healthcare services, programmes, training, and partner providers.',
     'Ibadan, Oyo State',
@@ -567,6 +591,52 @@ async function migrateBookings() {
     await db.prepare('ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_payment_status_check').run();
     await db.prepare("ALTER TABLE appointments ALTER COLUMN payment_status SET DEFAULT 'not_required'").run();
   });
+}
+
+// Phase 3 migration: adds CMS fields (slug, featured, display order, booking links,
+// location, partner association) to services and providers, plus the
+// service_categories table. Runs on every init and is idempotent.
+const PHASE3_COLUMNS = {
+  services: [
+    { name: 'slug', ddl: 'TEXT' },
+    { name: 'short_description', ddl: 'TEXT' },
+    { name: 'featured', ddl: 'INTEGER DEFAULT 0' },
+    { name: 'display_order', ddl: 'INTEGER DEFAULT 0' },
+    { name: 'booking_type', ddl: 'TEXT' },
+    { name: 'booking_url', ddl: 'TEXT' },
+    { name: 'provider_id', ddl: 'INTEGER REFERENCES providers(id)' },
+    { name: 'location', ddl: 'TEXT' },
+  ],
+  providers: [
+    { name: 'slug', ddl: 'TEXT' },
+    { name: 'services_offered', ddl: 'TEXT' },
+    { name: 'featured', ddl: 'INTEGER DEFAULT 0' },
+    { name: 'display_order', ddl: 'INTEGER DEFAULT 0' },
+  ],
+};
+
+async function migratePhase3() {
+  if (db.backend === 'sqlite') {
+    for (const [table, cols] of Object.entries(PHASE3_COLUMNS)) {
+      const existing = new Set((await db.prepare(`PRAGMA table_info(${table})`).all()).map((c) => c.name));
+      for (const col of cols) {
+        if (!existing.has(col.name)) {
+          await db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col.name} ${col.ddl}`).run();
+        }
+      }
+    }
+    return;
+  }
+
+  // Postgres / PGlite
+  for (const [table, cols] of Object.entries(PHASE3_COLUMNS)) {
+    for (const col of cols) {
+      const type = col.ddl.includes('INTEGER') ? 'INTEGER DEFAULT 0'
+        : col.ddl.includes('REFERENCES') ? 'INTEGER'
+          : 'TEXT';
+      await db.prepare(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col.name} ${type}`).run();
+    }
+  }
 }
 
 async function seedIfEmpty() {
@@ -686,6 +756,7 @@ async function init() {
   }
   await impl.exec(SCHEMA);
   await migrateBookings();
+  await migratePhase3();
   await seedIfEmpty();
   await archiveFakeSeedData();
 }
@@ -720,6 +791,16 @@ async function resetContentToDefaults() {
   }
 }
 
+// Generate a URL-safe slug from a name/title (used by services, providers, and categories).
+function slugify(input) {
+  return String(input || '')
+    .toLowerCase()
+    .trim()
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 const db = {
   backend: impl.backend,
   prepare(sql) {
@@ -731,6 +812,7 @@ const db = {
   },
   transaction: (fn) => impl.transaction(fn),
   pragma: (p) => impl.pragma(p),
+  slugify,
   resetContentToDefaults,
 };
 

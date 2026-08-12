@@ -24,6 +24,8 @@ const Terms = lazy(() => import('./pages/Terms'))
 const FAQ = lazy(() => import('./pages/FAQ'))
 const Careers = lazy(() => import('./pages/Careers'))
 const Resources = lazy(() => import('./pages/Resources'))
+const Services = lazy(() => import('./pages/Services'))
+const ServiceDetail = lazy(() => import('./pages/ServiceDetail'))
 const Sitemap = lazy(() => import('./pages/Sitemap'))
 const LiveCare = lazy(() => import('./pages/LiveCare'))
 const HearMenders = lazy(() => import('./pages/HearMenders'))
@@ -40,8 +42,8 @@ const AdminRoute = lazy(() => import('./admin/AdminRoute'))
 const AdminDashboard = lazy(() => import('./admin/Dashboard'))
 const AdminAppointments = lazy(() => import('./admin/Appointments'))
 const AdminPatients = lazy(() => import('./admin/Patients'))
-const AdminDoctors = lazy(() => import('./admin/Doctors'))
 const AdminServices = lazy(() => import('./admin/Services'))
+const AdminServiceCategories = lazy(() => import('./admin/ServiceCategories'))
 const AdminProviders = lazy(() => import('./admin/Providers'))
 const AdminBlog = lazy(() => import('./admin/Blog'))
 const AdminEvents = lazy(() => import('./admin/Events'))
@@ -116,6 +118,7 @@ function WhatsAppButton() {
 // Maps public routes to the feature flag that controls them. When a flag is
 // disabled, the route renders a "Coming Soon" page instead.
 const FEATURE_ROUTES = {
+  '/services': { key: 'services', name: 'Services' },
   '/appointments': { key: 'appointment_booking', name: 'Book a Service / Appointment' },
   '/contact': { key: 'contact_form', name: 'Contact' },
   '/faq': { key: 'faq', name: 'FAQ' },
@@ -176,11 +179,13 @@ function PublicLayout() {
             <Route path="/faq" element={<FeatureGate {...FEATURE_ROUTES['/faq']}><FAQ /></FeatureGate>} />
             <Route path="/careers" element={<FeatureGate {...FEATURE_ROUTES['/careers']}><Careers /></FeatureGate>} />
             <Route path="/resources" element={<Resources />} />
+            <Route path="/services" element={<FeatureGate {...FEATURE_ROUTES['/services']}><Services /></FeatureGate>} />
+            <Route path="/services/:idOrSlug" element={<FeatureGate {...FEATURE_ROUTES['/services']}><ServiceDetail /></FeatureGate>} />
             <Route path="/sitemap" element={<Sitemap />} />
             <Route path="/livecare" element={<FeatureGate {...FEATURE_ROUTES['/livecare']}><LiveCare /></FeatureGate>} />
             <Route path="/hear-menders" element={<FeatureGate {...FEATURE_ROUTES['/hear-menders']}><HearMenders /></FeatureGate>} />
             <Route path="/bacr" element={<BACR />} />
-            <Route path="/partner/:id" element={<PartnerDetail />} />
+            <Route path="/partner/:idOrSlug" element={<PartnerDetail />} />
             <Route path="/community" element={<Community />} />
             <Route path="/success-stories" element={<SuccessStories />} />
             <Route path="/newsroom" element={<FeatureGate {...FEATURE_ROUTES['/newsroom']}><Newsroom /></FeatureGate>} />
@@ -209,8 +214,8 @@ export default function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="appointments" element={<AdminAppointments />} />
               <Route path="patients" element={<AdminPatients />} />
-              <Route path="doctors" element={<AdminDoctors />} />
               <Route path="services" element={<AdminServices />} />
+              <Route path="service-categories" element={<AdminServiceCategories />} />
               <Route path="providers" element={<AdminProviders />} />
               <Route path="blog" element={<AdminBlog />} />
               <Route path="events" element={<AdminEvents />} />

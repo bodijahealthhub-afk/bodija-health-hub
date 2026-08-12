@@ -1,6 +1,7 @@
 // Maps site paths to the feature flag that controls them.
 // Used by Navbar, Footer, and SearchModal to hide links to disabled features.
 const PATH_FEATURES = {
+  '/services': 'services',
   '/appointments': 'appointment_booking',
   '/contact': 'contact_form',
   '/faq': 'faq',
@@ -19,6 +20,7 @@ const PATH_FEATURES = {
 
 // Dynamic paths whose children belong to the same feature.
 const PREFIX_FEATURES = [
+  ['/services/', 'services'],
   ['/blog/', 'blog'],
   ['/newsroom/', 'blog'],
   ['/partner/', 'partners_section'],

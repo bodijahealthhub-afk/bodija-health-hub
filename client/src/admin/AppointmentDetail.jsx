@@ -102,7 +102,7 @@ const AppointmentDetail = ({ appointment, isOpen, onClose, onStatusChange }) => 
           <DetailRow label="Name" value={appointment.patientName} />
           <DetailRow label="Email" value={appointment.email} />
           <DetailRow label="Phone" value={appointment.phone} />
-          <DetailRow label="Provider" value={appointment.providerName || appointment.doctor || 'Bodija Health Hub'} />
+          <DetailRow label="Provider" value={appointment.providerName || 'Bodija Health Hub'} />
           <DetailRow label="Service" value={appointment.service} />
           <DetailRow label="Preferred Date & Time" value={`${appointment.preferredDate || appointment.date || 'Flexible'}${appointment.preferredTime || appointment.time ? ` at ${appointment.preferredTime || appointment.time}` : ''}`} />
           <DetailRow label="Booking Method" value={appointment.bookingMethod} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { FiArrowRight, FiCheckCircle, FiPhone, FiMail, FiMapPin, FiClock } from 'react-icons/fi'
+import { FiArrowRight, FiCheckCircle, FiPhone, FiMail } from 'react-icons/fi'
 
 const fallbackPartners = {
   'livecare': {
@@ -24,7 +24,7 @@ const fallbackPartners = {
 }
 
 export default function PartnerDetail() {
-  const { slug } = useParams()
+  const { idOrSlug } = useParams()
   const [partner, setPartner] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -32,31 +32,45 @@ export default function PartnerDetail() {
     const fetchPartner = async () => {
       setLoading(true)
       try {
+        const res = await fetch(`/api/providers/${idOrSlug}`)
+        if (res.ok) {
+          const data = await res.json()
+          setPartner({
+            name: data.name,
+            tagline: '',
+            description: data.description,
+            about: data.description,
+            image: data.logo,
+            services: data.services || [],
+            contact_email: data.contactEmail,
+            contact_phone: data.contactPhone,
+            location: data.location,
+          })
+          return
+        }
+      } catch {}
+
+      // Fallback: site-content partners, then hardcoded fallbacks
+      try {
         const res = await fetch('/api/site-content')
         if (res.ok) {
           const data = await res.json()
-          const partnerKey = slug?.toLowerCase()
+          const partnerKey = idOrSlug?.toLowerCase()
           const apiPartner = data.partners?.find(p =>
             p.slug === partnerKey || p.name?.toLowerCase().replace(/\s+/g, '') === partnerKey
           )
           if (apiPartner) {
             setPartner(apiPartner)
-          } else if (fallbackPartners[partnerKey]) {
-            setPartner(fallbackPartners[partnerKey])
+            return
           }
-        } else if (fallbackPartners[slug?.toLowerCase()]) {
-          setPartner(fallbackPartners[slug.toLowerCase()])
         }
-      } catch {
-        if (fallbackPartners[slug?.toLowerCase()]) {
-          setPartner(fallbackPartners[slug.toLowerCase()])
-        }
-      } finally {
-        setLoading(false)
+      } catch {}
+      if (fallbackPartners[idOrSlug?.toLowerCase()]) {
+        setPartner(fallbackPartners[idOrSlug.toLowerCase()])
       }
     }
-    fetchPartner()
-  }, [slug])
+    fetchPartner().finally(() => setLoading(false))
+  }, [idOrSlug])
 
   if (loading) {
     return (
@@ -126,7 +140,17 @@ export default function PartnerDetail() {
                 <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <div className="flex items-start gap-3">
                     <FiCheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <p className="text-gray-700 font-medium">{service}</p>
+                    <div>
+                      <p className="text-gray-700 font-medium">
+                        {typeof service === 'string' ? service : service.name}
+                      </p>
+                      {typeof service !== 'string' && (service.short_description || service.category) && (
+                        <p className="text-sm text-gray-500 mt-1">{service.short_description || service.category}</p>
+                      )}
+                      {typeof service !== 'string' && service.price ? (
+                        <p className="text-sm font-medium text-primary mt-1">₦{Number(service.price).toLocaleString()}</p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ))}

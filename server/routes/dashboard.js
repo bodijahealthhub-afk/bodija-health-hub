@@ -15,7 +15,6 @@ const buildStats = async () => {
   ).get(today)).count;
 
   const totalPatients = (await db.prepare('SELECT COUNT(*) as count FROM patients').get()).count;
-  const totalDoctors = (await db.prepare('SELECT COUNT(*) as count FROM doctors WHERE is_active = 1').get()).count;
   const totalAppointments = (await db.prepare('SELECT COUNT(*) as count FROM appointments').get()).count;
 
   const pendingAppointments = (await db.prepare(
@@ -46,9 +45,8 @@ const buildStats = async () => {
   ).all();
 
   const recentRows = await db.prepare(
-    `SELECT a.*, d.name as doctor_name, s.name as service_name
+    `SELECT a.*, s.name as service_name
      FROM appointments a
-     LEFT JOIN doctors d ON a.doctor_id = d.id
      LEFT JOIN services s ON a.service_id = s.id
      ORDER BY a.created_at DESC LIMIT 5`
   ).all();
@@ -56,7 +54,6 @@ const buildStats = async () => {
   const recentAppointments = recentRows.map((a) => ({
     id: a.id,
     patient: a.patient_name,
-    doctor: a.doctor_name || '',
     service: a.service_name || '',
     date: a.date,
     time: a.time,
@@ -66,7 +63,6 @@ const buildStats = async () => {
   const stats = {
     todayAppointments,
     totalPatients,
-    totalDoctors,
     totalAppointments,
     pendingAppointments,
     completedAppointments,
@@ -149,16 +145,6 @@ router.get('/analytics', authenticateToken, requireRole('admin', 'super_admin', 
        LIMIT 5`
     ).all(start);
 
-    const topDoctors = await db.prepare(
-      `SELECT d.name, COUNT(*) AS count
-       FROM appointments a
-       LEFT JOIN doctors d ON a.doctor_id = d.id
-       WHERE a.date >= ? AND d.name IS NOT NULL
-       GROUP BY a.doctor_id
-       ORDER BY count DESC
-       LIMIT 5`
-    ).all(start);
-
     const newPatients = await db.prepare(
       `SELECT COUNT(*) AS count FROM patients WHERE created_at >= ?`
     ).get(start);
@@ -171,7 +157,7 @@ router.get('/analytics', authenticateToken, requireRole('admin', 'super_admin', 
       newPatients: Number(newPatients.count || 0),
     };
 
-    res.json({ days, daily, statusBreakdown, topServices, topDoctors, rangeSummary });
+    res.json({ days, daily, statusBreakdown, topServices, rangeSummary });
   } catch (err) {
     console.error('Error building analytics:', err);
     res.status(500).json({ error: 'Failed to fetch analytics' });
