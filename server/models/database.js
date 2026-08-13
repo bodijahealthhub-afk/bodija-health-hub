@@ -747,7 +747,21 @@ const featureFlagSeeds = [
   { key: 'hear_menders', name: 'hEar Menders Platform', description: 'hEar Menders hearing care platform.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
 ];
 async function insertFeatureFlags() {
-  const insert = db.prepare('INSERT OR IGNORE INTO feature_flags (key, name, description, status, enabled, public_visible, navigation_visible, admin_visible, requires_admin_confirmation, config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  // Upsert (not INSERT OR IGNORE) so the seed remains the authoritative baseline and
+  // existing databases self-heal drift (e.g. a flag toggled off that should be on).
+  const insert = db.prepare(
+    `INSERT INTO feature_flags (key, name, description, status, enabled, public_visible, navigation_visible, admin_visible, requires_admin_confirmation, config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET
+       name = excluded.name,
+       description = excluded.description,
+       status = excluded.status,
+       enabled = excluded.enabled,
+       public_visible = excluded.public_visible,
+       navigation_visible = excluded.navigation_visible,
+       admin_visible = excluded.admin_visible,
+       requires_admin_confirmation = excluded.requires_admin_confirmation,
+       config = excluded.config`
+  );
   for (const f of featureFlagSeeds) {
     await insert.run(f.key, f.name, f.description, f.status, f.enabled, f.public_visible, f.navigation_visible, f.admin_visible !== undefined ? f.admin_visible : 1, f.requires_admin_confirmation || 0, f.config || null);
   }
