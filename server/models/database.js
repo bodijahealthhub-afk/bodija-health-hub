@@ -772,13 +772,6 @@ const FAKE_DOCTOR_NAMES = [
   'Dr. Olumide Olatunji', 'Dr. Ngozi Eze', 'Dr. Tunde Bakare',
 ];
 
-const FAKE_SERVICE_NAMES = [
-  'General Consultation', 'Audiology', 'Hearing Tests', 'Hearing Aids',
-  'Speech Therapy', 'Laboratory Services', 'Hypertension Clinic', 'Diabetes Care',
-  'Kidney Care', 'Elderly Care', 'Child Health', 'Wellness Screening',
-  'Home Care LiveCare', 'Preventive Health', 'Vaccination', 'Health Outreach Programs',
-];
-
 const FAKE_TESTIMONIALS = [
   'The audiology team at Bodija Health Hub changed my life. After years of struggling with hearing loss, I can finally enjoy conversations with my family again. The hearing aid fitting was professional and the follow-up care has been excellent.',
   'Dr. Bello is an amazing pediatrician. She is patient, thorough, and genuinely cares about her young patients. My children actually look forward to their check-ups! The facility is clean and welcoming.',
@@ -797,9 +790,6 @@ async function archiveFakeSeedData() {
   const doctorPh = placeholders(FAKE_DOCTOR_NAMES.length);
   await db.prepare(`UPDATE doctors SET is_active = 0 WHERE is_active = 1 AND name IN (${doctorPh})`).run(...FAKE_DOCTOR_NAMES);
 
-  const servicePh = placeholders(FAKE_SERVICE_NAMES.length);
-  await db.prepare(`UPDATE services SET is_active = 0 WHERE is_active = 1 AND name IN (${servicePh})`).run(...FAKE_SERVICE_NAMES);
-
   const testPh = placeholders(FAKE_TESTIMONIALS.length);
   await db.prepare(`UPDATE testimonials SET is_active = 0 WHERE is_active = 1 AND content IN (${testPh})`).run(...FAKE_TESTIMONIALS);
 
@@ -807,9 +797,27 @@ async function archiveFakeSeedData() {
   await db.prepare(`UPDATE blog_posts SET status = 'draft' WHERE status = 'published' AND slug IN (${blogPh})`).run(...FAKE_BLOG_SLUGS);
 
   const archivedCount = await db.prepare(
-    "SELECT (SELECT COUNT(*) FROM doctors WHERE is_active = 0 AND name IN (" + doctorPh + ")) + (SELECT COUNT(*) FROM services WHERE is_active = 0 AND name IN (" + servicePh + ")) AS total"
-  ).get(...FAKE_DOCTOR_NAMES, ...FAKE_SERVICE_NAMES);
-  console.log(`[migrate] Archived fabricated seed content (doctors + services = ${archivedCount.total} affected rows).`);
+    "SELECT (SELECT COUNT(*) FROM doctors WHERE is_active = 0 AND name IN (" + doctorPh + ")) AS total"
+  ).get(...FAKE_DOCTOR_NAMES);
+  console.log(`[migrate] Archived fabricated seed content (doctors = ${archivedCount.total} affected rows).`);
+}
+
+// Restores the baseline service catalog that earlier seed cleanup archived. Idempotent —
+// runs on every init so existing databases (including production) get the catalog back
+// on next deploy without overwriting admin edits to real services.
+const SERVICE_CATALOG = [
+  'General Consultation', 'Audiology', 'Hearing Tests', 'Hearing Aids',
+  'Speech Therapy', 'Laboratory Services', 'Hypertension Clinic', 'Diabetes Care',
+  'Kidney Care', 'Elderly Care', 'Child Health', 'Wellness Screening',
+  'Home Care LiveCare', 'Preventive Health', 'Vaccination', 'Health Outreach Programs',
+];
+
+async function reactivateServiceCatalog() {
+  const placeholders = (n) => new Array(n).fill('?').join(',');
+  const ph = placeholders(SERVICE_CATALOG.length);
+  await db.prepare(
+    `UPDATE services SET is_active = 1, slug = COALESCE(slug, LOWER(REPLACE(name, ' ', '-'))) WHERE name IN (${ph})`
+  ).run(...SERVICE_CATALOG);
 }
 
 async function init() {
@@ -825,6 +833,7 @@ async function init() {
   await migrateSeoSettings();
   await seedIfEmpty();
   await archiveFakeSeedData();
+  await reactivateServiceCatalog();
 }
 
 // Reset all content to the original defaults (used by the admin backup/reset endpoint).

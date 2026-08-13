@@ -46,7 +46,7 @@ export default function Services() {
       }
       return true
     })
-    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (a.displayOrder || 0) - (b.displayOrder || 0))
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (a.display_order ?? a.displayOrder ?? 0) - (b.display_order ?? b.displayOrder ?? 0))
 
   return (
     <div>
