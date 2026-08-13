@@ -777,8 +777,7 @@ async function insertAuditSeeds() {
 }
 
 // ARCHIVE (not delete) any content that was created by earlier seed versions with
-// fabricated data — fake doctors, priced hospital-style services, fake testimonials,
-// and seeded blog posts that claim nonexistent teams. This is idempotent and runs on
+// fabricated data — fake doctors and fake testimonials. This is idempotent and runs on
 // every init so existing databases (including production) are cleaned up safely while
 // real admin-created content is left untouched.
 const FAKE_DOCTOR_NAMES = [
@@ -794,7 +793,9 @@ const FAKE_TESTIMONIALS = [
   'I visited for a wellness screening and was impressed by the thoroughness of the check-up. The staff took time to explain every result and provided practical health advice. Highly recommend their preventive health services!',
 ];
 
-const FAKE_BLOG_SLUGS = [
+// Baseline editorial content that an earlier seed cleanup drafted. Restored (republished)
+// on every init so the newsroom is never left empty — idempotent, admin edits preserved.
+const BLOG_CATALOG_SLUGS = [
   'understanding-hearing-loss', 'managing-hypertension',
   'child-health-vaccinations', 'diabetes-management',
 ];
@@ -807,13 +808,18 @@ async function archiveFakeSeedData() {
   const testPh = placeholders(FAKE_TESTIMONIALS.length);
   await db.prepare(`UPDATE testimonials SET is_active = 0 WHERE is_active = 1 AND content IN (${testPh})`).run(...FAKE_TESTIMONIALS);
 
-  const blogPh = placeholders(FAKE_BLOG_SLUGS.length);
-  await db.prepare(`UPDATE blog_posts SET status = 'draft' WHERE status = 'published' AND slug IN (${blogPh})`).run(...FAKE_BLOG_SLUGS);
-
   const archivedCount = await db.prepare(
     "SELECT (SELECT COUNT(*) FROM doctors WHERE is_active = 0 AND name IN (" + doctorPh + ")) AS total"
   ).get(...FAKE_DOCTOR_NAMES);
   console.log(`[migrate] Archived fabricated seed content (doctors = ${archivedCount.total} affected rows).`);
+}
+
+// Restores the baseline newsroom posts that earlier seed cleanup drafted. Idempotent —
+// runs on every init so production gets the posts back on next deploy.
+async function republishBlogPosts() {
+  const placeholders = (n) => new Array(n).fill('?').join(',');
+  const ph = placeholders(BLOG_CATALOG_SLUGS.length);
+  await db.prepare(`UPDATE blog_posts SET status = 'published' WHERE slug IN (${ph})`).run(...BLOG_CATALOG_SLUGS);
 }
 
 // Restores the baseline service catalog that earlier seed cleanup archived. Idempotent —
@@ -848,6 +854,7 @@ async function init() {
   await seedIfEmpty();
   await archiveFakeSeedData();
   await reactivateServiceCatalog();
+  await republishBlogPosts();
 }
 
 // Reset all content to the original defaults (used by the admin backup/reset endpoint).
