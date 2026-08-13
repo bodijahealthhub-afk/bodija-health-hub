@@ -2,27 +2,6 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { FiArrowRight, FiCheckCircle, FiPhone, FiMail } from 'react-icons/fi'
 
-const fallbackPartners = {
-  'livecare': {
-    name: 'LiveCare',
-    tagline: 'Smarter Care. Trusted Support.',
-    description: 'LiveCare is a dedicated elder care platform designed to bring peace of mind to families and trusted support to aging adults. From daily wellness check-ins to emergency alerts and caregiver coordination, LiveCare ensures that your loved ones are never far from the care they need.',
-    image: '',
-    services: ['Daily wellness monitoring', 'Emergency alert system', 'Caregiver coordination', 'Family access & updates', 'Remote health tracking'],
-    contact_email: 'care@livecare.ng',
-    contact_phone: '+234 800 123 4567',
-  },
-  'hearmenders': {
-    name: 'hEar Menders',
-    tagline: 'Your Digital Hearing Solution.',
-    description: 'hEar Menders is a digital hearing platform built to make hearing care accessible, continuous, and convenient. Backed by the expertise of hEar Max Centre, it connects patients to audiology support, hearing assessments, and ongoing care — all from the comfort of home.',
-    image: '',
-    services: ['Virtual hearing assessments', 'Audiology consultations', 'Hearing aid support', 'Ongoing care management', 'Educational resources'],
-    contact_email: 'info@hearmax.ng',
-    contact_phone: '+234 800 234 5678',
-  },
-}
-
 export default function PartnerDetail() {
   const { idOrSlug } = useParams()
   const [partner, setPartner] = useState(null)
@@ -31,6 +10,27 @@ export default function PartnerDetail() {
   useEffect(() => {
     const fetchPartner = async () => {
       setLoading(true)
+      try {
+        const res = await fetch(`/api/partners/${idOrSlug}`)
+        if (res.ok) {
+          const data = await res.json()
+          setPartner({
+            name: data.name,
+            tagline: '',
+            description: data.description,
+            about: data.description,
+            image: data.logo,
+            services: data.services || [],
+            contact_email: data.contactEmail,
+            contact_phone: data.contactPhone,
+            location: data.location,
+            website: data.website,
+          })
+          return
+        }
+      } catch {}
+
+      // Fallback: provider (legacy partner model)
       try {
         const res = await fetch(`/api/providers/${idOrSlug}`)
         if (res.ok) {
@@ -50,7 +50,7 @@ export default function PartnerDetail() {
         }
       } catch {}
 
-      // Fallback: site-content partners, then hardcoded fallbacks
+      // Fallback: site-content partners
       try {
         const res = await fetch('/api/site-content')
         if (res.ok) {
@@ -65,9 +65,6 @@ export default function PartnerDetail() {
           }
         }
       } catch {}
-      if (fallbackPartners[idOrSlug?.toLowerCase()]) {
-        setPartner(fallbackPartners[idOrSlug.toLowerCase()])
-      }
     }
     fetchPartner().finally(() => setLoading(false))
   }, [idOrSlug])

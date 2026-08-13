@@ -1,107 +1,103 @@
 import { useState, useEffect } from 'react';
 import DataTable from './DataTable';
 import SearchBar from './SearchBar';
-import BlogForm from './BlogForm';
+import ProgrammeForm from './ProgrammeForm';
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
 
-const Blog = () => {
-  const [posts, setPosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]);
+const Programmes = () => {
+  const [programmes, setProgrammes] = useState([]);
+  const [filteredProgrammes, setFilteredProgrammes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [editingPost, setEditingPost] = useState(null);
+  const [editingProgramme, setEditingProgramme] = useState(null);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchProgrammes = async () => {
       try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/blog', {
+        const response = await fetch('/api/admin/programmes', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
-          setPosts(data.posts || []);
+          setProgrammes(data.programmes || []);
         }
       } catch {
-        setPosts([]);
+        setProgrammes([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchPosts();
+    fetchProgrammes();
   }, []);
 
   useEffect(() => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      setFilteredPosts(
-        posts.filter(
+      setFilteredProgrammes(
+        programmes.filter(
           (p) =>
             p.title.toLowerCase().includes(q) ||
-            p.author.toLowerCase().includes(q) ||
-            p.category.toLowerCase().includes(q)
+            (p.category || '').toLowerCase().includes(q) ||
+            (p.location || '').toLowerCase().includes(q)
         )
       );
     } else {
-      setFilteredPosts(posts);
+      setFilteredProgrammes(programmes);
     }
-  }, [posts, searchQuery]);
+  }, [programmes, searchQuery]);
 
-  const handleSave = async (postData) => {
+  const handleSave = async (programmeData) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const url = editingPost
-        ? `/api/admin/blog/${editingPost.id}`
-        : '/api/admin/blog';
-      const method = editingPost ? 'PUT' : 'POST';
+      const url = editingProgramme
+        ? `/api/admin/programmes/${editingProgramme.id}`
+        : '/api/admin/programmes';
+      const method = editingProgramme ? 'PUT' : 'POST';
       await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(postData),
+        body: JSON.stringify(programmeData),
       });
     } catch {
       // Update locally
     }
-    if (editingPost) {
-      setPosts((prev) =>
-        prev.map((p) => (p.id === editingPost.id ? { ...p, ...postData } : p))
+    if (editingProgramme) {
+      setProgrammes((prev) =>
+        prev.map((p) => (p.id === editingProgramme.id ? { ...p, ...programmeData } : p))
       );
     } else {
-      setPosts((prev) => [
-        { id: Date.now(), ...postData, views: 0, date: new Date().toISOString().split('T')[0] },
-        ...prev,
-      ]);
+      setProgrammes((prev) => [...prev, { id: Date.now(), ...programmeData, status: 'active' }]);
     }
     setShowForm(false);
-    setEditingPost(null);
+    setEditingProgramme(null);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    if (!window.confirm('Are you sure you want to delete this programme?')) return;
     try {
       const token = localStorage.getItem('adminToken');
-      await fetch(`/api/admin/blog/${id}`, {
+      await fetch(`/api/admin/programmes/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
       // Update locally
     }
-    setPosts((prev) => prev.filter((p) => p.id !== id));
+    setProgrammes((prev) => prev.filter((p) => p.id !== id));
   };
 
   const columns = [
-    { key: 'title', label: 'Title', render: (val) => <span className="font-medium line-clamp-1">{val}</span> },
-    { key: 'author', label: 'Author' },
-    { key: 'category', label: 'Category' },
+    { key: 'title', label: 'Title', render: (val) => <span className="font-medium">{val}</span> },
+    { key: 'category', label: 'Category', render: (val) => val || '—' },
+    { key: 'schedule', label: 'Schedule', render: (val) => val || '—' },
+    { key: 'location', label: 'Location', render: (val) => val || '—' },
     { key: 'status', label: 'Status', render: (val) => <StatusBadge status={val} /> },
-    { key: 'date', label: 'Date' },
-    { key: 'views', label: 'Views', render: (val) => val.toLocaleString() },
     {
       key: 'actions',
       label: 'Actions',
@@ -109,7 +105,7 @@ const Blog = () => {
       render: (_, row) => (
         <div className="flex items-center gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); setEditingPost(row); setShowForm(true); }}
+            onClick={(e) => { e.stopPropagation(); setEditingProgramme(row); setShowForm(true); }}
             className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
           >
             Edit
@@ -129,22 +125,22 @@ const Blog = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Blog</h1>
-          <p className="text-gray-500 mt-1">Manage blog posts and articles</p>
+          <h1 className="text-2xl font-bold text-gray-900">Programmes</h1>
+          <p className="text-gray-500 mt-1">Manage community programmes and initiatives</p>
         </div>
         <button
-          onClick={() => { setEditingPost(null); setShowForm(true); }}
+          onClick={() => { setEditingProgramme(null); setShowForm(true); }}
           className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-          New Post
+          Add Programme
         </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <SearchBar placeholder="Search posts..." onSearch={setSearchQuery} className="w-full md:w-96" />
+        <SearchBar placeholder="Search programmes..." onSearch={setSearchQuery} className="w-full md:w-96" />
       </div>
 
       {loading ? (
@@ -154,25 +150,25 @@ const Blog = () => {
       ) : (
         <DataTable
           columns={columns}
-          data={filteredPosts}
+          data={filteredProgrammes}
           pageSize={10}
         />
       )}
 
       <Modal
         isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditingPost(null); }}
-        title={editingPost ? 'Edit Post' : 'Create New Post'}
-        size="xl"
+        onClose={() => { setShowForm(false); setEditingProgramme(null); }}
+        title={editingProgramme ? 'Edit Programme' : 'Add New Programme'}
+        size="lg"
       >
-        <BlogForm
-          post={editingPost}
+        <ProgrammeForm
+          programme={editingProgramme}
           onSave={handleSave}
-          onCancel={() => { setShowForm(false); setEditingPost(null); }}
+          onCancel={() => { setShowForm(false); setEditingProgramme(null); }}
         />
       </Modal>
     </div>
   );
 };
 
-export default Blog;
+export default Programmes;

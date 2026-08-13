@@ -34,6 +34,8 @@ const PartnerDetail = lazy(() => import('./pages/PartnerDetail'))
 const Community = lazy(() => import('./pages/Community'))
 const SuccessStories = lazy(() => import('./pages/SuccessStories'))
 const Newsroom = lazy(() => import('./pages/Newsroom'))
+const Events = lazy(() => import('./pages/Events'))
+const Programmes = lazy(() => import('./pages/Programmes'))
 
 // Admin (code-split — biggest chunk)
 const AdminLogin = lazy(() => import('./admin/AdminLogin'))
@@ -45,8 +47,10 @@ const AdminPatients = lazy(() => import('./admin/Patients'))
 const AdminServices = lazy(() => import('./admin/Services'))
 const AdminServiceCategories = lazy(() => import('./admin/ServiceCategories'))
 const AdminProviders = lazy(() => import('./admin/Providers'))
+const AdminPartners = lazy(() => import('./admin/Partners'))
 const AdminBlog = lazy(() => import('./admin/Blog'))
 const AdminEvents = lazy(() => import('./admin/Events'))
+const AdminProgrammes = lazy(() => import('./admin/Programmes'))
 const AdminGallery = lazy(() => import('./admin/Gallery'))
 const AdminMessages = lazy(() => import('./admin/Messages'))
 const AdminNewsletter = lazy(() => import('./admin/Newsletter'))
@@ -62,6 +66,7 @@ const AdminSiteSettings = lazy(() => import('./admin/SiteSettings'))
 const AdminMediaLibrary = lazy(() => import('./admin/MediaLibrary'))
 const AdminSeoSettings = lazy(() => import('./admin/SeoSettings'))
 const AdminBackupRestore = lazy(() => import('./admin/BackupRestore'))
+const AdminSystemHealth = lazy(() => import('./admin/SystemHealth'))
 const AdminPayments = lazy(() => import('./admin/Payments'))
 const AdminFeatures = lazy(() => import('./admin/Features'))
 
@@ -127,6 +132,8 @@ const FEATURE_ROUTES = {
   '/partners': { key: 'partners_section', name: 'Partner Network' },
   '/platforms': { key: 'platforms_section', name: 'Platforms' },
   '/newsroom': { key: 'blog', name: 'Newsroom' },
+  '/events': { key: 'events', name: 'Events' },
+  '/programmes': { key: 'programme_registration', name: 'Programmes' },
   '/livecare': { key: 'livecare', name: 'LiveCare' },
   '/hear-menders': { key: 'hear_menders', name: 'hEar Menders' },
 }
@@ -185,10 +192,12 @@ function PublicLayout() {
             <Route path="/livecare" element={<FeatureGate {...FEATURE_ROUTES['/livecare']}><LiveCare /></FeatureGate>} />
             <Route path="/hear-menders" element={<FeatureGate {...FEATURE_ROUTES['/hear-menders']}><HearMenders /></FeatureGate>} />
             <Route path="/bacr" element={<BACR />} />
-            <Route path="/partner/:idOrSlug" element={<PartnerDetail />} />
+            <Route path="/partner/:idOrSlug" element={<FeatureGate featureKey="partners_section" featureName="Partner Network"><PartnerDetail /></FeatureGate>} />
             <Route path="/community" element={<Community />} />
             <Route path="/success-stories" element={<SuccessStories />} />
             <Route path="/newsroom" element={<FeatureGate {...FEATURE_ROUTES['/newsroom']}><Newsroom /></FeatureGate>} />
+            <Route path="/events" element={<FeatureGate {...FEATURE_ROUTES['/events']}><Events /></FeatureGate>} />
+            <Route path="/programmes" element={<FeatureGate {...FEATURE_ROUTES['/programmes']}><Programmes /></FeatureGate>} />
           </Routes>
         </Suspense>
       </main>
@@ -217,8 +226,10 @@ export default function App() {
               <Route path="services" element={<AdminServices />} />
               <Route path="service-categories" element={<AdminServiceCategories />} />
               <Route path="providers" element={<AdminProviders />} />
+              <Route path="partners" element={<AdminPartners />} />
               <Route path="blog" element={<AdminBlog />} />
               <Route path="events" element={<AdminEvents />} />
+              <Route path="programmes" element={<AdminProgrammes />} />
               <Route path="gallery" element={<AdminGallery />} />
               <Route path="messages" element={<AdminMessages />} />
               <Route path="newsletter" element={<AdminNewsletter />} />
@@ -233,6 +244,7 @@ export default function App() {
               <Route path="media" element={<AdminMediaLibrary />} />
               <Route path="seo" element={<AdminSeoSettings />} />
               <Route path="backup" element={<AdminBackupRestore />} />
+              <Route path="system-health" element={<AdminSystemHealth />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="features" element={<AdminFeatures />} />
               <Route path="admin-users" element={<AdminManagement />} />
@@ -240,13 +252,20 @@ export default function App() {
           </Route>
 
           {/* Patient portal routes */}
-          <Route path="/portal/login" element={<PortalLogin />} />
-          <Route path="/portal/register" element={<PortalRegister />} />
-          <Route path="/portal" element={<PatientAuthProvider><PortalLayout /></PatientAuthProvider>}>
+          <Route
+            path="/portal"
+            element={
+              <FeatureGate featureKey="patient_portal" featureName="Patient Portal">
+                <PatientAuthProvider><PortalLayout /></PatientAuthProvider>
+              </FeatureGate>
+            }
+          >
             <Route index element={<PortalDashboard />} />
             <Route path="appointments" element={<PortalAppointments />} />
             <Route path="payments" element={<PortalPayments />} />
           </Route>
+          <Route path="/portal/login" element={<FeatureGate featureKey="patient_portal" featureName="Patient Portal"><PortalLogin /></FeatureGate>} />
+          <Route path="/portal/register" element={<FeatureGate featureKey="patient_portal" featureName="Patient Portal"><PortalRegister /></FeatureGate>} />
         </Routes>
       </Suspense>
     </AuthProvider>

@@ -24,6 +24,8 @@ const columns = [
     links: [
       { name: 'LiveCare', path: '/platforms' },
       { name: 'hEar Menders', path: '/platforms' },
+      { name: 'Events', path: '/events' },
+      { name: 'Programmes', path: '/programmes' },
       { name: 'Upcoming: BACR', path: '/upcoming' },
     ],
   },

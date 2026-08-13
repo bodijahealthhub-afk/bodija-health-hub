@@ -14,6 +14,17 @@ export default function PortalPayments() {
   const { token } = usePatientAuth()
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
+  const [mockMode, setMockMode] = useState(null)
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch('/api/payments/config')
+        if (res.ok) setMockMode((await res.json()).mock)
+      } catch {}
+    }
+    fetchConfig()
+  }, [])
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -34,6 +45,12 @@ export default function PortalPayments() {
         <h1 className="text-2xl font-bold text-gray-900">Payments & Receipts</h1>
         <p className="text-gray-500 mt-1">Your payment history with Bodija Health Hub.</p>
       </div>
+
+      {mockMode && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
+          Payments are currently running in <strong>test mode</strong>. No real charges are processed until a payment gateway is configured.
+        </div>
+      )}
 
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-10 text-center text-sm text-gray-400">Loading...</div>

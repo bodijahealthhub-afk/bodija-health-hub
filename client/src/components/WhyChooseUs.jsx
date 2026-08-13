@@ -18,8 +18,8 @@ const features = [
   },
   {
     icon: FiUsers,
-    title: 'Expert Medical Team',
-    description: 'Board-certified physicians and specialists with decades of combined experience.',
+    title: 'Skilled Provider Network',
+    description: 'Licensed healthcare providers and specialists delivering coordinated care across the ecosystem.',
   },
   {
     icon: FiAward,

@@ -2,8 +2,9 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 const FeatureContext = createContext(null)
 
-// While the feature list loads (or for keys with no flag entry) we default to
-// "enabled" so pages and links never flash away or disappear unexpectedly.
+// While the feature list loads we default to "enabled" so pages and links never
+// flash away unexpectedly. After loading, keys missing from the flag list are
+// treated as disabled (fail-closed) so unknown flags cannot silently enable.
 const defaultEnabled = true
 
 export function FeatureProvider({ children }) {
@@ -36,21 +37,23 @@ export function FeatureProvider({ children }) {
   const isEnabled = useCallback(
     (key) => {
       const f = byKey(key)
-      if (!f) return defaultEnabled
-      return Boolean(f.enabled)
+      if (f) return Boolean(f.enabled)
+      return loading ? defaultEnabled : false
     },
-    [byKey]
+    [byKey, loading]
   )
 
   const isVisible = useCallback(
     (key, mode = 'public') => {
       const f = byKey(key)
-      if (!f) return defaultEnabled
-      if (mode === 'nav') return Boolean(f.navigation_visible)
-      if (mode === 'admin') return Boolean(f.admin_visible)
-      return Boolean(f.public_visible)
+      if (f) {
+        if (mode === 'nav') return Boolean(f.navigation_visible)
+        if (mode === 'admin') return Boolean(f.admin_visible)
+        return Boolean(f.public_visible)
+      }
+      return loading ? defaultEnabled : false
     },
-    [byKey]
+    [byKey, loading]
   )
 
   return (

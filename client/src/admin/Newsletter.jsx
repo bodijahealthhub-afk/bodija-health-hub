@@ -21,17 +21,7 @@ const Newsletter = () => {
           setSubscribers(data.subscribers || []);
         }
       } catch {
-        // Mock data
-        setSubscribers([
-          { id: 1, email: 'adebayo@email.com', name: 'Adebayo Oladipo', subscribedAt: '2026-07-01', status: 'active' },
-          { id: 2, email: 'chioma@email.com', name: 'Chioma Nwosu', subscribedAt: '2026-07-03', status: 'active' },
-          { id: 3, email: 'fatima@email.com', name: 'Fatima Abubakar', subscribedAt: '2026-07-05', status: 'active' },
-          { id: 4, email: 'emeka@email.com', name: 'Emeka Okonkwo', subscribedAt: '2026-07-07', status: 'unsubscribed' },
-          { id: 5, email: 'aisha@email.com', name: 'Aisha Bello', subscribedAt: '2026-07-09', status: 'active' },
-          { id: 6, email: 'oluwaseun@email.com', name: 'Oluwaseun Adeyemi', subscribedAt: '2026-07-10', status: 'active' },
-          { id: 7, email: 'ngozi@email.com', name: 'Ngozi Okafor', subscribedAt: '2026-07-11', status: 'active' },
-          { id: 8, email: 'tunde@email.com', name: 'Tunde Williams', subscribedAt: '2026-07-12', status: 'active' },
-        ]);
+        setSubscribers([]);
       } finally {
         setLoading(false);
       }

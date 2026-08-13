@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../models/database');
 const { authenticatePatient } = require('../middleware/auth');
+const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
 
 const router = express.Router();
@@ -10,6 +11,10 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
+
+// The whole patient portal (register/login/me/appointments/payments) is gated
+// behind the patient_portal feature flag. Disabled => 404 like it never existed.
+router.use(requireFeature('patient_portal'));
 
 function signPatientToken(account) {
   return jwt.sign(

@@ -22,16 +22,23 @@ const defaultCoreValues = [
   },
 ]
 
-const defaultServices = [
-  { icon: FiActivity, name: 'Primary Care', description: 'Routine check-ups, family medicine, and preventive health.' },
-  { icon: FiZap, name: 'Specialist Consultations', description: 'Access to experienced specialists across multiple disciplines.' },
-  { icon: FiCheckCircle, name: 'Diagnostics & Laboratory', description: 'Fast, accurate diagnostic testing and imaging services.' },
-  { icon: FiUsers, name: 'Hearing & Audiology', description: 'Comprehensive hearing assessments and support.' },
-  { icon: FiActivity, name: 'Physiotherapy', description: 'Physical rehabilitation and mobility recovery.' },
-  { icon: FiZap, name: 'Chronic Disease Management', description: 'Ongoing care for diabetes, hypertension, and kidney health.' },
-  { icon: FiCheckCircle, name: 'Elder Care', description: 'Specialized support for aging adults and their families.' },
-  { icon: FiUsers, name: 'Digital Health Solutions', description: 'Telehealth platforms extending care beyond clinic walls.' },
-]
+const serviceIcons = {
+  'primary-care': FiActivity,
+  'specialist-consultations': FiZap,
+  'diagnostics-laboratory': FiCheckCircle,
+  'hearing-audiology': FiUsers,
+  'physiotherapy': FiActivity,
+  'chronic-disease-management': FiZap,
+  'elder-care': FiCheckCircle,
+  'digital-health-solutions': FiUsers,
+  default: FiActivity,
+}
+
+const serviceIcon = (s) => {
+  if (s && typeof s.icon === 'string' && serviceIcons[s.icon]) return serviceIcons[s.icon]
+  const name = (s && s.name || '').toLowerCase().replace(/\s+/g, '-')
+  return serviceIcons[name] || serviceIcons['default']
+}
 
 export default function Home() {
   const { isEnabled } = useFeatures()
@@ -43,6 +50,8 @@ export default function Home() {
     hero_cta2_text: 'Meet Our Partners',
     hero_cta2_link: '/partners',
   })
+  const [services, setServices] = useState([])
+  const [servicesLoading, setServicesLoading] = useState(true)
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -57,6 +66,23 @@ export default function Home() {
       }
     }
     fetchContent()
+  }, [])
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await fetch('/api/services')
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data)) setServices(data)
+        }
+      } catch {
+        // leave empty state
+      } finally {
+        setServicesLoading(false)
+      }
+    }
+    fetchServices()
   }, [])
 
   return (
@@ -170,15 +196,28 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {defaultServices.map(({ icon: Icon, name, description }) => (
-              <div key={name} className="bg-warm-white rounded-2xl p-6 hover:shadow-md transition-shadow border border-gray-100">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
-                  <Icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">{name}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+            {servicesLoading && (
+              <div className="sm:col-span-2 lg:col-span-4 text-center py-12 text-gray-400">
+                Loading services...
               </div>
-            ))}
+            )}
+            {!servicesLoading && services.length === 0 && (
+              <div className="sm:col-span-2 lg:col-span-4 text-center py-12 text-gray-500">
+                Service details are being finalized. Explore our partners and ecosystem pages in the meantime.
+              </div>
+            )}
+            {services.map((service) => {
+              const Icon = serviceIcon(service)
+              return (
+                <div key={service.id || service.name} className="bg-warm-white rounded-2xl p-6 hover:shadow-md transition-shadow border border-gray-100">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                    <Icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{service.name}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{service.shortDescription || service.short_description || service.description}</p>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>

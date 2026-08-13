@@ -29,7 +29,26 @@ export default function Partners() {
         }
       } catch {}
 
-      // Load the actual provider/partner list from the providers API
+      // Load the partner list from the Partners CMS API
+      try {
+        const res = await fetch('/api/partners')
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data.length) {
+            setPartners(data.map(p => ({
+              id: p.id,
+              slug: p.slug,
+              name: p.name,
+              description: p.description,
+              services: p.servicesOffered || [],
+              image: p.logo || '',
+            })))
+            return
+          }
+        }
+      } catch {}
+
+      // Fallback: load the provider list (legacy partner model)
       try {
         const provRes = await fetch('/api/providers')
         if (provRes.ok) {

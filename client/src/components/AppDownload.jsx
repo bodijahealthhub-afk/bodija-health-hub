@@ -45,7 +45,7 @@ export default function AppDownload() {
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">LiveCare</h3>
             <p className="text-sm text-gray-500 mb-6">
-              Virtual consultations at your fingertips. See a doctor anytime, anywhere through video calls.
+              Virtual consultations at your fingertips. Connect with providers anytime, anywhere through secure video calls.
             </p>
             <Link
               to="/download-apps"

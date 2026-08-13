@@ -1,12 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 
-const stats = [
-  { label: 'Happy Patients', value: 10000, suffix: '+' },
-  { label: 'Expert Doctors', value: 25, suffix: '+' },
-  { label: 'Services Offered', value: 30, suffix: '+' },
-  { label: 'Years of Service', value: 10, suffix: '+' },
-]
-
 function AnimatedCounter({ target, suffix, inView }) {
   const [count, setCount] = useState(0)
 
@@ -34,7 +27,7 @@ function AnimatedCounter({ target, suffix, inView }) {
   )
 }
 
-export default function Stats() {
+export default function Stats({ stats = [] }) {
   const [inView, setInView] = useState(false)
   const ref = useRef(null)
 

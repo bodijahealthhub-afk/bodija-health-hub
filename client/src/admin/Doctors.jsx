@@ -24,13 +24,7 @@ const Doctors = () => {
           setDoctors(data.doctors || []);
         }
       } catch {
-        setDoctors([
-          { id: 1, name: 'Dr. Adewale Olaniyan', email: 'adewale@bodija.com', specialization: 'General Practice', department: 'General Medicine', experience: 12, consultationFee: 5000, availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], status: 'active', bio: 'Experienced general practitioner with 12 years in family medicine.' },
-          { id: 2, name: 'Dr. Olumide Adebayo', email: 'olumide@bodija.com', specialization: 'Dentistry', department: 'Dental', experience: 8, consultationFee: 7000, availableDays: ['Monday', 'Wednesday', 'Friday'], status: 'active', bio: 'Specialist in cosmetic and restorative dentistry.' },
-          { id: 3, name: 'Dr. Amina Bello', email: 'amina@bodija.com', specialization: 'Obstetrics & Gynecology', department: 'Women\'s Health', experience: 15, consultationFee: 8000, availableDays: ['Tuesday', 'Thursday', 'Saturday'], status: 'active', bio: 'Dedicated OB-GYN with expertise in prenatal care.' },
-          { id: 4, name: 'Dr. Chukwuemeka Obi', email: 'chukwuemeka@bodija.com', specialization: 'Pediatrics', department: 'Pediatrics', experience: 10, consultationFee: 6000, availableDays: ['Monday', 'Tuesday', 'Thursday'], status: 'active', bio: 'Compassionate pediatrician caring for children from birth to adolescence.' },
-          { id: 5, name: 'Dr. Fatima Yusuf', email: 'fatima@bodija.com', specialization: 'Ophthalmology', department: 'Eye Care', experience: 7, consultationFee: 6500, availableDays: ['Wednesday', 'Friday'], status: 'inactive', bio: 'Ophthalmologist specializing in vision correction and eye diseases.' },
-        ]);
+        setDoctors([]);
       } finally {
         setLoading(false);
       }

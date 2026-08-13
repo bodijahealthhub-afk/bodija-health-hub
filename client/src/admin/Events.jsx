@@ -25,13 +25,7 @@ const Events = () => {
           setEvents(data.events || []);
         }
       } catch {
-        setEvents([
-          { id: 1, title: 'Free Health Screening', date: '2026-07-20', location: 'Bodija Community Center', type: 'screening', status: 'active', description: 'Free blood pressure, diabetes, and cholesterol screening for all community members.' },
-          { id: 2, title: 'Childhood Vaccination Drive', date: '2026-07-25', location: 'Bodija Health Hub', type: 'outreach', status: 'active', description: 'Free vaccinations for children under 5 years old.' },
-          { id: 3, title: 'Mental Health Workshop', date: '2026-08-01', location: 'University of Ibadan Auditorium', type: 'event', status: 'active', description: 'Workshop on mental health awareness and stress management.' },
-          { id: 4, title: 'Women\'s Health Summit', date: '2026-08-10', location: 'IICC Hall, Ibadan', type: 'event', status: 'active', description: 'Annual summit focusing on women\'s health issues.' },
-          { id: 5, title: 'Blood Donation Day', date: '2026-08-15', location: 'Bodija Health Hub', type: 'outreach', status: 'inactive', description: 'Community blood donation event.' },
-        ]);
+        setEvents([]);
       } finally {
         setLoading(false);
       }

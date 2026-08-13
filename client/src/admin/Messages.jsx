@@ -23,14 +23,7 @@ const Messages = () => {
           setMessages(Array.isArray(data) ? data : data.messages || []);
         }
       } catch {
-        // Mock data
-        setMessages([
-          { id: 1, name: 'Adebayo Oladipo', email: 'adebayo@email.com', subject: 'Appointment Inquiry', message: 'I would like to schedule a general checkup for next week. Please let me know available slots.', date: '2026-07-14', read: false },
-          { id: 2, name: 'Chioma Nwosu', email: 'chioma@email.com', subject: 'Dental Service Question', message: 'Do you offer teeth whitening services? If so, what are the costs and how long does the procedure take?', date: '2026-07-13', read: true },
-          { id: 3, name: 'Fatima Abubakar', email: 'fatima@email.com', subject: 'Insurance Verification', message: 'I need to verify if my health insurance is accepted at your facility. My provider is Leadway Health.', date: '2026-07-12', read: false },
-          { id: 4, name: 'Emeka Okonkwo', email: 'emeka@email.com', subject: 'Feedback', message: 'The service at your clinic was excellent. Dr. Adewale was very professional and attentive.', date: '2026-07-11', read: true },
-          { id: 5, name: 'Aisha Bello', email: 'aisha@email.com', subject: 'Prenatal Package', message: 'I am interested in your prenatal care package. Could you provide details on what is included?', date: '2026-07-10', read: false },
-        ]);
+        setMessages([]);
       } finally {
         setLoading(false);
       }

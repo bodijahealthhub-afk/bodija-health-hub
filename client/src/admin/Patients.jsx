@@ -27,13 +27,7 @@ const Patients = () => {
           setPatients(data.patients || []);
         }
       } catch {
-        setPatients([
-          { id: 1, name: 'Adebayo Oladipo', email: 'adebayo@email.com', phone: '+234 801 234 5678', age: 32, gender: 'Male', lastVisit: '2026-07-10', bloodGroup: 'O+', address: '12 Bodija Avenue, Ibadan' },
-          { id: 2, name: 'Chioma Nwosu', email: 'chioma@email.com', phone: '+234 802 345 6789', age: 28, gender: 'Female', lastVisit: '2026-07-08', bloodGroup: 'A+', address: '45 Dugbe Road, Ibadan' },
-          { id: 3, name: 'Fatima Abubakar', email: 'fatima@email.com', phone: '+234 803 456 7890', age: 35, gender: 'Female', lastVisit: '2026-07-12', bloodGroup: 'B-', address: '78 Mokola Hill, Ibadan' },
-          { id: 4, name: 'Emeka Okonkwo', email: 'emeka@email.com', phone: '+234 804 567 8901', age: 45, gender: 'Male', lastVisit: '2026-06-28', bloodGroup: 'AB+', address: '23 Iwo Road, Ibadan' },
-          { id: 5, name: 'Aisha Bello', email: 'aisha@email.com', phone: '+234 805 678 9012', age: 24, gender: 'Female', lastVisit: '2026-07-14', bloodGroup: 'O-', address: '56 Jericho, Ibadan' },
-        ]);
+        setPatients([]);
       } finally {
         setLoading(false);
       }

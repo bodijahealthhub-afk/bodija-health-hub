@@ -25,16 +25,7 @@ const Services = () => {
           setServices(data.services || []);
         }
       } catch {
-        setServices([
-          { id: 1, name: 'General Consultation', description: 'Comprehensive health assessment and diagnosis by our experienced physicians.', category: 'Consultation', price: 5000, status: 'active', icon: '🩺' },
-          { id: 2, name: 'Dental Cleaning', description: 'Professional teeth cleaning and oral health checkup.', category: 'Dental', price: 7000, status: 'active', icon: '🦷' },
-          { id: 3, name: 'Blood Test', description: 'Complete blood count and metabolic panel testing.', category: 'Laboratory', price: 3000, status: 'active', icon: '🩸' },
-          { id: 4, name: 'Eye Examination', description: 'Comprehensive vision test and eye health screening.', category: 'Eye Care', price: 4000, status: 'active', icon: '👁️' },
-          { id: 5, name: 'Prenatal Checkup', description: 'Complete prenatal care package for expecting mothers.', category: 'Women\'s Health', price: 8000, status: 'active', icon: '🤰' },
-          { id: 6, name: 'Vaccination', description: 'Childhood and adult immunization services.', category: 'Preventive', price: 2500, status: 'active', icon: '💉' },
-          { id: 7, name: 'X-Ray', description: 'Digital X-ray imaging services.', category: 'Diagnostic', price: 10000, status: 'active', icon: '📷' },
-          { id: 8, name: 'Physiotherapy', description: 'Physical therapy and rehabilitation sessions.', category: 'Therapy', price: 6000, status: 'inactive', icon: '🏃' },
-        ]);
+        setServices([]);
       } finally {
         setLoading(false);
       }

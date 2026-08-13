@@ -26,17 +26,7 @@ const Gallery = () => {
           setImages(data.images || []);
         }
       } catch {
-        // Mock data
-        setImages([
-          { id: 1, title: 'Modern Reception Area', url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400', category: 'Facility', album: 'Main Building', createdAt: '2026-07-01' },
-          { id: 2, title: 'Consultation Room', url: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400', category: 'Facility', album: 'Main Building', createdAt: '2026-07-02' },
-          { id: 3, title: 'Dr. Adewale', url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400', category: 'Team', album: 'Doctors', createdAt: '2026-07-03' },
-          { id: 4, title: 'Laboratory Equipment', url: 'https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=400', category: 'Equipment', album: 'Lab', createdAt: '2026-07-04' },
-          { id: 5, title: 'Waiting Lounge', url: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400', category: 'Facility', album: 'Main Building', createdAt: '2026-07-05' },
-          { id: 6, title: 'Dental Clinic', url: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=400', category: 'Facility', album: 'Dental Wing', createdAt: '2026-07-06' },
-          { id: 7, title: 'Dr. Amina', url: 'https://images.unsplash.com/photo-1594824476967-48c8b964ac31?w=400', category: 'Team', album: 'Doctors', createdAt: '2026-07-07' },
-          { id: 8, title: 'MRI Scanner', url: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400', category: 'Equipment', album: 'Radiology', createdAt: '2026-07-08' },
-        ]);
+        setImages([]);
       } finally {
         setLoading(false);
       }

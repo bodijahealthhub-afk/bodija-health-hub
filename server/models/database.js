@@ -92,6 +92,27 @@ const SCHEMA = `
     external_booking_url TEXT,
     featured INTEGER DEFAULT 0,
     display_order INTEGER DEFAULT 0,
+    partner_id INTEGER REFERENCES partners(id),
+    config TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS partners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    partner_type TEXT DEFAULT 'healthcare',
+    description TEXT,
+    logo TEXT,
+    location TEXT,
+    website TEXT,
+    contact_email TEXT,
+    contact_phone TEXT,
+    services_offered TEXT,
+    featured INTEGER DEFAULT 0,
+    display_order INTEGER DEFAULT 0,
     config TEXT,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -163,6 +184,20 @@ const SCHEMA = `
     type TEXT DEFAULT 'event' CHECK(type IN ('outreach','screening','event')),
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS programmes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT,
+    schedule TEXT,
+    frequency TEXT,
+    location TEXT,
+    image TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS gallery (
@@ -442,6 +477,8 @@ async function insertContentDefaults() {
       { label: 'The Ecosystem', url: '/ecosystem' },
       { label: 'Our Partners', url: '/partners' },
       { label: 'Our Platforms', url: '/platforms' },
+      { label: 'Events', url: '/events' },
+      { label: 'Programmes', url: '/programmes' },
       { label: 'Upcoming Projects', url: '/upcoming' },
       { label: 'Contact Us', url: '/contact' },
     ])],
@@ -458,6 +495,8 @@ async function insertContentDefaults() {
     ['home', 'Bodija Health Hub - Quality Healthcare in Ibadan', 'Bodija Health Hub provides comprehensive healthcare services in Ibadan, Nigeria.', 'https://bodijahealthhub.com/'],
     ['about', 'About Us - Bodija Health Hub', 'Learn about Bodija Health Hub, an integrated healthcare network in Ibadan.', 'https://bodijahealthhub.com/about'],
     ['services', 'Our Services - Bodija Health Hub', 'Explore our comprehensive healthcare services.', 'https://bodijahealthhub.com/services'],
+    ['events', 'Events - Bodija Health Hub', 'Health talks, screenings and events at Bodija Health Hub.', 'https://bodijahealthhub.com/events'],
+    ['programmes', 'Programmes - Bodija Health Hub', 'Community programmes and initiatives at Bodija Health Hub.', 'https://bodijahealthhub.com/programmes'],
     ['platforms', 'Our Platforms - Bodija Health Hub', 'Discover our digital health platforms.', 'https://bodijahealthhub.com/platforms'],
     ['blog', 'Blog - Bodija Health Hub', 'Health tips and news from our experts.', 'https://bodijahealthhub.com/blog'],
     ['contact', 'Contact Us - Bodija Health Hub', 'Get in touch with Bodija Health Hub.', 'https://bodijahealthhub.com/contact'],
@@ -639,6 +678,31 @@ async function migratePhase3() {
   }
 }
 
+// Ensures SEO entries exist for pages added after the original seed (events, programmes)
+// so the sitemap and SEO admin can manage them. Idempotent — runs on every init.
+async function migrateSeoSettings() {
+  const insertSeo = db.prepare('INSERT OR IGNORE INTO seo_settings (page_id, meta_title, meta_description, canonical) VALUES (?, ?, ?, ?)');
+  const seoPages = [
+    ['events', 'Events - Bodija Health Hub', 'Health talks, screenings and events at Bodija Health Hub.', 'https://bodijahealthhub.com/events'],
+    ['programmes', 'Programmes - Bodija Health Hub', 'Community programmes and initiatives at Bodija Health Hub.', 'https://bodijahealthhub.com/programmes'],
+  ];
+  for (const [pageId, title, desc, canonical] of seoPages) {
+    await insertSeo.run(pageId, title, desc, canonical);
+  }
+}
+
+// Adds the partner_id FK to providers on databases created before the Partners module.
+async function migratePartnersLink() {
+  if (db.backend === 'sqlite') {
+    const cols = await db.prepare('PRAGMA table_info(providers)').all();
+    if (!cols.some((c) => c.name === 'partner_id')) {
+      await db.prepare('ALTER TABLE providers ADD COLUMN partner_id INTEGER REFERENCES partners(id)').run();
+    }
+    return;
+  }
+  await db.prepare('ALTER TABLE providers ADD COLUMN IF NOT EXISTS partner_id INTEGER').run();
+}
+
 async function seedIfEmpty() {
   const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (userCount.count === 0) {
@@ -654,7 +718,7 @@ const featureFlagSeeds = [
   { key: 'appointments', name: 'Appointments & Scheduling (Legacy)', description: 'Legacy doctor-based booking form — superseded by appointment_booking.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
   { key: 'doctors', name: 'Doctors Directory (Future)', description: 'Doctor directory and profiles — future module, not presented publicly.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
   { key: 'appointment_booking', name: 'Book a Service / Appointment', description: 'Request-based booking for BHH services, partner providers, programmes, events, and training.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1, requires_admin_confirmation: 1, config: '{"mode":"request_based"}' },
-  { key: 'programme_registration', name: 'Programme Registration', description: 'Registration for BHH community programmes and initiatives.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
+  { key: 'programme_registration', name: 'Programme Registration', description: 'Registration for BHH community programmes and initiatives.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
   { key: 'event_registration', name: 'Event Registration', description: 'Registration for BHH events and health talks.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'training_registration', name: 'Training Registration', description: 'Registration for BHH trainings and capacity-building programmes.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'external_partner_booking', name: 'External Partner Booking', description: 'Route bookings to partner external booking portals when enabled.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
@@ -668,7 +732,7 @@ const featureFlagSeeds = [
   { key: 'platforms_section', name: 'Platforms Section', description: 'Show the platforms section on the homepage.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
   { key: 'upcoming_projects', name: 'Upcoming Projects', description: 'Upcoming projects page and section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
   { key: 'blog', name: 'Blog & News', description: 'Blog and news section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
-  { key: 'events', name: 'Events', description: 'Events and health talk schedules.', status: 'draft', enabled: 0, public_visible: 1, navigation_visible: 0 },
+  { key: 'events', name: 'Events', description: 'Events and health talk schedules.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
   { key: 'testimonials', name: 'Testimonials', description: 'Patient testimonials section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 0 },
   { key: 'gallery', name: 'Gallery', description: 'Facility photo gallery.', status: 'draft', enabled: 0, public_visible: 0, navigation_visible: 0 },
   { key: 'careers', name: 'Careers', description: 'Careers page and job listings.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
@@ -679,8 +743,8 @@ const featureFlagSeeds = [
   { key: 'audio_consultation', name: 'Audio Consultation', description: 'Audio consultation service.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 0 },
   { key: 'video_consultation', name: 'Video Consultation', description: 'Video consultation service.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 0 },
   { key: 'chatbot', name: 'Chatbot Support', description: 'AI-powered chatbot for visitor support.', status: 'draft', enabled: 0, public_visible: 0, navigation_visible: 0 },
-  { key: 'livecare', name: 'LiveCare Platform', description: 'LiveCare telemedicine platform.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 1, config: '{"launchDate":""}' },
-  { key: 'hear_menders', name: 'hEar Menders Platform', description: 'hEar Menders hearing care platform.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 1 },
+  { key: 'livecare', name: 'LiveCare Platform', description: 'LiveCare telemedicine platform.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1, config: '{"launchDate":""}' },
+  { key: 'hear_menders', name: 'hEar Menders Platform', description: 'hEar Menders hearing care platform.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
 ];
 async function insertFeatureFlags() {
   const insert = db.prepare('INSERT OR IGNORE INTO feature_flags (key, name, description, status, enabled, public_visible, navigation_visible, admin_visible, requires_admin_confirmation, config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -757,6 +821,8 @@ async function init() {
   await impl.exec(SCHEMA);
   await migrateBookings();
   await migratePhase3();
+  await migratePartnersLink();
+  await migrateSeoSettings();
   await seedIfEmpty();
   await archiveFakeSeedData();
 }

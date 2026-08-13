@@ -95,7 +95,7 @@ export default function Ecosystem() {
               </blockquote>
               <div className="mt-6 w-12 h-1 bg-primary rounded-full" />
               <p className="mt-6 text-gray-500 leading-relaxed">
-                When your primary care doctor, specialist, lab, therapist, and digital health platform all communicate seamlessly — you get care that's not just available, but truly connected.
+                When your care provider, specialist, lab, therapist, and digital health platform all communicate seamlessly — you get care that's not just available, but truly connected.
               </p>
             </div>
           </div>

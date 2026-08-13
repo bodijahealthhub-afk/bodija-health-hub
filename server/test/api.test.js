@@ -88,6 +88,28 @@ test('admin login works', async () => {
   assert.strictEqual(status, 200);
   assert.ok(json.token);
   adminToken = json.token;
+
+test('payments config endpoint discloses mock mode', async () => {
+  const { status, json } = await request('GET', '/api/payments/config');
+  assert.strictEqual(status, 200);
+  assert.strictEqual(typeof json.mock, 'boolean');
+  assert.strictEqual(typeof json.gatewayConfigured, 'boolean');
+  assert.strictEqual(typeof json.flagEnabled, 'boolean');
+});
+
+test('admin system health endpoint returns operational checks', async () => {
+  const { status, json } = await request('GET', '/api/admin/system-health', { token: adminToken });
+  assert.strictEqual(status, 200);
+  assert.strictEqual(json.database.status, 'ok');
+  assert.ok(json.server.node);
+  assert.ok(typeof json.storage.exists === 'boolean');
+  assert.ok(Array.isArray(Object.keys(json.tableCounts)));
+  assert.strictEqual(json.payments.gatewayConfigured, false);
+  assert.strictEqual(json.payments.mock, true);
+
+  const denied = await request('GET', '/api/admin/system-health');
+  assert.strictEqual(denied.status, 401);
+});
 });
 
 test('admin endpoints return wrapped camelCase contract', async () => {
@@ -208,7 +230,23 @@ test('dashboard analytics returns trend data', async () => {
   assert.ok(json.rangeSummary && typeof json.rangeSummary.totalAppointments === 'number');
 });
 
-test('patient can register, log in, and see own appointments', async () => {
+test('patient portal is gated by the patient_portal flag and the full flow works when enabled', async () => {
+  // Archived/disabled => the whole portal 404s like it never existed.
+  assert.strictEqual((await request('POST', '/api/patient/register', {
+    body: { name: 'Portal Patient', email: 'portal@example.com', phone: '08077777777', password: 'secret123' },
+  })).status, 404);
+  assert.strictEqual((await request('POST', '/api/patient/login', {
+    body: { email: 'portal@example.com', password: 'secret123' },
+  })).status, 404);
+
+  // Admin enables the patient portal feature
+  const enabled = await request('PUT', '/api/admin/features/patient_portal', {
+    token: adminToken,
+    body: { enabled: true },
+  });
+  assert.strictEqual(enabled.status, 200);
+  assert.strictEqual(enabled.json.enabled, true);
+
   const registered = await request('POST', '/api/patient/register', {
     body: { name: 'Portal Patient', email: 'portal@example.com', phone: '08077777777', password: 'secret123' },
   });
@@ -232,6 +270,12 @@ test('patient can register, log in, and see own appointments', async () => {
   });
   assert.strictEqual(login.status, 200);
   assert.ok(login.json.token);
+
+  // Restore the archived/disabled state so the portal stays locked down.
+  await request('PUT', '/api/admin/features/patient_portal', {
+    token: adminToken,
+    body: { enabled: false },
+  });
 });
 
 test('payments initialize works in mock mode and marks appointment paid', async () => {
@@ -388,5 +432,87 @@ test('providers: public list, admin CRUD, and status toggle', async () => {
   assert.ok(list.json.providers.some((p) => p.id === created.json.id));
 
   const del = await request('DELETE', `/api/admin/providers/${created.json.id}`, { token: adminToken });
+  assert.strictEqual(del.status, 200);
+});
+
+test('partners: public list, detail, admin CRUD, and status toggle', async () => {
+  const publicList = await request('GET', '/api/partners');
+  assert.strictEqual(publicList.status, 200);
+  assert.ok(Array.isArray(publicList.json));
+
+  const created = await request('POST', '/api/admin/partners', {
+    token: adminToken,
+    body: { name: 'Test Partner Org', partner_type: 'healthcare', services_offered: 'Audiology, Hearing Aids' },
+  });
+  assert.strictEqual(created.status, 201);
+  assert.ok(created.json.id);
+  assert.ok(created.json.slug);
+
+  const detail = await request('GET', `/api/partners/${created.json.id}`);
+  assert.strictEqual(detail.status, 200);
+  assert.strictEqual(detail.json.name, 'Test Partner Org');
+  assert.ok(Array.isArray(detail.json.services));
+
+  const slugDetail = await request('GET', `/api/partners/${created.json.slug}`);
+  assert.strictEqual(slugDetail.status, 200);
+
+  // Search includes partners (gated by partners_section flag)
+  const search = await request('GET', '/api/search?q=Partner');
+  assert.ok(Array.isArray(search.json.partners));
+  assert.ok(search.json.partners.some((p) => p.id === created.json.id));
+
+  const toggle = await request('PATCH', `/api/admin/partners/${created.json.id}/status`, {
+    token: adminToken,
+    body: { status: 'inactive' },
+  });
+  assert.strictEqual(toggle.status, 200);
+
+  // Inactive partners are hidden from the public list and detail
+  const afterDeactivate = await request('GET', `/api/partners/${created.json.id}`);
+  assert.strictEqual(afterDeactivate.status, 404);
+
+  // Search no longer includes the inactive partner
+  const searchAfter = await request('GET', '/api/search?q=Test Partner Org');
+  assert.ok(!searchAfter.json.partners.some((p) => p.id === created.json.id));
+
+  const adminList = await request('GET', '/api/admin/partners', { token: adminToken });
+  assert.ok(adminList.json.partners.some((p) => p.id === created.json.id));
+
+  const del = await request('DELETE', `/api/admin/partners/${created.json.id}`, { token: adminToken });
+  assert.strictEqual(del.status, 200);
+});
+
+test('programmes: public list, detail, admin CRUD, and status toggle', async () => {
+  const publicList = await request('GET', '/api/programmes');
+  assert.strictEqual(publicList.status, 200);
+  assert.ok(Array.isArray(publicList.json));
+
+  const created = await request('POST', '/api/admin/programmes', {
+    token: adminToken,
+    body: { title: 'Test Community Nutrition Programme', category: 'Nutrition', schedule: 'Every 2nd Saturday', location: 'Bodija Community Center' },
+  });
+  assert.strictEqual(created.status, 201);
+  assert.ok(created.json.id);
+
+  const detail = await request('GET', `/api/programmes/${created.json.id}`);
+  assert.strictEqual(detail.status, 200);
+  assert.strictEqual(detail.json.title, 'Test Community Nutrition Programme');
+
+  const toggle = await request('PATCH', `/api/admin/programmes/${created.json.id}/status`, {
+    token: adminToken,
+    body: { status: 'inactive' },
+  });
+  assert.strictEqual(toggle.status, 200);
+
+  const afterDeactivate = await request('GET', `/api/programmes/${created.json.id}`);
+  assert.strictEqual(afterDeactivate.status, 404);
+
+  const adminList = await request('GET', '/api/admin/programmes', { token: adminToken });
+  assert.ok(adminList.json.programmes.some((p) => p.id === created.json.id));
+
+  const search = await request('GET', '/api/search?q=Nutrition');
+  assert.ok(Array.isArray(search.json.programmes));
+
+  const del = await request('DELETE', `/api/admin/programmes/${created.json.id}`, { token: adminToken });
   assert.strictEqual(del.status, 200);
 });

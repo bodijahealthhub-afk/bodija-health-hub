@@ -9,6 +9,8 @@ const defaultLinks = [
   { name: 'The Ecosystem', path: '/ecosystem' },
   { name: 'Our Partners', path: '/partners' },
   { name: 'Our Platforms', path: '/platforms' },
+  { name: 'Events', path: '/events' },
+  { name: 'Programmes', path: '/programmes' },
   { name: 'Upcoming Projects', path: '/upcoming' },
   { name: 'Contact Us', path: '/contact' },
 ]

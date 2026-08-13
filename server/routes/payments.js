@@ -15,6 +15,17 @@ function makeReference() {
   return `BHH-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 }
 
+// GET /api/payments/config — payment mode disclosure. Tells clients whether
+// payments are running in mock (test) mode or against a real gateway.
+router.get('/config', async (req, res) => {
+  const flag = await db.prepare("SELECT enabled FROM feature_flags WHERE key = 'payment_system'").get().catch(() => null);
+  res.json({
+    mock: isMock(),
+    gatewayConfigured: Boolean(secretKey()),
+    flagEnabled: Boolean(flag && flag.enabled),
+  });
+});
+
 // POST /api/payments/initialize — create a payment intent for an appointment and
 // return the Paystack checkout URL. Gated behind the payment_system feature flag.
 router.post('/initialize', requireFeature('payment_system'), async (req, res) => {

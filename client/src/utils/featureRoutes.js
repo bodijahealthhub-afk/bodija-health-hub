@@ -11,6 +11,8 @@ const PATH_FEATURES = {
   '/platforms': 'platforms_section',
   '/newsroom': 'blog',
   '/blog': 'blog',
+  '/events': 'events',
+  '/programmes': 'programme_registration',
   '/livecare': 'livecare',
   '/hear-menders': 'hear_menders',
   '/hear-menders/': 'hear_menders',

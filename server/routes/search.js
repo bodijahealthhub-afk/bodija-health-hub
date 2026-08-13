@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
   try {
     const q = (req.query.q || '').trim();
     if (q.length < 2) {
-      return res.json({ services: [], providers: [], blog: [], events: [] });
+      return res.json({ services: [], providers: [], partners: [], blog: [], events: [], programmes: [] });
     }
     const like = `%${q}%`;
 
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
       return Boolean(flag && flag.enabled);
     };
 
-    const results = { services: [], providers: [], blog: [], events: [] };
+    const results = { services: [], providers: [], partners: [], blog: [], events: [], programmes: [] };
 
     if (await featureIsOn('services')) {
       results.services = await db.prepare(
@@ -30,6 +30,9 @@ router.get('/', async (req, res) => {
     if (await featureIsOn('partners_section')) {
       results.providers = await db.prepare(
         "SELECT id, name, description, provider_type, location FROM providers WHERE is_active = 1 AND (name LIKE ? OR description LIKE ? OR location LIKE ?) LIMIT 5"
+      ).all(like, like, like);
+      results.partners = await db.prepare(
+        "SELECT id, name, description, partner_type, location FROM partners WHERE is_active = 1 AND (name LIKE ? OR description LIKE ? OR location LIKE ?) LIMIT 5"
       ).all(like, like, like);
     }
 
@@ -42,6 +45,12 @@ router.get('/', async (req, res) => {
     if (await featureIsOn('events')) {
       results.events = await db.prepare(
         "SELECT id, title, date, location FROM events WHERE is_active = 1 AND (title LIKE ? OR location LIKE ? OR description LIKE ?) LIMIT 5"
+      ).all(like, like, like);
+    }
+
+    if (await featureIsOn('programme_registration')) {
+      results.programmes = await db.prepare(
+        "SELECT id, title, category, schedule, location FROM programmes WHERE is_active = 1 AND (title LIKE ? OR description LIKE ? OR category LIKE ?) LIMIT 5"
       ).all(like, like, like);
     }
 

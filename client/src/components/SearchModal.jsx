@@ -22,6 +22,8 @@ const builtinPages = [
   { title: 'Community Impact', path: '/community', category: 'Community' },
   { title: 'Success Stories', path: '/success-stories', category: 'Stories' },
   { title: 'Newsroom', path: '/newsroom', category: 'News' },
+  { title: 'Events', path: '/events', category: 'Events' },
+  { title: 'Programmes', path: '/programmes', category: 'Pages' },
   { title: 'BACR Rehabilitation', path: '/bacr', category: 'Partners' },
 ]
 

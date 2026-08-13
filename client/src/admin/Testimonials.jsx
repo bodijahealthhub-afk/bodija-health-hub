@@ -25,14 +25,7 @@ const Testimonials = () => {
           setTestimonials(data.testimonials || []);
         }
       } catch {
-        // Mock data
-        setTestimonials([
-          { id: 1, name: 'Adebayo Oladipo', content: 'Excellent service! Dr. Adewale was very professional and thorough. The facility is clean and modern. Highly recommend Bodija Health Hub.', rating: 5, active: true, createdAt: '2026-07-01' },
-          { id: 2, name: 'Chioma Nwosu', content: 'Great dental service. The staff was friendly and the procedure was painless. Will definitely come back.', rating: 4, active: true, createdAt: '2026-07-03' },
-          { id: 3, name: 'Fatima Abubakar', content: 'The prenatal care package is comprehensive. Dr. Amina explained everything clearly and made me feel comfortable throughout.', rating: 5, active: true, createdAt: '2026-07-05' },
-          { id: 4, name: 'Emeka Okonkwo', content: 'Good experience overall. The waiting time was a bit long but the service quality made up for it.', rating: 3, active: false, createdAt: '2026-07-07' },
-          { id: 5, name: 'Aisha Bello', content: 'Best eye care in Ibadan! Dr. Olumide is very knowledgeable and patient. The eye examination was thorough.', rating: 5, active: true, createdAt: '2026-07-09' },
-        ]);
+        setTestimonials([]);
       } finally {
         setLoading(false);
       }

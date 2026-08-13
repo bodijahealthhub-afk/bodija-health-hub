@@ -5,11 +5,7 @@ export default function SuccessStories() {
   const [testimonials, setTestimonials] = useState([])
   useEffect(() => { fetch('/api/testimonials').then(r => r.json()).then(setTestimonials).catch(() => {}) }, [])
 
-  const stories = [
-    ...testimonials.map(t => ({ name: t.patient_name, content: t.content, rating: t.rating, type: 'Patient' })),
-    { name: 'Mrs. Adekunle', content: 'After my husband\'s stroke, BHH\'s home care service through LiveCare helped him recover at home. The caregivers were professional and compassionate.', rating: 5, type: 'Family' },
-    { name: 'Nurse Adewale', content: 'Working with BHH has been incredible. The integrated ecosystem means I can coordinate with specialists seamlessly for my patients.', rating: 5, type: 'Caregiver' },
-  ]
+  const stories = testimonials.map(t => ({ name: t.patient_name, content: t.content, rating: t.rating, type: 'Patient' }))
 
   return (
     <div>
@@ -24,6 +20,11 @@ export default function SuccessStories() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {stories.length === 0 && (
+              <div className="md:col-span-2 lg:col-span-3 text-center py-12">
+                <p className="text-gray-500 text-lg">Stories are being gathered. Check back soon.</p>
+              </div>
+            )}
             {stories.map((story, i) => (
               <div key={i} className="bg-warm-white rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow">
                 <svg className="w-8 h-8 text-primary/30 mb-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>

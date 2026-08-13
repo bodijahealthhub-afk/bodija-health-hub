@@ -13,8 +13,14 @@ const getIp = (req) => req.ip || req.connection.remoteAddress || null;
 
 const publicFlag = (flag) => {
   if (!flag) return null;
-  const { key, name, description, status, enabled, config } = flag;
-  return { key, name, description, status, enabled, config };
+  const { key, name, description, status, enabled, public_visible, navigation_visible, admin_visible, config } = flag;
+  return {
+    key, name, description, status, enabled,
+    public_visible: Boolean(public_visible),
+    navigation_visible: Boolean(navigation_visible),
+    admin_visible: Boolean(admin_visible),
+    config,
+  };
 };
 
 const adminOnly = [authenticateToken, requireRole('admin', 'super_admin')];
@@ -23,11 +29,12 @@ const adminOnly = [authenticateToken, requireRole('admin', 'super_admin')];
 // Public
 // ---------------------------------------------------------------------------
 
-// GET /api/features — visible public features (for nav, popups, and section toggles)
+// GET /api/features — all flags for client-side gating (nav, popups, section toggles).
+// Returns every flag (not just visible ones) so isEnabled() can gate any feature.
 publicRouter.get('/', async (req, res) => {
   try {
     const flags = await getAllFlags();
-    res.json(flags.filter((f) => f.public_visible || f.navigation_visible).map(publicFlag));
+    res.json(flags.map(publicFlag));
   } catch (err) {
     console.error('Failed to fetch features:', err);
     res.status(500).json({ error: 'Failed to fetch features' });
@@ -38,7 +45,7 @@ publicRouter.get('/', async (req, res) => {
 publicRouter.get('/:key', async (req, res) => {
   try {
     const flag = await getFlag(req.params.key);
-    if (!flag || !(flag.public_visible || flag.navigation_visible)) {
+    if (!flag) {
       return res.status(404).json({ error: 'Feature not found' });
     }
     res.json(publicFlag(flag));

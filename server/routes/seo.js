@@ -4,17 +4,22 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Maps seo_settings page_id -> { path, featureKey }. When featureKey is set, the
+// page is only emitted while that feature flag is enabled.
 const SEARCH_PAGE_MAP = {
-  home: '/',
-  about: '/about',
-  services: '/services',
-  platforms: '/platforms',
-  livecare: '/platforms/livecare',
-  hearmenders: '/platforms/hear-menders',
-  blog: '/blog',
-  contact: '/contact',
-  careers: '/careers',
-  faq: '/faq',
+  home: { path: '/', featureKey: null },
+  about: { path: '/about', featureKey: null },
+  services: { path: '/services', featureKey: 'services' },
+  partners: { path: '/partners', featureKey: 'partners_section' },
+  platforms: { path: '/platforms', featureKey: 'platforms_section' },
+  livecare: { path: '/livecare', featureKey: 'livecare' },
+  hearmenders: { path: '/hear-menders', featureKey: 'hear_menders' },
+  blog: { path: '/newsroom', featureKey: 'blog' },
+  contact: { path: '/contact', featureKey: 'contact_form' },
+  careers: { path: '/careers', featureKey: 'careers' },
+  faq: { path: '/faq', featureKey: 'faq' },
+  events: { path: '/events', featureKey: 'events' },
+  programmes: { path: '/programmes', featureKey: 'programme_registration' },
 };
 
 const toClient = (row) => ({
@@ -47,20 +52,32 @@ const generateSitemapXml = async () => {
   const baseUrl = (process.env.SITE_URL || 'https://bodijahealthhub.com').replace(/\/+$/, '');
   const urls = [];
 
+  const flagEnabled = async (key) => {
+    if (!key) return true;
+    const row = await db.prepare('SELECT enabled FROM feature_flags WHERE key = ?').get(key);
+    return Boolean(row && row.enabled);
+  };
+
   const seoRows = await db.prepare('SELECT page_id, canonical FROM seo_settings').all();
   for (const row of seoRows) {
-    const path = SEARCH_PAGE_MAP[row.page_id] || `/${row.page_id}`;
+    const page = SEARCH_PAGE_MAP[row.page_id];
+    if (!page || !(await flagEnabled(page.featureKey))) continue;
+    const path = page.path;
     urls.push({ loc: `${baseUrl}${path}`, priority: row.page_id === 'home' ? 1.0 : 0.8 });
   }
 
-  const posts = await db.prepare("SELECT slug, updated_at FROM blog_posts WHERE status = 'published'").all();
-  for (const post of posts) {
-    urls.push({ loc: `${baseUrl}/blog/${post.slug}`, lastmod: post.updated_at, priority: 0.7 });
+  if (await flagEnabled('blog')) {
+    const posts = await db.prepare("SELECT slug, updated_at FROM blog_posts WHERE status = 'published'").all();
+    for (const post of posts) {
+      urls.push({ loc: `${baseUrl}/newsroom/${post.slug}`, lastmod: post.updated_at, priority: 0.7 });
+    }
   }
 
-  const events = await db.prepare('SELECT id, date FROM events WHERE is_active = 1').all();
-  for (const event of events) {
-    urls.push({ loc: `${baseUrl}/events/${event.id}`, lastmod: event.date, priority: 0.6 });
+  if (await flagEnabled('events')) {
+    const events = await db.prepare('SELECT id, date FROM events WHERE is_active = 1').all();
+    for (const event of events) {
+      urls.push({ loc: `${baseUrl}/events/${event.id}`, lastmod: event.date, priority: 0.6 });
+    }
   }
 
   const urlTags = urls

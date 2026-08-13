@@ -12,7 +12,7 @@ export default function Hero() {
           <div>
             <div className="inline-flex items-center px-4 py-2 bg-white/10 rounded-full text-sm font-medium mb-6 backdrop-blur-sm">
               <span className="w-2 h-2 bg-accent rounded-full mr-2 animate-pulse" />
-              Trusted by 10,000+ patients
+              Integrated Health Ecosystem
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-balance">
               Your Health.<br />
