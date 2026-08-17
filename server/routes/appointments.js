@@ -306,7 +306,7 @@ router.patch('/:id/notes', authenticateToken, requireRole('admin', 'super_admin'
 });
 
 // GET /api/appointments/:id
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
     const appointment = await db.prepare(`${bookingSelect} WHERE a.id = ?`).get(req.params.id);
 
@@ -357,7 +357,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
 });
 
 // DELETE /api/appointments/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {

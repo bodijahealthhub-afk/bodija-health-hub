@@ -19,7 +19,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
       await db.prepare('SELECT 1').get();
       database = { status: 'ok', driver };
     } catch (err) {
-      database = { status: 'error', driver, error: err.message };
+      database = { status: 'error', driver, error: 'Database connection failed' };
     }
 
     const tables = ['users', 'services', 'providers', 'partners', 'events', 'programmes',

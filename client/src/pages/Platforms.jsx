@@ -15,7 +15,7 @@ const defaultPlatforms = [
       'Family access & updates',
       'Remote health tracking',
     ],
-    link: '#',
+    link: '/livecare',
   },
   {
     name: 'hEar Menders',
@@ -30,7 +30,7 @@ const defaultPlatforms = [
       'Ongoing care management',
       'Educational resources',
     ],
-    link: '#',
+    link: '/hear-menders',
   },
 ]
 

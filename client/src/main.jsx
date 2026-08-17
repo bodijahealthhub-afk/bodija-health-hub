@@ -10,7 +10,8 @@ import { FeatureProvider } from './context/FeatureContext'
 import { getAdminToken, clearAdminSession, redirectToAdminLogin } from './utils/api'
 
 // Global fetch wrapper for the admin area:
-//  - attaches the admin bearer token when present (patient portal sends its own),
+//  - attaches the admin bearer token for admin/portal API calls only,
+//    so public page fetches (testimonials, gallery, etc.) are unaffected,
 //  - on an invalid/expired token it clears the session and bounces to login,
 //    instead of letting every save fail with 403 "Invalid or expired token".
 const originalFetch = window.fetch
@@ -20,7 +21,13 @@ window.fetch = async (input, init = {}) => {
   const headers = new Headers(init.headers || (input && input.headers) || {})
   let usedAdminToken = false
 
-  if (token && !headers.has('Authorization')) {
+  const isAdminOrPortalPath = typeof url === 'string' && (
+    url.startsWith('/api/admin') ||
+    url.startsWith('/api/patient') ||
+    url.startsWith('/api/appointments')
+  )
+
+  if (token && isAdminOrPortalPath && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`)
     usedAdminToken = true
   } else {

@@ -20,6 +20,11 @@ const SEARCH_PAGE_MAP = {
   faq: { path: '/faq', featureKey: 'faq' },
   events: { path: '/events', featureKey: 'events' },
   programmes: { path: '/programmes', featureKey: 'programme_registration' },
+  resources: { path: '/resources', featureKey: null },
+  community: { path: '/community', featureKey: null },
+  success_stories: { path: '/success-stories', featureKey: null },
+  upcoming: { path: '/upcoming', featureKey: 'upcoming_projects' },
+  bacr: { path: '/bacr', featureKey: null },
 };
 
 const toClient = (row) => ({
@@ -48,8 +53,11 @@ const setSetting = async (key, value) => {
   ).run(key, value === null || value === undefined ? '' : String(value));
 };
 
-const generateSitemapXml = async () => {
-  const baseUrl = (process.env.SITE_URL || 'https://bodijahealthhub.com').replace(/\/+$/, '');
+const generateSitemapXml = async (hostOverride) => {
+  const baseUrl = (hostOverride
+    ? `${hostOverride.startsWith('localhost') ? 'http' : 'https'}://${hostOverride}`
+    : process.env.SITE_URL || 'https://bodijahealthhub.com'
+  ).replace(/\/+$/, '');
   const urls = [];
 
   const flagEnabled = async (key) => {

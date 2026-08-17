@@ -106,6 +106,12 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
     if (!name) {
       return res.status(400).json({ error: 'Service name is required' });
     }
+    if (price !== undefined && price !== null && price !== '' && (isNaN(Number(price)) || Number(price) < 0)) {
+      return res.status(400).json({ error: 'Price must be a non-negative number' });
+    }
+    if (booking_url && !/^https?:\/\/.+/.test(booking_url)) {
+      return res.status(400).json({ error: 'Booking URL must be a valid URL' });
+    }
 
     const slug = req.body.slug && db.slugify(req.body.slug) ? db.slugify(req.body.slug) : null;
     const finalSlug = await makeUniqueSlug(slug || name, null);
@@ -151,6 +157,13 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
       name, description, short_description, category, price, image, icon, is_active, status,
       featured, display_order, booking_type, booking_url, provider_id, location,
     } = req.body;
+
+    if (price !== undefined && price !== null && price !== '' && (isNaN(Number(price)) || Number(price) < 0)) {
+      return res.status(400).json({ error: 'Price must be a non-negative number' });
+    }
+    if (booking_url && !/^https?:\/\/.+/.test(booking_url)) {
+      return res.status(400).json({ error: 'Booking URL must be a valid URL' });
+    }
 
     let slug = service.slug;
     if (req.body.slug !== undefined) {

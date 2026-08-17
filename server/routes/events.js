@@ -74,6 +74,9 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
     if (!title) {
       return res.status(400).json({ error: 'Event title is required' });
     }
+    if (date && isNaN(Date.parse(date))) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
 
     const result = await db.prepare(
       'INSERT INTO events (title, description, date, location, image, type) VALUES (?, ?, ?, ?, ?, ?)'
@@ -95,6 +98,9 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
     }
 
     const { title, description, date, location, image, type, is_active, status } = req.body;
+    if (date && isNaN(Date.parse(date))) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
 
     await db.prepare(
       `UPDATE events SET

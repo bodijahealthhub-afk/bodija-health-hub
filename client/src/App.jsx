@@ -34,7 +34,9 @@ const PartnerDetail = lazy(() => import('./pages/PartnerDetail'))
 const Community = lazy(() => import('./pages/Community'))
 const SuccessStories = lazy(() => import('./pages/SuccessStories'))
 const Newsroom = lazy(() => import('./pages/Newsroom'))
+const BlogPost = lazy(() => import('./pages/BlogPost'))
 const Events = lazy(() => import('./pages/Events'))
+const EventDetail = lazy(() => import('./pages/EventDetail'))
 const Programmes = lazy(() => import('./pages/Programmes'))
 
 // Admin (code-split — biggest chunk)
@@ -196,7 +198,9 @@ function PublicLayout() {
             <Route path="/community" element={<Community />} />
             <Route path="/success-stories" element={<SuccessStories />} />
             <Route path="/newsroom" element={<FeatureGate {...FEATURE_ROUTES['/newsroom']}><Newsroom /></FeatureGate>} />
+            <Route path="/newsroom/:slug" element={<FeatureGate {...FEATURE_ROUTES['/newsroom']}><BlogPost /></FeatureGate>} />
             <Route path="/events" element={<FeatureGate {...FEATURE_ROUTES['/events']}><Events /></FeatureGate>} />
+            <Route path="/events/:slug" element={<FeatureGate {...FEATURE_ROUTES['/events']}><EventDetail /></FeatureGate>} />
             <Route path="/programmes" element={<FeatureGate {...FEATURE_ROUTES['/programmes']}><Programmes /></FeatureGate>} />
           </Routes>
         </Suspense>

@@ -68,13 +68,14 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (
     if ((!name && !patient_name) || !content) {
       return res.status(400).json({ error: 'Patient name and content are required' });
     }
+    const safeRating = Math.min(5, Math.max(1, Math.round(Number(rating) || 5)));
 
     const result = await db.prepare(
       'INSERT INTO testimonials (patient_name, content, rating, photo, is_active) VALUES (?, ?, ?, ?, ?)'
     ).run(
       name || patient_name,
       content,
-      rating || 5,
+      safeRating,
       photo || null,
       active !== undefined ? (active ? 1 : 0) : (is_active !== undefined ? is_active : 1)
     );
@@ -95,6 +96,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async
     }
 
     const { name, patient_name, content, rating, photo, active, is_active } = req.body;
+    const safeRating = rating !== undefined && rating !== null ? Math.min(5, Math.max(1, Math.round(Number(rating)))) : null;
 
     await db.prepare(
       `UPDATE testimonials SET
@@ -107,7 +109,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async
     ).run(
       name || patient_name || null,
       content || null,
-      rating ?? null,
+      safeRating,
       photo || null,
       (active !== undefined ? (active ? 1 : 0) : (is_active ?? null)),
       req.params.id

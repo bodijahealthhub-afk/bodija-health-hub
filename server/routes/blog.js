@@ -120,7 +120,7 @@ router.get('/:slug', async (req, res) => {
       `SELECT bp.*, u.name as author_name
        FROM blog_posts bp
        LEFT JOIN users u ON bp.author_id = u.id
-       WHERE bp.slug = ?`
+       WHERE bp.slug = ?${!req.baseUrl.includes('/admin') ? " AND bp.status = 'published'" : ''}`
     ).get(req.params.slug);
 
     if (!post) {

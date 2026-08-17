@@ -132,13 +132,18 @@ router.post('/create-admin', authenticateToken, requireRole('admin', 'super_admi
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
+    const allowedRoles = ['admin', 'receptionist', 'content_manager', 'accountant'];
+    const finalRole = role || 'admin';
+    if (!allowedRoles.includes(finalRole)) {
+      return res.status(400).json({ error: `Invalid role. Allowed: ${allowedRoles.join(', ')}` });
+    }
     const existing = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) {
       return res.status(409).json({ error: 'Email already exists' });
     }
     const hash = bcrypt.hashSync(password, 10);
     const result = await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
-      name, email, hash, role || 'admin', phone || null
+      name, email, hash, finalRole, phone || null
     );
     const user = await db.prepare('SELECT id, name, email, role, phone, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(user);

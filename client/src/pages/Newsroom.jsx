@@ -31,7 +31,7 @@ export default function Newsroom() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filtered.map((post, i) => (
-                <Link key={i} to={`/blog/${post.slug}`} className="bg-warm-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow group">
+                <Link key={i} to={`/newsroom/${post.slug}`} className="bg-warm-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow group">
                   {post.featured_image && <img src={post.featured_image} alt={post.title} className="w-full h-48 object-cover" />}
                   <div className="p-6">
                     <span className="text-xs text-primary font-medium">{post.category || 'News'}</span>

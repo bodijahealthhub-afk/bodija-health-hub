@@ -119,9 +119,9 @@ export default function Resources() {
                     <p className="text-gray-500 text-sm leading-relaxed mb-4">
                       {article.excerpt}
                     </p>
-                    <span className="inline-flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all cursor-pointer">
+                    <Link to="/newsroom" className="inline-flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
                       Read More <FiArrowRight className="w-4 h-4" />
-                    </span>
+                    </Link>
                   </div>
                 </article>
               ))}

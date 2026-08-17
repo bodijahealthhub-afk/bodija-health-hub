@@ -71,6 +71,7 @@ const publicWriteLimiter = rateLimit({
 
 app.use('/api', apiLimiter);
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 app.use('/api/messages', publicWriteLimiter);
 app.use('/api/newsletter', publicWriteLimiter);
 app.use('/api/appointments', publicWriteLimiter);
@@ -86,9 +87,14 @@ app.get('/robots.txt', async (req, res) => {
 });
 
 app.get('/sitemap.xml', async (req, res) => {
-  const row = await db.prepare("SELECT value FROM site_settings WHERE key = 'sitemap'").get();
-  const content = (row && row.value) || await generateSitemapXml();
-  res.type('application/xml').send(content);
+  try {
+    const host = req.get('host');
+    const content = await generateSitemapXml(host);
+    res.type('application/xml').send(content);
+  } catch (err) {
+    console.error('Error generating sitemap:', err);
+    res.status(500).type('application/xml').send('<?xml version="1.0"?><error>Sitemap generation failed</error>');
+  }
 });
 
 // Public routes

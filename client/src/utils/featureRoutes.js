@@ -25,6 +25,7 @@ const PREFIX_FEATURES = [
   ['/services/', 'services'],
   ['/blog/', 'blog'],
   ['/newsroom/', 'blog'],
+  ['/events/', 'events'],
   ['/partner/', 'partners_section'],
   ['/portal/', 'patient_portal'],
 ]

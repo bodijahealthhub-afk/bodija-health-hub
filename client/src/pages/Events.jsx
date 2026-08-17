@@ -95,7 +95,9 @@ export default function Events() {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {filtered.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <Link key={event.id} to={`/events/${event.id}`} className="block">
+                  <EventCard event={event} />
+                </Link>
               ))}
             </div>
           )}

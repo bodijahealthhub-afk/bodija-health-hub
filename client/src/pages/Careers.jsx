@@ -263,15 +263,6 @@ export default function Careers() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Resume</label>
-                  <div className="w-full px-4 py-3 border border-gray-300 border-dashed rounded-xl bg-white text-center hover:border-primary transition-colors cursor-pointer">
-                    <FiBriefcase className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Drag and drop your resume, or click to browse</p>
-                    <p className="text-xs text-gray-400 mt-1">PDF, DOC, or DOCX (max 5MB)</p>
-                    <input type="file" accept=".pdf,.doc,.docx" className="sr-only" />
-                  </div>
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
                   <textarea
                     name="coverLetter"

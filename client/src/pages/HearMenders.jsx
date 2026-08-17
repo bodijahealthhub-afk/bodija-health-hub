@@ -32,7 +32,7 @@ export default function HearMenders() {
                 A digital platform giving you instant access to licensed audiologists and ENT specialists — powered by hEar Max Centre and built for smarter, stress-free hearing care.
               </p>
               <div className="flex flex-wrap gap-4">
-                <a href="#" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-900 font-semibold rounded-full hover:bg-blue-50 transition-colors">
+                <a href="/upcoming" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-900 font-semibold rounded-full hover:bg-blue-50 transition-colors">
                   Download on Google Play
                 </a>
                 <Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-colors">
@@ -99,7 +99,7 @@ export default function HearMenders() {
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Hearing Care?</h2>
           <p className="text-blue-200 mb-8">Download hEar Menders today and connect with hearing specialists instantly.</p>
-          <a href="#" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-900 font-semibold rounded-full hover:bg-blue-50 transition-colors">
+          <a href="/upcoming" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-900 font-semibold rounded-full hover:bg-blue-50 transition-colors">
             Download hEar Menders
           </a>
         </div>

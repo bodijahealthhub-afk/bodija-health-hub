@@ -739,7 +739,7 @@ const featureFlagSeeds = [
   { key: 'faq', name: 'FAQ', description: 'Frequently asked questions section.', status: 'active', enabled: 1, public_visible: 1, navigation_visible: 1 },
   { key: 'newsletter', name: 'Newsletter Signup', description: 'Email newsletter signup form in the footer.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 0 },
   { key: 'payment_system', name: 'Payment System', description: 'Online payment processing for bookings and services.', status: 'disabled', enabled: 0, public_visible: 0, navigation_visible: 0, requires_admin_confirmation: 1 },
-  { key: 'patient_portal', name: 'Patient Portal', description: 'Patient portal for bookings, records, and messaging.', status: 'active', enabled: 1, public_visible: 0, navigation_visible: 1 },
+  { key: 'patient_portal', name: 'Patient Portal', description: 'Patient portal for bookings, records, and messaging.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
   { key: 'audio_consultation', name: 'Audio Consultation', description: 'Audio consultation service.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 0 },
   { key: 'video_consultation', name: 'Video Consultation', description: 'Video consultation service.', status: 'coming_soon', enabled: 0, public_visible: 1, navigation_visible: 0 },
   { key: 'chatbot', name: 'Chatbot Support', description: 'AI-powered chatbot for visitor support.', status: 'draft', enabled: 0, public_visible: 0, navigation_visible: 0 },
@@ -765,8 +765,6 @@ async function insertFeatureFlags() {
   for (const f of featureFlagSeeds) {
     await insert.run(f.key, f.name, f.description, f.status, f.enabled, f.public_visible, f.navigation_visible, f.admin_visible !== undefined ? f.admin_visible : 1, f.requires_admin_confirmation || 0, f.config || null);
   }
-  await db.prepare("UPDATE feature_flags SET status = 'archived', enabled = 0, public_visible = 0 WHERE key = 'patient_portal'").run();
-  await db.prepare("UPDATE feature_flags SET status = 'archived', enabled = 0, public_visible = 0 WHERE key = 'appointments'").run();
 }
 
 async function insertAuditSeeds() {

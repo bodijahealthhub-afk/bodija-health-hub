@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
 
     query += ' ORDER BY display_order ASC, name ASC';
     const partners = await db.prepare(query).all(...params);
-    res.json(isAdmin ? { partners: partners.map(toClient) } : partners);
+    res.json(isAdmin ? { partners: partners.map(toClient) } : partners.map(toClient));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch partners' });
   }

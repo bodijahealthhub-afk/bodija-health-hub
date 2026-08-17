@@ -50,10 +50,10 @@ export default function Contact() {
   const [social, setSocial] = useState({})
 
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     email: '',
     phone: '',
-    role: '',
+    subject: '',
     message: '',
   })
   const [submitting, setSubmitting] = useState(false)
@@ -102,21 +102,25 @@ export default function Contact() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.fullName || !formData.email || !formData.message) {
+    if (!formData.name || !formData.email || !formData.message) {
       toast.error('Please fill in all required fields')
       return
     }
     setSubmitting(true)
     try {
-      await fetch('/api/messages', {
+      const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to send message')
+      }
       setSubmitted(true)
       toast.success('Message sent! We\'ll get back to you soon.')
-    } catch {
-      toast.error('Something went wrong. Please try again.')
+    } catch (err) {
+      toast.error(err.message || 'Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -247,7 +251,7 @@ export default function Contact() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h3>
                   <p className="text-gray-500 mb-6">Thank you for reaching out. We'll get back to you soon.</p>
                   <button
-                    onClick={() => { setSubmitted(false); setFormData({ fullName: '', email: '', phone: '', role: '', message: '' }) }}
+                    onClick={() => { setSubmitted(false); setFormData({ name: '', email: '', phone: '', subject: '', message: '' }) }}
                     className="text-primary font-medium hover:underline"
                   >
                     Send another message
@@ -260,8 +264,8 @@ export default function Contact() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                       <input
                         type="text"
-                        name="fullName"
-                        value={formData.fullName}
+                        name="name"
+                        value={formData.name}
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                         placeholder="Your full name"
@@ -292,20 +296,15 @@ export default function Contact() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                      <select
-                        name="role"
-                        value={formData.role}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                      <input
+                        type="text"
+                        name="subject"
+                        value={formData.subject}
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                      >
-                        <option value="">Select your role</option>
-                        <option value="Patient">Patient</option>
-                        <option value="Family">Family</option>
-                        <option value="Healthcare Provider">Healthcare Provider</option>
-                        <option value="Caregiver">Caregiver</option>
-                        <option value="Other">Other</option>
-                      </select>
+                        placeholder="What is this about?"
+                      />
                     </div>
                   </div>
                   <div>

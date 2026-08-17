@@ -17,8 +17,8 @@ const builtinPages = [
   { title: 'FAQ', path: '/faq', category: 'Pages' },
   { title: 'Careers', path: '/careers', category: 'Pages' },
   { title: 'Resources', path: '/resources', category: 'Pages' },
-  { title: 'LiveCare', path: '/platforms/livecare', category: 'Platforms' },
-  { title: 'hEar Menders', path: '/platforms/hearmenders', category: 'Platforms' },
+  { title: 'LiveCare', path: '/livecare', category: 'Platforms' },
+  { title: 'hEar Menders', path: '/hear-menders', category: 'Platforms' },
   { title: 'Community Impact', path: '/community', category: 'Community' },
   { title: 'Success Stories', path: '/success-stories', category: 'Stories' },
   { title: 'Newsroom', path: '/newsroom', category: 'News' },
@@ -82,8 +82,8 @@ export default function SearchModal({ isOpen, onClose }) {
           const apiResults = []
           if (data.services) data.services.forEach(s => apiResults.push({ ...s, category: 'Services', path: `/services/${s.slug || s.id}` }))
           if (data.providers) data.providers.forEach(p => apiResults.push({ ...p, category: 'Partners', path: `/partner/${p.slug || p.id}` }))
-          if (data.blog) data.blog.forEach(b => apiResults.push({ ...b, category: 'Blog', path: `/blog/${b.slug || b.id}` }))
-          if (data.events) data.events.forEach(e => apiResults.push({ ...e, category: 'Events', path: `/events/${e.slug || e.id}` }))
+          if (data.blog) data.blog.forEach(b => apiResults.push({ ...b, category: 'Blog', path: `/newsroom` }))
+          if (data.events) data.events.forEach(e => apiResults.push({ ...e, category: 'Events', path: `/events` }))
           // Filter builtin pages
           const pageResults = visibleBuiltinPages
             .filter(p => p.title.toLowerCase().includes(query.toLowerCase()))
