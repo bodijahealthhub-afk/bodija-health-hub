@@ -3,13 +3,15 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 const FeatureContext = createContext(null)
 
 // While the feature list loads we default to "enabled" so pages and links never
-// flash away unexpectedly. After loading, keys missing from the flag list are
-// treated as disabled (fail-closed) so unknown flags cannot silently enable.
+// flash away unexpectedly. After loading, if the API returned no flags (backend
+// unreachable), we fail-open so the homepage isn't blank.  Only when the API
+// returned flags do we respect the stored enabled value.
 const defaultEnabled = true
 
 export function FeatureProvider({ children }) {
   const [features, setFeatures] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loaded, setLoaded] = useState(false)
 
   const refresh = useCallback(async () => {
     try {
@@ -21,6 +23,7 @@ export function FeatureProvider({ children }) {
     } catch {
       // Keep whatever we have; features default to enabled.
     } finally {
+      setLoaded(true)
       setLoading(false)
     }
   }, [])
@@ -38,9 +41,15 @@ export function FeatureProvider({ children }) {
     (key) => {
       const f = byKey(key)
       if (f) return Boolean(f.enabled)
-      return loading ? defaultEnabled : false
+      // While loading, show everything.  After loading, if the API returned
+      // flags we don't recognise, disable them (fail-closed for unknown flags
+      // from a working API).  But if the API returned nothing at all (empty
+      // array = backend down), fail-open so the site stays usable.
+      if (loading) return defaultEnabled
+      if (loaded && features.length === 0) return true
+      return false
     },
-    [byKey, loading]
+    [byKey, loading, loaded, features]
   )
 
   const isVisible = useCallback(
@@ -51,9 +60,11 @@ export function FeatureProvider({ children }) {
         if (mode === 'admin') return Boolean(f.admin_visible)
         return Boolean(f.public_visible)
       }
-      return loading ? defaultEnabled : false
+      if (loading) return defaultEnabled
+      if (loaded && features.length === 0) return true
+      return false
     },
-    [byKey, loading]
+    [byKey, loading, loaded, features]
   )
 
   return (
