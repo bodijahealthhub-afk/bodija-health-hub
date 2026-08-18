@@ -7,6 +7,10 @@ const router = express.Router();
 // GET /api/settings (public — returns all settings)
 router.get('/', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const settings = await db.prepare('SELECT * FROM contact_info').all();
     const settingsObj = {};
     for (const s of settings) {

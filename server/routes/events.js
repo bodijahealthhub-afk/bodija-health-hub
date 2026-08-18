@@ -21,6 +21,9 @@ router.get('/', async (req, res) => {
       return res.status(404).json({ error: 'Not Found' });
     }
     const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const { type } = req.query;
     let query = 'SELECT * FROM events WHERE 1=1';
     const params = [];
@@ -56,6 +59,10 @@ router.get('/:id', async (req, res) => {
   try {
     if (await featureDisabled(req, 'events')) {
       return res.status(404).json({ error: 'Not Found' });
+    }
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
     const event = await db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     if (!event) {

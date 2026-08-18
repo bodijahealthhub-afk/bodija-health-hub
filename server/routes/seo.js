@@ -200,6 +200,10 @@ router.post('/sitemap/generate', authenticateToken, requireRole('admin', 'super_
 // GET /api/seo/:pageId (public)
 router.get('/:pageId', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const row = await db.prepare('SELECT * FROM seo_settings WHERE page_id = ?').get(req.params.pageId);
     res.json(row ? toClient(row) : {});
   } catch (err) {

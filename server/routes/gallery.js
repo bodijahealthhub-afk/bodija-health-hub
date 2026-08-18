@@ -18,6 +18,10 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 // GET /api/gallery (public) or admin (with valid token — returns {images})
 router.get('/', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const { category, album } = req.query;
     let query = 'SELECT * FROM gallery WHERE 1=1';
     const params = [];
@@ -65,6 +69,10 @@ router.get('/', async (req, res) => {
 // GET /api/gallery/:id
 router.get('/:id', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const item = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     if (!item) {
       return res.status(404).json({ error: 'Gallery item not found' });

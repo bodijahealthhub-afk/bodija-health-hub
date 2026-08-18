@@ -30,6 +30,9 @@ const makeUniqueSlug = async (name, excludeId) => {
 router.get('/', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const { partner_type, featured } = req.query;
     let query = 'SELECT * FROM partners WHERE 1=1';
     const params = [];
@@ -56,6 +59,10 @@ router.get('/', async (req, res) => {
 // GET /api/partners/:idOrSlug (public) — includes the partner's related services
 router.get('/:idOrSlug', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const param = req.params.idOrSlug;
     const isId = /^\d+$/.test(param);
     let partner;

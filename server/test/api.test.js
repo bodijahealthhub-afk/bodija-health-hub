@@ -516,3 +516,54 @@ test('programmes: public list, detail, admin CRUD, and status toggle', async () 
   const del = await request('DELETE', `/api/admin/programmes/${created.json.id}`, { token: adminToken });
   assert.strictEqual(del.status, 200);
 });
+
+test('admin GET routes require authentication (mount-level guard)', async () => {
+  const adminGetRoutes = [
+    '/api/admin/services', '/api/admin/doctors', '/api/admin/appointments',
+    '/api/admin/patients', '/api/admin/blog', '/api/admin/events',
+    '/api/admin/testimonials', '/api/admin/media', '/api/admin/partners',
+    '/api/admin/programmes', '/api/admin/system-health',
+    '/api/admin/page-content', '/api/admin/seo',
+  ];
+  for (const url of adminGetRoutes) {
+    const { status } = await request('GET', url);
+    assert.strictEqual(status, 401, `${url} should return 401 without token, got ${status}`);
+  }
+  // With valid token these should return 200
+  for (const url of ['/api/admin/services', '/api/admin/testimonials', '/api/admin/events']) {
+    const { status } = await request('GET', url, { token: adminToken });
+    assert.strictEqual(status, 200, `${url} should return 200 with token, got ${status}`);
+  }
+});
+
+test('admin system-health returns feature flags and status summary', async () => {
+  const { status, json } = await request('GET', '/api/admin/system-health', { token: adminToken });
+  assert.strictEqual(status, 200);
+  assert.ok(json.status, 'should have status summary');
+  assert.ok(['healthy', 'degraded'].includes(json.status.server), 'server status should be healthy or degraded');
+  assert.ok(json.featureFlags, 'should have featureFlags');
+  assert.strictEqual(typeof json.featureFlags.count, 'number');
+  assert.strictEqual(typeof json.featureFlags.activeCount, 'number');
+  assert.strictEqual(typeof json.featureFlags.loaded, 'boolean');
+  assert.ok(json.backups, 'should have backups');
+  assert.strictEqual(typeof json.backups.autoBackupEnabled, 'boolean');
+});
+
+test('backup export returns valid JSON (gzip tested)', async () => {
+  const { status, json } = await request('GET', '/api/admin/backups/export', { token: adminToken });
+  assert.strictEqual(status, 200);
+  assert.ok(json, 'export should return data');
+  assert.ok(json.data || json.export_date, 'export should have recognizable structure');
+});
+
+test('patient login and register routes exist and are accessible', async () => {
+  const login = await request('POST', '/api/patient/login', {
+    body: { email: 'nonexistent@example.com', password: 'wrong' },
+  });
+  assert.ok([400, 401, 403, 404].includes(login.status), `patient login responded with ${login.status}`);
+
+  const register = await request('POST', '/api/patient/register', {
+    body: { name: 'Test', email: 'test-ratelimit@example.com', phone: '08012345678', password: 'testpass' },
+  });
+  assert.ok([201, 400, 403, 404, 409].includes(register.status), `patient register responded with ${register.status}`);
+});

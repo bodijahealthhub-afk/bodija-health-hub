@@ -7,6 +7,10 @@ const router = express.Router();
 // GET /api/site-content — public: returns all site content as key-value object
 router.get('/', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const rows = await db.prepare('SELECT key, value FROM site_content').all();
     const content = {};
     for (const row of rows) {
@@ -22,8 +26,6 @@ router.get('/', async (req, res) => {
 router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
     const updates = req.body;
-    console.log('PUT received updates:', Object.keys(updates).length, 'keys');
-    console.log('hero_headline in updates:', updates.hero_headline);
     const upsert = db.prepare(
       'INSERT INTO site_content (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP'
     );
@@ -49,6 +51,10 @@ router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
 // GET /api/site-content/:section — public: returns content for a specific section
 router.get('/:section', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const { section } = req.params;
     const prefixes = {
       hero: 'hero_',

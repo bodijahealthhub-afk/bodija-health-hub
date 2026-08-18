@@ -30,6 +30,9 @@ router.get('/', async (req, res) => {
     if (!isAdmin && (await doctorsPubliclyDisabled(req))) {
       return res.status(404).json({ error: 'Not Found' });
     }
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const { specialization, department, available_day } = req.query;
     let query = `SELECT d.*, u.email, u.avatar
                  FROM doctors d
@@ -66,6 +69,10 @@ router.get('/:id', async (req, res) => {
   try {
     if (await doctorsPubliclyDisabled(req)) {
       return res.status(404).json({ error: 'Not Found' });
+    }
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
     const doctor = await db.prepare(
       `SELECT d.*, u.email, u.avatar

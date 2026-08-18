@@ -7,6 +7,10 @@ const router = express.Router();
 // GET /api/page-content/:pageId — public: returns page title, meta, and sections
 router.get('/:pageId', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const { pageId } = req.params;
 
     // Get page meta from site_content

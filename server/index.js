@@ -14,6 +14,7 @@ if (process.env.SENTRY_DSN) {
 const db = require('./models/database');
 const { generateSitemapXml } = require('./routes/seo');
 const { startScheduler } = require('./utils/scheduler');
+const { authenticateToken, requireRole } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,7 +27,7 @@ app.use(helmet({
 }));
 
 const allowedOrigins = (process.env.CORS_ORIGINS ||
-  'https://client-six-eta-66.vercel.app,https://client-nt8gk3ac6-team-bhh.vercel.app,http://localhost:5173,http://localhost:3000'
+  'https://client-six-eta-66.vercel.app,https://client-nt8gk3ac6-team-bhh.vercel.app'
 ).split(',').map((s) => s.trim()).filter(Boolean);
 
 app.use(cors({
@@ -72,6 +73,8 @@ const publicWriteLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/patient/login', authLimiter);
+app.use('/api/patient/register', authLimiter);
 app.use('/api/messages', publicWriteLimiter);
 app.use('/api/newsletter', publicWriteLimiter);
 app.use('/api/appointments', publicWriteLimiter);
@@ -129,31 +132,35 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/admin/payments', paymentsRouter);
 app.use('/api/patient', require('./routes/patient'));
 
-// Admin routes
-app.use('/api/admin/site-content', require('./routes/siteContent'));
-app.use('/api/admin/page-content', require('./routes/pageContent'));
-app.use('/api/admin/media', require('./routes/media'));
-app.use('/api/admin/seo', require('./routes/seo'));
-app.use('/api/admin/backups', require('./routes/backup'));
-app.use('/api/admin/system-health', require('./routes/systemHealth'));
-app.use('/api/admin/site-settings', require('./routes/siteSettings'));
-app.use('/api/admin/services', require('./routes/services'));
-app.use('/api/admin/blog', require('./routes/blog'));
-app.use('/api/admin/testimonials', require('./routes/testimonials'));
-app.use('/api/admin/messages', require('./routes/messages'));
-app.use('/api/admin/events', require('./routes/events'));
-app.use('/api/admin/programmes', require('./routes/programmes'));
-app.use('/api/admin/gallery', require('./routes/gallery'));
-app.use('/api/admin/doctors', require('./routes/doctors'));
-app.use('/api/admin/providers', require('./routes/providers'));
-app.use('/api/admin/partners', require('./routes/partners'));
-app.use('/api/admin/service-categories', require('./routes/serviceCategories').router);
-app.use('/api/admin/appointments', require('./routes/appointments'));
-app.use('/api/admin/patients', require('./routes/patients'));
-app.use('/api/admin/notifications', require('./routes/notifications'));
-app.use('/api/admin/dashboard', require('./routes/dashboard'));
-app.use('/api/admin/features', require('./routes/features').router);
-app.use('/api/admin/audit-logs', require('./routes/features').auditRouter);
+// Admin routes — mount-level authentication ensures all /api/admin/* routes require
+// a valid JWT from a recognised admin-panel role.  Per-handler requireRole() calls
+// inside individual route files further restrict access where needed.
+const adminAuth = [authenticateToken, requireRole('admin', 'super_admin', 'content_manager', 'receptionist', 'accountant')];
+
+app.use('/api/admin/site-content', ...adminAuth, require('./routes/siteContent'));
+app.use('/api/admin/page-content', ...adminAuth, require('./routes/pageContent'));
+app.use('/api/admin/media', ...adminAuth, require('./routes/media'));
+app.use('/api/admin/seo', ...adminAuth, require('./routes/seo'));
+app.use('/api/admin/backups', ...adminAuth, require('./routes/backup'));
+app.use('/api/admin/system-health', ...adminAuth, require('./routes/systemHealth'));
+app.use('/api/admin/site-settings', ...adminAuth, require('./routes/siteSettings'));
+app.use('/api/admin/services', ...adminAuth, require('./routes/services'));
+app.use('/api/admin/blog', ...adminAuth, require('./routes/blog'));
+app.use('/api/admin/testimonials', ...adminAuth, require('./routes/testimonials'));
+app.use('/api/admin/messages', ...adminAuth, require('./routes/messages'));
+app.use('/api/admin/events', ...adminAuth, require('./routes/events'));
+app.use('/api/admin/programmes', ...adminAuth, require('./routes/programmes'));
+app.use('/api/admin/gallery', ...adminAuth, require('./routes/gallery'));
+app.use('/api/admin/doctors', ...adminAuth, require('./routes/doctors'));
+app.use('/api/admin/providers', ...adminAuth, require('./routes/providers'));
+app.use('/api/admin/partners', ...adminAuth, require('./routes/partners'));
+app.use('/api/admin/service-categories', ...adminAuth, require('./routes/serviceCategories').router);
+app.use('/api/admin/appointments', ...adminAuth, require('./routes/appointments'));
+app.use('/api/admin/patients', ...adminAuth, require('./routes/patients'));
+app.use('/api/admin/notifications', ...adminAuth, require('./routes/notifications'));
+app.use('/api/admin/dashboard', ...adminAuth, require('./routes/dashboard'));
+app.use('/api/admin/features', ...adminAuth, require('./routes/features').router);
+app.use('/api/admin/audit-logs', ...adminAuth, require('./routes/features').auditRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

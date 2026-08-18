@@ -1,4 +1,5 @@
 const express = require('express');
+const zlib = require('zlib');
 const db = require('../models/database');
 const { exportAll, importData } = require('../utils/backupData');
 const { authenticateToken, requireRole } = require('../middleware/auth');
@@ -24,10 +25,30 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
   }
 });
 
-// GET /api/admin/backups/export?format=json — export all data
+// GET /api/admin/backups/export?format=json — export all data (gzip when accepted)
 router.get('/export', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
   try {
-    res.json(await exportAll());
+    const snapshot = await exportAll();
+    const json = JSON.stringify(snapshot);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="bhh-export.json"');
+
+    const acceptEncoding = req.headers['accept-encoding'] || '';
+    if (acceptEncoding.includes('gzip')) {
+      res.setHeader('Content-Encoding', 'gzip');
+      const gzipped = await new Promise((resolve, reject) => {
+        zlib.gzip(Buffer.from(json), { level: 6 }, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+      res.setHeader('Content-Length', gzipped.length);
+      res.end(gzipped);
+    } else {
+      res.setHeader('Content-Length', Buffer.byteLength(json));
+      res.end(json);
+    }
   } catch (err) {
     console.error('Error exporting data:', err);
     res.status(500).json({ error: 'Failed to export data' });

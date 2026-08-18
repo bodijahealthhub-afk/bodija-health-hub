@@ -31,6 +31,9 @@ const toClient = (m) => ({
 router.get('/', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const { category } = req.query;
     let query = 'SELECT * FROM media';
     const params = [];

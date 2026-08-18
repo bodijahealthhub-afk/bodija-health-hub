@@ -14,18 +14,10 @@ const toClient = (t) => ({
 // GET /api/testimonials (public — active only) or admin (with valid token — all, wrapped)
 router.get('/', async (req, res) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    let isAdmin = false;
-    if (token) {
-      try {
-        const decoded = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
-        if (['admin', 'super_admin'].includes(decoded.role)) {
-          isAdmin = true;
-        }
-      } catch (err) { /* treat as public */ }
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
-
     if (isAdmin) {
       const testimonials = await db.prepare('SELECT * FROM testimonials ORDER BY created_at DESC').all();
       return res.json({ testimonials: testimonials.map(toClient) });
@@ -51,6 +43,10 @@ router.get('/all', authenticateToken, requireRole('admin', 'super_admin'), async
 // GET /api/testimonials/:id
 router.get('/:id', async (req, res) => {
   try {
+    const isAdmin = req.baseUrl.includes('/admin');
+    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     const testimonial = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
     if (!testimonial) {
       return res.status(404).json({ error: 'Testimonial not found' });
