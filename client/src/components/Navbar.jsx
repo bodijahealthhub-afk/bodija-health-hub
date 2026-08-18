@@ -56,7 +56,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img src="/bhh-logo.svg" alt="Bodija Health Hub" className="h-12 w-auto" />
+            <img src="/BHH.png" alt="Bodija Health Hub" className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
