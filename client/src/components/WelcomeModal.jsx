@@ -51,7 +51,7 @@ export default function WelcomeModal() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={dismiss} />
       <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
         <button
@@ -66,7 +66,7 @@ export default function WelcomeModal() {
           <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mb-5">
             <FiHeart className="w-7 h-7" />
           </div>
-          <h2 className="text-2xl font-bold leading-snug">{content.title}</h2>
+          <h2 id="welcome-modal-title" className="text-2xl font-bold leading-snug">{content.title}</h2>
         </div>
 
         <div className="px-8 py-8">
