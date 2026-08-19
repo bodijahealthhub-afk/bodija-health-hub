@@ -4,12 +4,15 @@ import {
   FiHeart, FiLink2, FiClock, FiArrowRight, FiActivity, FiZap,
   FiCheckCircle, FiUsers, FiCalendar, FiChevronRight, FiStar,
   FiShield, FiDatabase, FiTool, FiGlobe, FiSmile, FiArrowUpRight,
-  FiBookOpen, FiTrendingUp, FiPhone, FiMail, FiMapPin,
+  FiBookOpen, FiTrendingUp, FiInbox, FiRefreshCw, FiSearch,
 } from 'react-icons/fi'
 import { useFeatures } from '../context/FeatureContext'
 import WelcomeModal from '../components/WelcomeModal'
 import ScrollReveal from '../components/ScrollReveal'
 import AnimatedCounter from '../components/AnimatedCounter'
+import BackendStatusBanner from '../components/BackendStatusBanner'
+import { cachedFetch } from '../utils/api'
+import { ServicesSkeleton, EventsSkeleton, BlogSkeletons, TestimonialsSkeleton } from '../components/SkeletonLoader'
 
 const coreValues = [
   { icon: FiHeart, title: 'Accessible', desc: 'Quality care should never be out of reach.' },
@@ -47,6 +50,19 @@ function resolveServiceIcon(s) {
   return serviceIcons[name] || serviceIcons.default
 }
 
+function EmptyState({ icon: Icon, title, description, action }) {
+  return (
+    <div className="text-center py-12">
+      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <Icon className="w-7 h-7 text-gray-400" />
+      </div>
+      <h3 className="text-sm font-semibold text-gray-700 mb-1">{title}</h3>
+      <p className="text-sm text-gray-500 max-w-xs mx-auto">{description}</p>
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  )
+}
+
 export default function Home() {
   const { isEnabled } = useFeatures()
   const [content, setContent] = useState({
@@ -66,60 +82,61 @@ export default function Home() {
   const [services, setServices] = useState([])
   const [servicesLoading, setServicesLoading] = useState(true)
   const [events, setEvents] = useState([])
+  const [eventsLoading, setEventsLoading] = useState(true)
   const [blogPosts, setBlogPosts] = useState([])
+  const [blogLoading, setBlogLoading] = useState(true)
   const [programmes, setProgrammes] = useState([])
   const [testimonials, setTestimonials] = useState([])
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/site-content')
-      .then(r => r.ok ? r.json() : null)
+    cachedFetch('/api/site-content')
       .then(d => { if (d) setContent(prev => ({ ...prev, ...d })) })
       .catch(() => {})
   }, [])
 
   useEffect(() => {
-    fetch('/api/services')
-      .then(r => r.ok ? r.json() : [])
+    cachedFetch('/api/services')
       .then(d => { if (Array.isArray(d)) setServices(d) })
       .catch(() => {})
       .finally(() => setServicesLoading(false))
   }, [])
 
   useEffect(() => {
-    if (!isEnabled('events')) return
-    fetch('/api/events')
-      .then(r => r.ok ? r.json() : [])
+    if (!isEnabled('events')) { setEventsLoading(false); return }
+    cachedFetch('/api/events')
       .then(d => { if (Array.isArray(d)) setEvents(d.slice(0, 3)) })
       .catch(() => {})
+      .finally(() => setEventsLoading(false))
   }, [isEnabled])
 
   useEffect(() => {
-    if (!isEnabled('blog')) return
-    fetch('/api/blog?limit=3')
-      .then(r => r.ok ? r.json() : {})
+    if (!isEnabled('blog')) { setBlogLoading(false); return }
+    cachedFetch('/api/blog?limit=3')
       .then(d => { if (d?.posts) setBlogPosts(d.posts.slice(0, 3)) })
       .catch(() => {})
+      .finally(() => setBlogLoading(false))
   }, [isEnabled])
 
   useEffect(() => {
     if (!isEnabled('programme_registration')) return
-    fetch('/api/programmes')
-      .then(r => r.ok ? r.json() : [])
+    cachedFetch('/api/programmes')
       .then(d => { if (Array.isArray(d)) setProgrammes(d.slice(0, 3)) })
       .catch(() => {})
   }, [isEnabled])
 
   useEffect(() => {
-    fetch('/api/testimonials')
-      .then(r => r.ok ? r.json() : [])
+    cachedFetch('/api/testimonials')
       .then(d => { if (Array.isArray(d)) setTestimonials(d.slice(0, 3)) })
       .catch(() => {})
+      .finally(() => setTestimonialsLoading(false))
   }, [])
 
   return (
     <div className="overflow-hidden">
+      <BackendStatusBanner />
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
+      {/* Hero */}
       {isEnabled('home_hero') && (
         <section className="relative min-h-[92vh] flex items-center bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white overflow-hidden">
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.06]" />
@@ -151,7 +168,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Trust Bar ────────────────────────────────────────────── */}
+      {/* Trust Bar */}
       <ScrollReveal>
         <section className="py-6 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -165,7 +182,7 @@ export default function Home() {
         </section>
       </ScrollReveal>
 
-      {/* ── About ────────────────────────────────────────────────── */}
+      {/* About */}
       {isEnabled('ecosystem_section') && (
         <section className="py-20 lg:py-28 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -203,7 +220,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Core Values ──────────────────────────────────────────── */}
+      {/* Core Values */}
       {isEnabled('ecosystem_section') && (
         <section className="py-20 bg-warm-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -230,7 +247,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Impact Stats ─────────────────────────────────────────── */}
+      {/* Impact Stats */}
       <ScrollReveal>
         <section className="py-16 bg-gradient-to-r from-primary to-emerald-700 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -249,7 +266,7 @@ export default function Home() {
         </section>
       </ScrollReveal>
 
-      {/* ── Featured Services ────────────────────────────────────── */}
+      {/* Featured Services */}
       {isEnabled('services') && (
         <section className="py-20 lg:py-28 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -261,9 +278,14 @@ export default function Home() {
               </div>
             </ScrollReveal>
             {servicesLoading ? (
-              <div className="text-center py-16 text-gray-400">Loading services...</div>
+              <ServicesSkeleton />
             ) : services.length === 0 ? (
-              <div className="text-center py-16 text-gray-500">Service details are being finalised. Explore our partners and ecosystem pages in the meantime.</div>
+              <EmptyState
+                icon={FiInbox}
+                title="No services available yet"
+                description="Our service catalogue is being prepared. Check back soon or explore our ecosystem."
+                action={<Link to="/ecosystem" className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:underline">Explore Ecosystem <FiArrowRight className="w-4 h-4" /></Link>}
+              />
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {services.slice(0, 8).map((service, i) => {
@@ -295,7 +317,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Ecosystem Cards ──────────────────────────────────────── */}
+      {/* Ecosystem Cards */}
       {isEnabled('ecosystem_section') && (
         <section className="py-20 bg-warm-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -323,16 +345,24 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Testimonials ─────────────────────────────────────────── */}
-      {testimonials.length > 0 && (
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <ScrollReveal>
-              <div className="text-center mb-14">
-                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">What People Say</span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Trusted by Our Community</h2>
-              </div>
-            </ScrollReveal>
+      {/* Testimonials */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal>
+            <div className="text-center mb-14">
+              <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">What People Say</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Trusted by Our Community</h2>
+            </div>
+          </ScrollReveal>
+          {testimonialsLoading ? (
+            <TestimonialsSkeleton />
+          ) : testimonials.length === 0 ? (
+            <EmptyState
+              icon={FiStar}
+              title="No testimonials yet"
+              description="Patient stories will appear here as our community grows."
+            />
+          ) : (
             <div className="grid md:grid-cols-3 gap-8">
               {testimonials.map((t, i) => (
                 <ScrollReveal key={t.id} delay={i * 100}>
@@ -350,17 +380,17 @@ export default function Home() {
                 </ScrollReveal>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          )}
+        </div>
+      </section>
 
-      {/* ── Programmes & Events ─────────────────────────────────── */}
-      {(isEnabled('programme_registration') && programmes.length > 0) || (isEnabled('events') && events.length > 0) ? (
+      {/* Programmes & Events */}
+      {(isEnabled('programme_registration') || isEnabled('events')) && (
         <section className="py-20 bg-warm-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Programmes */}
-              {isEnabled('programme_registration') && programmes.length > 0 && (
+              {isEnabled('programme_registration') && (
                 <div>
                   <ScrollReveal>
                     <div className="mb-8">
@@ -368,29 +398,37 @@ export default function Home() {
                       <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Health Programmes</h2>
                     </div>
                   </ScrollReveal>
-                  <div className="space-y-4">
-                    {programmes.map((p, i) => (
-                      <ScrollReveal key={p.id} delay={i * 100}>
-                        <div className="bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4">
-                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                            <FiTrendingUp className="w-5 h-5 text-primary" />
+                  {programmes.length === 0 ? (
+                    <EmptyState
+                      icon={FiTrendingUp}
+                      title="No programmes running"
+                      description="New health programmes are on the way. Stay tuned."
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      {programmes.map((p, i) => (
+                        <ScrollReveal key={p.id} delay={i * 100}>
+                          <div className="bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4">
+                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                              <FiTrendingUp className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 text-sm truncate">{p.title}</h3>
+                              <p className="text-xs text-gray-500">{p.schedule || p.category}</p>
+                            </div>
+                            <Link to="/programmes" className="text-primary shrink-0">
+                              <FiChevronRight className="w-5 h-5" />
+                            </Link>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-sm truncate">{p.title}</h3>
-                            <p className="text-xs text-gray-500">{p.schedule || p.category}</p>
-                          </div>
-                          <Link to="/programmes" className="text-primary shrink-0">
-                            <FiChevronRight className="w-5 h-5" />
-                          </Link>
-                        </div>
-                      </ScrollReveal>
-                    ))}
-                  </div>
+                        </ScrollReveal>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Events */}
-              {isEnabled('events') && events.length > 0 && (
+              {isEnabled('events') && (
                 <div>
                   <ScrollReveal>
                     <div className="mb-8">
@@ -398,33 +436,44 @@ export default function Home() {
                       <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Upcoming Events</h2>
                     </div>
                   </ScrollReveal>
-                  <div className="space-y-4">
-                    {events.map((e, i) => (
-                      <ScrollReveal key={e.id} delay={i * 100}>
-                        <div className="bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4">
-                          <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
-                            <FiCalendar className="w-5 h-5 text-amber-600" />
+                  {eventsLoading ? (
+                    <EventsSkeleton />
+                  ) : events.length === 0 ? (
+                    <EmptyState
+                      icon={FiCalendar}
+                      title="No upcoming events"
+                      description="Check back soon for health screenings, outreaches, and community events."
+                      action={<Link to="/events" className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:underline">View All Events <FiArrowRight className="w-4 h-4" /></Link>}
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      {events.map((e, i) => (
+                        <ScrollReveal key={e.id} delay={i * 100}>
+                          <div className="bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4">
+                            <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center shrink-0">
+                              <FiCalendar className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 text-sm truncate">{e.title}</h3>
+                              <p className="text-xs text-gray-500">{e.date}{e.location ? ` - ${e.location}` : ''}</p>
+                            </div>
+                            <Link to="/events" className="text-primary shrink-0">
+                              <FiChevronRight className="w-5 h-5" />
+                            </Link>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-sm truncate">{e.title}</h3>
-                            <p className="text-xs text-gray-500">{e.date}{e.location ? ` - ${e.location}` : ''}</p>
-                          </div>
-                          <Link to="/events" className="text-primary shrink-0">
-                            <FiChevronRight className="w-5 h-5" />
-                          </Link>
-                        </div>
-                      </ScrollReveal>
-                    ))}
-                  </div>
+                        </ScrollReveal>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </section>
-      ) : null}
+      )}
 
-      {/* ── Resources Preview ────────────────────────────────────── */}
-      {isEnabled('blog') && blogPosts.length > 0 && (
+      {/* Resources Preview */}
+      {isEnabled('blog') && (
         <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ScrollReveal>
@@ -433,40 +482,55 @@ export default function Home() {
                   <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Resources</span>
                   <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Latest Insights</h2>
                 </div>
-                <Link to="/newsroom" className="hidden sm:inline-flex items-center gap-2 text-primary font-semibold hover:underline text-sm">
-                  View All <FiArrowRight className="w-4 h-4" />
-                </Link>
+                {blogPosts.length > 0 && (
+                  <Link to="/newsroom" className="hidden sm:inline-flex items-center gap-2 text-primary font-semibold hover:underline text-sm">
+                    View All <FiArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
               </div>
             </ScrollReveal>
-            <div className="grid md:grid-cols-3 gap-8">
-              {blogPosts.map((post, i) => (
-                <ScrollReveal key={post.id} delay={i * 100}>
-                  <Link to={`/newsroom/${post.slug}`} className="group block bg-warm-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 h-full">
-                    {post.featured_image && (
-                      <div className="aspect-[16/10] bg-gray-200 overflow-hidden">
-                        <img src={post.featured_image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            {blogLoading ? (
+              <BlogSkeletons />
+            ) : blogPosts.length === 0 ? (
+              <EmptyState
+                icon={FiBookOpen}
+                title="No resources published yet"
+                description="Health articles and guides will be available soon."
+                action={<Link to="/newsroom" className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:underline">Visit Newsroom <FiArrowRight className="w-4 h-4" /></Link>}
+              />
+            ) : (
+              <div className="grid md:grid-cols-3 gap-8">
+                {blogPosts.map((post, i) => (
+                  <ScrollReveal key={post.id} delay={i * 100}>
+                    <Link to={`/newsroom/${post.slug}`} className="group block bg-warm-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 h-full">
+                      {post.featured_image && (
+                        <div className="aspect-[16/10] bg-gray-200 overflow-hidden">
+                          <img src={post.featured_image} alt={post.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        </div>
+                      )}
+                      <div className="p-6">
+                        {post.category && <span className="text-xs font-semibold text-primary uppercase tracking-wide">{post.category}</span>}
+                        <h3 className="font-semibold text-gray-900 mt-2 mb-2 group-hover:text-primary transition-colors">{post.title}</h3>
+                        <p className="text-sm text-gray-500 line-clamp-2">{post.excerpt}</p>
+                        <span className="inline-flex items-center gap-1 text-sm text-primary font-medium mt-4 group-hover:gap-2 transition-all">
+                          Read more <FiArrowUpRight className="w-4 h-4" />
+                        </span>
                       </div>
-                    )}
-                    <div className="p-6">
-                      {post.category && <span className="text-xs font-semibold text-primary uppercase tracking-wide">{post.category}</span>}
-                      <h3 className="font-semibold text-gray-900 mt-2 mb-2 group-hover:text-primary transition-colors">{post.title}</h3>
-                      <p className="text-sm text-gray-500 line-clamp-2">{post.excerpt}</p>
-                      <span className="inline-flex items-center gap-1 text-sm text-primary font-medium mt-4 group-hover:gap-2 transition-all">
-                        Read more <FiArrowUpRight className="w-4 h-4" />
-                      </span>
-                    </div>
-                  </Link>
-                </ScrollReveal>
-              ))}
-            </div>
-            <div className="sm:hidden text-center mt-8">
-              <Link to="/newsroom" className="inline-flex items-center gap-2 text-primary font-semibold">View All <FiArrowRight className="w-4 h-4" /></Link>
-            </div>
+                    </Link>
+                  </ScrollReveal>
+                ))}
+              </div>
+            )}
+            {blogPosts.length > 0 && (
+              <div className="sm:hidden text-center mt-8">
+                <Link to="/newsroom" className="inline-flex items-center gap-2 text-primary font-semibold">View All <FiArrowRight className="w-4 h-4" /></Link>
+              </div>
+            )}
           </div>
         </section>
       )}
 
-      {/* ── Community CTA ────────────────────────────────────────── */}
+      {/* Community CTA */}
       {isEnabled('cta_section') && (
         <section className="py-20 bg-warm-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
