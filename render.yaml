@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: bodija-health-hub
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: rm -rf node_modules && npm install
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: JWT_SECRET
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.18.0
+      - key: DB_PATH
+        value: /data/database.sqlite
+      - key: UPLOADS_DIR
+        value: /data/uploads
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
