@@ -401,21 +401,30 @@ async function insertUsers() {
   );
 }
 
-// Ensures the admin user's password matches the current ADMIN_PASSWORD env var.
-// On persistent databases (Render, Railway) the admin hash may be stale if the env
-// var was changed after initial seeding. Runs on every init — idempotent.
+// Ensures the admin user's email and password match the current env vars.
+// On persistent databases (Render) the admin hash may be stale if the env
+// var was changed after initial seeding, or the admin row may be missing.
+// Runs on every init — idempotent.
 async function syncAdminPassword() {
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminEmail || !adminPassword) return;
 
   const admin = await db.prepare('SELECT id, password_hash FROM users WHERE email = ?').get(adminEmail);
-  if (!admin) return;
+  const newHash = bcrypt.hashSync(adminPassword, 10);
+
+  if (!admin) {
+    // Admin user was deleted or never created with these env vars — insert it.
+    await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
+      'Admin User', adminEmail, newHash, 'admin', '+234 801 234 5678'
+    );
+    console.log(`[seed] Created admin user ${adminEmail}`);
+    return;
+  }
 
   const valid = bcrypt.compareSync(adminPassword, admin.password_hash);
   if (valid) return;
 
-  const newHash = bcrypt.hashSync(adminPassword, 10);
   await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, admin.id);
   console.log(`[seed] Synced password hash for admin user ${adminEmail}`);
 }
