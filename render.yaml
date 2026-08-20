@@ -5,7 +5,7 @@ services:
     plan: free
     rootDir: .
     buildCommand: rm -rf node_modules && npm install
-    startCommand: node server/index.js
+    startCommand: node index.js
     healthCheckPath: /api/health
     envVars:
       - key: JWT_SECRET
