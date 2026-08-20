@@ -37,7 +37,7 @@ const AdminRoute = () => {
 
         const data = await res.json();
         if (!active) return;
-        setUser(data.user || parsedUser);
+        setUser(data || parsedUser);
         setIsAuthenticated(true);
       } catch {
         if (active) setIsAuthenticated(false);
