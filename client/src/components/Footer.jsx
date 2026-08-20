@@ -12,9 +12,9 @@ const defaultQuickLinks = [
 ]
 
 const defaultPlatformLinks = [
-  { label: 'LiveCare — Elder Care App', url: '/platforms' },
-  { label: 'hEar Menders — Digital Hearing Health', url: '/platforms' },
-  { label: 'BACR — Rehabilitation Centre (Coming Soon)', url: '/upcoming' },
+  { label: 'LiveCare — Elder Care App', url: '/livecare' },
+  { label: 'hEar Menders — Digital Hearing Health', url: '/hear-menders' },
+  { label: 'BACR — Rehabilitation Centre (Coming Soon)', url: '/bacr' },
 ]
 
 export default function Footer() {

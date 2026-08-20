@@ -567,3 +567,86 @@ test('patient login and register routes exist and are accessible', async () => {
   });
   assert.ok([201, 400, 403, 404, 409].includes(register.status), `patient register responded with ${register.status}`);
 });
+
+test('feature gate regression: all public route flags are enabled and correctly structured', async () => {
+  const { status, json } = await request('GET', '/api/features');
+  assert.strictEqual(status, 200);
+  assert.ok(Array.isArray(json));
+
+  const byKey = Object.fromEntries(json.map((f) => [f.key, f]));
+
+  // These flags control public routes via FeatureGate in App.jsx.
+  // If any is disabled, the route shows "Coming Soon" instead of real content.
+  const publicRouteFlags = [
+    'services',
+    'appointment_booking',
+    'contact_form',
+    'faq',
+    'careers',
+    'upcoming_projects',
+    'partners_section',
+    'platforms_section',
+    'blog',
+    'events',
+    'programme_registration',
+    'livecare',
+    'hear_menders',
+  ];
+
+  for (const key of publicRouteFlags) {
+    assert.ok(byKey[key], `flag "${key}" must exist in GET /api/features`);
+    assert.strictEqual(byKey[key].enabled, true, `flag "${key}" must be enabled for its public route to render`);
+    assert.strictEqual(byKey[key].status, 'active', `flag "${key}" must have status "active"`);
+  }
+
+  // Archived features must be disabled — their routes should stay behind "Coming Soon"
+  const archivedFlags = ['patient_portal', 'appointments', 'doctors'];
+  for (const key of archivedFlags) {
+    assert.ok(byKey[key], `archived flag "${key}" must exist`);
+    assert.strictEqual(byKey[key].enabled, false, `archived flag "${key}" must be disabled`);
+    assert.strictEqual(byKey[key].status, 'archived', `archived flag "${key}" must have status "archived"`);
+  }
+
+  // Each public route flag must expose boolean fields the frontend relies on
+  for (const key of publicRouteFlags) {
+    const f = byKey[key];
+    assert.strictEqual(typeof f.enabled, 'boolean', `"${key}".enabled must be boolean`);
+    assert.strictEqual(typeof f.public_visible, 'boolean', `"${key}".public_visible must be boolean`);
+    assert.strictEqual(typeof f.navigation_visible, 'boolean', `"${key}".navigation_visible must be boolean`);
+  }
+});
+
+test('feature gate regression: disabling a public flag hides its API and re-enabling restores it', async () => {
+  // Disable the blog flag (controls /newsroom route)
+  await request('PUT', '/api/admin/features/blog', {
+    token: adminToken,
+    body: { enabled: false },
+  });
+
+  // Public blog endpoint should 404
+  const disabled = await request('GET', '/api/blog');
+  assert.strictEqual(disabled.status, 404);
+
+  // Re-enable it
+  await request('POST', '/api/admin/features/blog/toggle', { token: adminToken });
+
+  // Public blog endpoint should work again
+  const enabled = await request('GET', '/api/blog');
+  assert.strictEqual(enabled.status, 200);
+});
+
+test('feature gate regression: every feature flag returned by public API has required boolean fields', async () => {
+  const { status, json } = await request('GET', '/api/features');
+  assert.strictEqual(status, 200);
+  assert.ok(json.length > 0, 'must have feature flags');
+
+  const requiredFields = ['key', 'name', 'status', 'enabled', 'public_visible', 'navigation_visible'];
+  for (const flag of json) {
+    for (const field of requiredFields) {
+      assert.ok(field in flag, `flag "${flag.key}" missing field "${field}"`);
+    }
+    assert.strictEqual(typeof flag.enabled, 'boolean', `"${flag.key}".enabled must be boolean`);
+    assert.strictEqual(typeof flag.public_visible, 'boolean', `"${flag.key}".public_visible must be boolean`);
+    assert.strictEqual(typeof flag.navigation_visible, 'boolean', `"${flag.key}".navigation_visible must be boolean`);
+  }
+});

@@ -125,23 +125,26 @@ function WhatsAppButton() {
 // Maps public routes to the feature flag that controls them. When a flag is
 // disabled, the route renders a "Coming Soon" page instead.
 const FEATURE_ROUTES = {
-  '/services': { key: 'services', name: 'Services' },
-  '/appointments': { key: 'appointment_booking', name: 'Book a Service / Appointment' },
-  '/contact': { key: 'contact_form', name: 'Contact' },
-  '/faq': { key: 'faq', name: 'FAQ' },
-  '/careers': { key: 'careers', name: 'Careers' },
-  '/upcoming': { key: 'upcoming_projects', name: 'Upcoming Projects' },
-  '/partners': { key: 'partners_section', name: 'Partner Network' },
-  '/platforms': { key: 'platforms_section', name: 'Platforms' },
-  '/newsroom': { key: 'blog', name: 'Newsroom' },
-  '/events': { key: 'events', name: 'Events' },
-  '/programmes': { key: 'programme_registration', name: 'Programmes' },
-  '/livecare': { key: 'livecare', name: 'LiveCare' },
-  '/hear-menders': { key: 'hear_menders', name: 'hEar Menders' },
+  '/services': { featureKey: 'services', featureName: 'Services' },
+  '/appointments': { featureKey: 'appointment_booking', featureName: 'Book a Service / Appointment' },
+  '/contact': { featureKey: 'contact_form', featureName: 'Contact' },
+  '/faq': { featureKey: 'faq', featureName: 'FAQ' },
+  '/careers': { featureKey: 'careers', featureName: 'Careers' },
+  '/upcoming': { featureKey: 'upcoming_projects', featureName: 'Upcoming Projects' },
+  '/partners': { featureKey: 'partners_section', featureName: 'Partner Network' },
+  '/platforms': { featureKey: 'platforms_section', featureName: 'Platforms' },
+  '/newsroom': { featureKey: 'blog', featureName: 'Newsroom' },
+  '/events': { featureKey: 'events', featureName: 'Events' },
+  '/programmes': { featureKey: 'programme_registration', featureName: 'Programmes' },
+  '/livecare': { featureKey: 'livecare', featureName: 'LiveCare' },
+  '/hear-menders': { featureKey: 'hear_menders', featureName: 'hEar Menders' },
 }
 
 function FeatureGate({ featureKey, featureName, children }) {
   const { isEnabled } = useFeatures()
+  if (!featureKey && import.meta.env.DEV) {
+    console.error('[FeatureGate] Missing featureKey prop – route will be blocked')
+  }
   if (!isEnabled(featureKey)) {
     return <FeatureUnavailable featureName={featureName} />
   }
