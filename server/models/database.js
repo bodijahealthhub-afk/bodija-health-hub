@@ -742,6 +742,31 @@ async function seedIfEmpty() {
   await insertAuditSeeds();
 }
 
+// Ensures a default admin account always exists with admin role.
+// On persistent databases the original seed may have been skipped, or the email may
+// have been registered via the public form with receptionist role.
+// Creates the user if missing; promotes the role if non-admin. Does NOT reset the
+// password — syncAdminPassword() handles that when env vars are available.
+async function ensureDefaultAdmin() {
+  const email = 'admin@bodijahealthhub.com';
+  const existing = await db.prepare('SELECT id, role FROM users WHERE email = ?').get(email);
+
+  if (!existing) {
+    const password = process.env.ADMIN_PASSWORD || 'admin123';
+    const hash = bcrypt.hashSync(password, 10);
+    await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
+      'Admin User', email, hash, 'admin', '+234 801 234 5678'
+    );
+    console.log(`[seed] Created default admin user ${email}`);
+    return;
+  }
+
+  if (existing.role !== 'admin' && existing.role !== 'super_admin') {
+    await db.prepare('UPDATE users SET role = ? WHERE id = ?').run('admin', existing.id);
+    console.log(`[seed] Promoted ${email} to admin role`);
+  }
+}
+
 const featureFlagSeeds = [
   { key: 'appointments', name: 'Appointments & Scheduling (Legacy)', description: 'Legacy doctor-based booking form — superseded by appointment_booking.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
   { key: 'doctors', name: 'Doctors Directory (Future)', description: 'Doctor directory and profiles — future module, not presented publicly.', status: 'archived', enabled: 0, public_visible: 0, navigation_visible: 0 },
@@ -1045,6 +1070,7 @@ async function init() {
   await migrateSeoSettings();
   await seedIfEmpty();
   await syncAdminPassword();
+  await ensureDefaultAdmin();
   await archiveFakeSeedData();
   await reactivateServiceCatalog();
   await republishBlogPosts();
