@@ -401,15 +401,13 @@ async function insertUsers() {
   );
 }
 
-// Ensures the admin user's email and password match the current env vars.
-// On persistent databases (Render) the admin hash may be stale if the env
-// var was changed after initial seeding, or the admin row may be missing.
-// Falls back to hardcoded defaults when env vars are not set (e.g. on Render
-// where ADMIN_EMAIL/ADMIN_PASSWORD may not be configured in the dashboard).
-// Runs on every init — idempotent.
+// Syncs the admin password ONLY when both ADMIN_EMAIL and ADMIN_PASSWORD env vars
+// are explicitly configured (e.g. in Render dashboard or .env). This avoids overwriting
+// passwords on deployments where env vars are not set.
 async function syncAdminPassword() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@bodijahealthhub.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) return;
 
   const admin = await db.prepare('SELECT id, password_hash FROM users WHERE email = ?').get(adminEmail);
   const newHash = bcrypt.hashSync(adminPassword, 10);
