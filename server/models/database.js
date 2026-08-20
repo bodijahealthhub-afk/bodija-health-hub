@@ -401,6 +401,25 @@ async function insertUsers() {
   );
 }
 
+// Ensures the admin user's password matches the current ADMIN_PASSWORD env var.
+// On persistent databases (Render, Railway) the admin hash may be stale if the env
+// var was changed after initial seeding. Runs on every init — idempotent.
+async function syncAdminPassword() {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) return;
+
+  const admin = await db.prepare('SELECT id, password_hash FROM users WHERE email = ?').get(adminEmail);
+  if (!admin) return;
+
+  const valid = bcrypt.compareSync(adminPassword, admin.password_hash);
+  if (valid) return;
+
+  const newHash = bcrypt.hashSync(adminPassword, 10);
+  await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, admin.id);
+  console.log(`[seed] Synced password hash for admin user ${adminEmail}`);
+}
+
 async function insertContentDefaults() {
   // NOTE: No fake services, blog posts, or testimonials are seeded.
   // The spec requires real, admin-created content only — fresh installs start with
@@ -791,12 +810,124 @@ const FAKE_TESTIMONIALS = [
   'I visited for a wellness screening and was impressed by the thoroughness of the check-up. The staff took time to explain every result and provided practical health advice. Highly recommend their preventive health services!',
 ];
 
-// Baseline editorial content that an earlier seed cleanup drafted. Restored (republished)
-// on every init so the newsroom is never left empty — idempotent, admin edits preserved.
-const BLOG_CATALOG_SLUGS = [
-  'understanding-hearing-loss', 'managing-hypertension',
-  'child-health-vaccinations', 'diabetes-management',
+// Baseline editorial content that ensures the newsroom is never empty on fresh DBs.
+// INSERT OR IGNORE adds missing posts; UPDATE republishes any that were drafted.
+const BLOG_CATALOG = [
+  {
+    title: 'Understanding Hearing Loss: Causes, Signs, and Solutions',
+    slug: 'understanding-hearing-loss',
+    category: 'Audiology',
+    excerpt: 'Hearing loss affects millions of people worldwide, yet many suffer in silence. Learn about the causes, early warning signs, and modern treatment options available at Bodija Health Hub.',
+    content: `<h2>What is Hearing Loss?</h2>
+<p>Hearing loss is a partial or total inability to hear. It can affect one or both ears and may come on gradually or suddenly. At Bodija Health Hub, we see patients across all age groups — from children with congenital hearing issues to elderly patients experiencing age-related decline.</p>
+
+<h2>Common Causes</h2>
+<ul>
+<li><strong>Age-related:</strong> Presbycusis affects most people over 60 to some degree</li>
+<li><strong>Noise exposure:</strong> Prolonged exposure to loud sounds damages hair cells in the inner ear</li>
+<li><strong>Infections:</strong> Ear infections, if untreated, can lead to permanent damage</li>
+<li><strong>Genetics:</strong> Some forms of hearing loss run in families</li>
+<li><strong>Medications:</strong> Certain drugs are ototoxic and can damage hearing</li>
+</ul>
+
+<h2>Warning Signs to Watch For</h2>
+<p>Difficulty following conversations in groups, asking people to repeat themselves, turning up the TV volume, and avoiding social situations are all common signs. If you notice these, schedule a hearing test at our Audiology department.</p>
+
+<h2>Treatment Options</h2>
+<p>Modern hearing aids are smaller, smarter, and more effective than ever. Our audiologists at BHH provide comprehensive assessments and personalized fitting services. For severe cases, we coordinate with specialist partners for cochlear implant evaluations.</p>
+
+<p><strong>Take the first step:</strong> Book a hearing assessment at Bodija Health Hub today. Early detection makes all the difference.</p>`,
+  },
+  {
+    title: 'Managing Hypertension: Your Guide to Healthy Blood Pressure',
+    slug: 'managing-hypertension',
+    category: 'Chronic Care',
+    excerpt: 'High blood pressure is a silent killer that affects millions of Nigerians. Discover practical strategies for monitoring and managing your blood pressure effectively.',
+    content: `<h2>Why Hypertension Matters</h2>
+<p>Hypertension — or high blood pressure — is one of the leading causes of heart disease, stroke, and kidney failure worldwide. In Nigeria, an estimated 30-40% of adults live with hypertension, and many don't even know it because the condition rarely shows symptoms until serious damage has occurred.</p>
+
+<h2>What Numbers Should You Know?</h2>
+<p>A normal blood pressure reading is below 120/80 mmHg. Elevated blood pressure is 120-129/less than 80. Stage 1 hypertension is 130-139/80-89, and Stage 2 is 140+/90+. A hypertensive crisis (above 180/120) requires immediate medical attention.</p>
+
+<h2>Practical Management Strategies</h2>
+<ul>
+<li><strong>Monitor regularly:</strong> Check your blood pressure at home and keep a log</li>
+<li><strong>Reduce salt intake:</strong> Aim for less than 5g per day — be mindful of processed foods</li>
+<li><strong>Stay active:</strong> At least 30 minutes of moderate exercise most days of the week</li>
+<li><strong>Manage stress:</strong> Practice relaxation techniques and ensure adequate sleep</li>
+<li><strong>Take medication consistently:</strong> Never skip doses or stop without consulting your doctor</li>
+</ul>
+
+<h2>Our Hypertension Clinic</h2>
+<p>Bodija Health Hub's dedicated Hypertension Clinic provides regular monitoring, medication management, lifestyle counselling, and follow-up care. Our goal is to help you achieve and maintain healthy blood pressure for life.</p>`,
+  },
+  {
+    title: 'Child Health: Essential Vaccinations Every Parent Should Know',
+    slug: 'child-health-vaccinations',
+    category: 'Child Health',
+    excerpt: 'Vaccinations protect your child from serious diseases. Learn about the recommended immunization schedule and why each vaccine matters.',
+    content: `<h2>Why Vaccinate?</h2>
+<p>Vaccines are one of the most important tools we have to protect children from serious, potentially life-threatening diseases. They work by training the immune system to recognise and fight specific pathogens without causing the actual disease.</p>
+
+<h2>The Nigerian Childhood Immunization Schedule</h2>
+<p>The National Primary Health Care Development Agency recommends vaccinations starting from birth:</p>
+<ul>
+<li><strong>Birth:</strong> BCG (tuberculosis), OPV-0 (polio), Hepatitis B-0</li>
+<li><strong>6 weeks:</strong> OPV-1, Penta-1, PCV-1, Rotavirus-1</li>
+<li><strong>10 weeks:</strong> OPV-2, Penta-2, PCV-2, Rotavirus-2</li>
+<li><strong>14 weeks:</strong> OPV-3, Penta-3, PCV-3, Rotavirus-3, IPV</li>
+<li><strong>9 months:</strong> Measles-Rubella-1, Yellow Fever</li>
+<li><strong>15-18 months:</strong> Measles-Rubella-2, DPT booster-1</li>
+</ul>
+
+<h2>Common Concerns</h2>
+<p>Many parents worry about side effects. Most reactions are mild — slight fever, redness at the injection site, or fussiness — and resolve within a day or two. Serious reactions are extremely rare. The diseases vaccines prevent are far more dangerous than any vaccine side effect.</p>
+
+<h2>Vaccination at BHH</h2>
+<p>Our Child Health clinic provides all recommended vaccinations in a safe, child-friendly environment. We maintain proper cold-chain storage and our nurses are trained in gentle, reassuring techniques for little ones.</p>`,
+  },
+  {
+    title: 'Living Well with Diabetes: Practical Tips for Daily Management',
+    slug: 'diabetes-management',
+    category: 'Chronic Care',
+    excerpt: 'Diabetes doesn\'t have to control your life. With the right knowledge and support, you can manage your condition and live fully.',
+    content: `<h2>Understanding Diabetes</h2>
+<p>Diabetes is a chronic condition where the body cannot properly process blood sugar (glucose). In Type 1 diabetes, the pancreas produces little or no insulin. In Type 2 diabetes — which accounts for about 90% of cases — the body becomes resistant to insulin or doesn't produce enough.</p>
+
+<h2>Key Management Strategies</h2>
+<h3>Monitor Your Blood Sugar</h3>
+<p>Regular monitoring helps you understand how food, activity, stress, and medication affect your blood sugar levels. Check at the times your doctor recommends and keep a log to share at appointments.</p>
+
+<h3>Eat Balanced Meals</h3>
+<p>Focus on whole grains, lean proteins, vegetables, and healthy fats. Limit refined carbohydrates and sugary drinks. The "plate method" is simple: fill half your plate with vegetables, a quarter with protein, and a quarter with whole grains or starchy foods.</p>
+
+<h3>Stay Physically Active</h3>
+<p>Regular exercise helps your body use insulin more effectively. Aim for at least 150 minutes of moderate activity per week. Walking, swimming, and cycling are excellent choices.</p>
+
+<h3>Take Medication as Prescribed</h3>
+<p>Whether you take oral medications or insulin, consistency is key. Set reminders and never skip doses without consulting your doctor.</p>
+
+<h2>Our Diabetes Care Programme</h2>
+<p>Bodija Health Hub's Diabetes Care programme includes regular check-ups, blood sugar monitoring, nutritional counselling, foot care screening, and education workshops. Our multidisciplinary team works together to help you stay in control.</p>
+
+<p><strong>Remember:</strong> Diabetes is manageable. With consistent care and the right support, you can live a full, healthy life.</p>`,
+  },
 ];
+
+async function republishBlogPosts() {
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO blog_posts (title, slug, content, excerpt, category, status, views)
+     VALUES (?, ?, ?, ?, ?, 'published', 0)`
+  );
+  const activate = db.prepare(
+    `UPDATE blog_posts SET status = 'published' WHERE slug = ?`
+  );
+  for (const post of BLOG_CATALOG) {
+    insert.run(post.title, post.slug, post.content, post.excerpt, post.category);
+    activate.run(post.slug);
+  }
+  console.log(`[seed] Blog: ${BLOG_CATALOG.length} baseline newsroom posts ensured.`);
+}
 
 async function archiveFakeSeedData() {
   const placeholders = (n) => new Array(n).fill('?').join(',');
@@ -812,30 +943,84 @@ async function archiveFakeSeedData() {
   console.log(`[migrate] Archived fabricated seed content (doctors = ${archivedCount.total} affected rows).`);
 }
 
-// Restores the baseline newsroom posts that earlier seed cleanup drafted. Idempotent —
-// runs on every init so production gets the posts back on next deploy.
-async function republishBlogPosts() {
-  const placeholders = (n) => new Array(n).fill('?').join(',');
-  const ph = placeholders(BLOG_CATALOG_SLUGS.length);
-  await db.prepare(`UPDATE blog_posts SET status = 'published' WHERE slug IN (${ph})`).run(...BLOG_CATALOG_SLUGS);
-}
-
-// Restores the baseline service catalog that earlier seed cleanup archived. Idempotent —
-// runs on every init so existing databases (including production) get the catalog back
-// on next deploy without overwriting admin edits to real services.
+// Ensures the baseline service catalog exists and is active. On fresh databases
+// the INSERT adds the rows; on existing databases the UPDATE reactivates any that
+// were archived. Admin edits to name/description/price are preserved on re-deploys.
 const SERVICE_CATALOG = [
-  'General Consultation', 'Audiology', 'Hearing Tests', 'Hearing Aids',
-  'Speech Therapy', 'Laboratory Services', 'Hypertension Clinic', 'Diabetes Care',
-  'Kidney Care', 'Elderly Care', 'Child Health', 'Wellness Screening',
-  'Home Care LiveCare', 'Preventive Health', 'Vaccination', 'Health Outreach Programs',
+  { name: 'General Consultation', category: 'Primary Care', short_description: 'Comprehensive health assessment and diagnosis by our experienced physicians.', icon: '🩺', price: 5000 },
+  { name: 'Audiology', category: 'Specialist Care', short_description: 'Professional hearing assessment and treatment by certified audiologists.', icon: '👂', price: 10000 },
+  { name: 'Hearing Tests', category: 'Diagnostics', short_description: 'Advanced audiometric testing to evaluate hearing sensitivity and identify hearing loss.', icon: '🔬', price: 7500 },
+  { name: 'Hearing Aids', category: 'Specialist Care', short_description: 'Fitting and dispensing of modern hearing aids tailored to your needs.', icon: '🎧', price: 50000 },
+  { name: 'Speech Therapy', category: 'Therapy', short_description: 'Speech and language therapy for children and adults with communication disorders.', icon: '🗣️', price: 8000 },
+  { name: 'Laboratory Services', category: 'Diagnostics', short_description: 'Full range of clinical laboratory tests including blood work, urinalysis, and more.', icon: '🧪', price: 3000 },
+  { name: 'Hypertension Clinic', category: 'Chronic Care', short_description: 'Specialized management and monitoring for patients with high blood pressure.', icon: '❤️', price: 5000 },
+  { name: 'Diabetes Care', category: 'Chronic Care', short_description: 'Comprehensive diabetes management including monitoring, education, and lifestyle support.', icon: '💉', price: 5000 },
+  { name: 'Kidney Care', category: 'Specialist Care', short_description: 'Expert nephrology services for kidney health assessment and management.', icon: '🫘', price: 15000 },
+  { name: 'Elderly Care', category: 'Primary Care', short_description: 'Compassionate healthcare services designed for the unique needs of senior citizens.', icon: '🧓', price: 8000 },
+  { name: 'Child Health', category: 'Primary Care', short_description: 'Pediatric care including immunizations, growth monitoring, and childhood illness treatment.', icon: '👶', price: 5000 },
+  { name: 'Wellness Screening', category: 'Preventive', short_description: 'Comprehensive health check-ups and preventive screenings for early detection.', icon: '📋', price: 10000 },
+  { name: 'Home Care LiveCare', category: 'Digital Health', short_description: 'Remote patient monitoring and virtual care through our LiveCare digital platform.', icon: '📱', price: 15000 },
+  { name: 'Preventive Health', category: 'Preventive', short_description: 'Proactive health programmes focused on disease prevention and wellness promotion.', icon: '🛡️', price: 7000 },
+  { name: 'Vaccination', category: 'Preventive', short_description: 'Full range of immunizations for children and adults following national guidelines.', icon: '💊', price: 3000 },
+  { name: 'Health Outreach Programs', category: 'Community', short_description: 'Community health initiatives including free screenings, health talks, and wellness events.', icon: '🏥', price: 0 },
 ];
 
 async function reactivateServiceCatalog() {
-  const placeholders = (n) => new Array(n).fill('?').join(',');
-  const ph = placeholders(SERVICE_CATALOG.length);
-  await db.prepare(
-    `UPDATE services SET is_active = 1, slug = COALESCE(slug, LOWER(REPLACE(name, ' ', '-'))) WHERE name IN (${ph})`
-  ).run(...SERVICE_CATALOG);
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO services (name, slug, short_description, category, icon, price, is_active, display_order)
+     VALUES (?, ?, ?, ?, ?, ?, 1, ?)`
+  );
+  const activate = db.prepare(
+    `UPDATE services SET is_active = 1, slug = COALESCE(slug, LOWER(REPLACE(name, ' ', '-'))) WHERE name = ?`
+  );
+  SERVICE_CATALOG.forEach((svc, i) => {
+    insert.run(svc.name, db.slugify(svc.name), svc.short_description, svc.category, svc.icon, svc.price, i);
+    activate.run(svc.name);
+  });
+  console.log(`[seed] Service catalog: ${SERVICE_CATALOG.length} baseline services ensured.`);
+}
+
+// Baseline partners — only inserted when the partners table is empty so admin-created
+// partners are never overwritten. Gives the Partners page real content on fresh DBs.
+const PARTNER_CATALOG = [
+  {
+    name: 'Bodija Health Hub (BHH)',
+    partner_type: 'healthcare',
+    description: 'The central hub connecting patients with quality healthcare services, programmes, and partner providers across Ibadan.',
+    location: 'Favos Junction, Bodija, Ibadan',
+    services_offered: 'General Consultation,Wellness Screening,Health Outreach Programs',
+    featured: 1,
+  },
+  {
+    name: 'Ibadan Community Health Initiative',
+    partner_type: 'community',
+    description: 'A community-based organisation focused on preventive health education and outreach in underserved neighbourhoods across Ibadan.',
+    location: 'Ibadan, Oyo State',
+    services_offered: 'Health Outreach Programs,Preventive Health,Vaccination',
+    featured: 1,
+  },
+  {
+    name: 'Sunrise Hearing Centre',
+    partner_type: 'specialist',
+    description: 'Specialist audiology and hearing care provider offering advanced diagnostics, hearing aid fitting, and rehabilitation services.',
+    location: 'Bodija, Ibadan',
+    services_offered: 'Audiology,Hearing Tests,Hearing Aids',
+    featured: 0,
+  },
+];
+
+async function seedPartners() {
+  const count = await db.prepare('SELECT COUNT(*) as count FROM partners').get();
+  if (count.count > 0) return;
+
+  const insert = db.prepare(
+    `INSERT INTO partners (name, slug, partner_type, description, location, services_offered, featured, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 1)`
+  );
+  for (const p of PARTNER_CATALOG) {
+    insert.run(p.name, db.slugify(p.name), p.partner_type, p.description, p.location, p.services_offered, p.featured);
+  }
+  console.log(`[seed] Partners: ${PARTNER_CATALOG.length} baseline partners seeded.`);
 }
 
 async function init() {
@@ -850,9 +1035,11 @@ async function init() {
   await migratePartnersLink();
   await migrateSeoSettings();
   await seedIfEmpty();
+  await syncAdminPassword();
   await archiveFakeSeedData();
   await reactivateServiceCatalog();
   await republishBlogPosts();
+  await seedPartners();
 }
 
 // Reset all content to the original defaults (used by the admin backup/reset endpoint).

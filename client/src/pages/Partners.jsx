@@ -17,6 +17,7 @@ export default function Partners() {
     partners_description: 'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care.',
   })
   const [partners, setPartners] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,6 +44,7 @@ export default function Partners() {
               services: p.servicesOffered || [],
               image: p.logo || '',
             })))
+            setLoading(false)
             return
           }
         }
@@ -62,6 +64,7 @@ export default function Partners() {
               services: p.servicesOffered || [],
               image: p.logo || '',
             })))
+            setLoading(false)
             return
           }
         }
@@ -86,6 +89,7 @@ export default function Partners() {
           if (partnerList.length > 0) setPartners(partnerList)
         }
       } catch {}
+      setLoading(false)
     }
     fetchData()
   }, [])
@@ -106,8 +110,21 @@ export default function Partners() {
       {/* Partners Grid */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-8">
-            {partners.map((partner, i) => {
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+            </div>
+          ) : partners.length === 0 ? (
+            <div className="text-center py-24">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">No partners yet</h3>
+              <p className="text-gray-500 mb-8">Our partner network is growing. Check back soon for updates.</p>
+              <Link to="/contact" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/90 transition-colors">
+                Become a Partner
+              </Link>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-8">
+              {partners.map((partner, i) => {
               const Icon = icons[i % icons.length]
               const color = colors[i % colors.length]
               const colors2 = colorMap[color]
@@ -141,7 +158,8 @@ export default function Partners() {
                 </Link>
               )
             })}
-          </div>
+            </div>
+          )}
         </div>
       </section>
 
