@@ -10,6 +10,7 @@
     "start": "node server/index.js",
     "server": "node server/index.js",
     "client": "cd client && npm start",
+    "build": "cd client && npm install && npm run build",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "test": "node --test \"server/test/**/*.test.js\""
   },
