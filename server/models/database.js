@@ -394,7 +394,7 @@ async function insertUsers() {
   }
   const seededAdminEmail = adminEmail || 'admin@bodijahealthhub.com';
   const seededAdminPassword = adminPassword || 'admin123';
-  const adminHash = bcrypt.hashSync(seededAdminPassword, 10);
+  const adminHash = await bcrypt.hash(seededAdminPassword, 10);
 
   await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
     'Admin User', seededAdminEmail, adminHash, 'admin', '+234 801 234 5678'
@@ -410,7 +410,7 @@ async function syncAdminPassword() {
   if (!adminEmail || !adminPassword) return;
 
   const admin = await db.prepare('SELECT id, password_hash FROM users WHERE email = ?').get(adminEmail);
-  const newHash = bcrypt.hashSync(adminPassword, 10);
+  const newHash = await bcrypt.hash(adminPassword, 10);
 
   if (!admin) {
     await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
@@ -420,7 +420,7 @@ async function syncAdminPassword() {
     return;
   }
 
-  const valid = bcrypt.compareSync(adminPassword, admin.password_hash);
+  const valid = await bcrypt.compare(adminPassword, admin.password_hash);
   if (valid) return;
 
   await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, admin.id);
@@ -751,7 +751,7 @@ async function ensureDefaultAdmin() {
 
   if (!existing) {
     const password = process.env.ADMIN_PASSWORD || 'admin123';
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = await bcrypt.hash(password, 10);
     await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
       'Admin User', email, hash, 'admin', '+234 801 234 5678'
     );
@@ -1128,6 +1128,7 @@ const db = {
   pragma: (p) => impl.pragma(p),
   slugify,
   resetContentToDefaults,
+  close() { if (impl.close) impl.close(); },
 };
 
 db.ready = init();

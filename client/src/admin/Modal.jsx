@@ -1,7 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   const overlayRef = useRef(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMounted(true);
+    } else {
+      const timer = setTimeout(() => setMounted(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -31,15 +41,19 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
     full: 'max-w-6xl',
   };
 
-  if (!isOpen) return null;
+  if (!mounted) return null;
 
   return (
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4"
+      className={`fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4 transition-opacity duration-200 ${
+        isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
     >
-      <div className={`bg-white rounded-xl shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col`}>
+      <div className={`bg-white rounded-xl shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col transition-all duration-200 ${
+        isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+      }`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>

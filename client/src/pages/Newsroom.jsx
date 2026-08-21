@@ -1,21 +1,40 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiSearch, FiArrowRight } from 'react-icons/fi'
+import { BlogSkeletons } from '../components/SkeletonLoader'
+import ScrollReveal from '../components/ScrollReveal'
 
 export default function Newsroom() {
   const [posts, setPosts] = useState([])
   const [search, setSearch] = useState('')
-  useEffect(() => { fetch('/api/blog').then(r => r.json()).then(d => setPosts(Array.isArray(d) ? d : d.posts || [])).catch(() => {}) }, [])
+  const [loading, setLoading] = useState(true)
+  const [activeCategory, setActiveCategory] = useState(null)
 
-  const filtered = search ? posts.filter(p => p.title.toLowerCase().includes(search.toLowerCase()) || (p.excerpt || '').toLowerCase().includes(search.toLowerCase())) : posts
+  const categories = [...new Set(posts.map(p => p.category).filter(Boolean))].sort()
+
+  const filtered = posts.filter(p => {
+    const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) || (p.excerpt || '').toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = !activeCategory || p.category === activeCategory
+    return matchesSearch && matchesCategory
+  })
+
+  useEffect(() => {
+    fetch('/api/blog')
+      .then(r => r.json())
+      .then(d => { setPosts(Array.isArray(d) ? d : d.posts || []) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
     <div>
       <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-primary/90 text-white py-24">
         <div className="max-w-7xl mx-auto px-4 text-center">
+          <ScrollReveal>
           <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Newsroom</span>
           <h1 className="text-4xl sm:text-5xl font-bold mb-6">Latest News & Updates</h1>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">Stay informed with the latest from Bodija Health Hub.</p>
+          </ScrollReveal>
           <div className="mt-8 max-w-md mx-auto relative">
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input type="text" placeholder="Search news..." value={search} onChange={e => setSearch(e.target.value)}
@@ -26,22 +45,52 @@ export default function Newsroom() {
 
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <BlogSkeletons />
+          ) : filtered.length === 0 ? (
             <p className="text-center text-gray-500 py-12">No news articles found.</p>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filtered.map((post, i) => (
-                <Link key={i} to={`/newsroom/${post.slug}`} className="bg-warm-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow group">
-                  {post.featured_image && <img src={post.featured_image} alt={post.title} className="w-full h-48 object-cover" />}
+            <>
+              {categories.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-8">
+                  <button
+                    onClick={() => setActiveCategory(null)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      !activeCategory ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >All</button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        activeCategory === cat ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >{cat}</button>
+                  ))}
+                </div>
+              )}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filtered.map((post, i) => (
+                <ScrollReveal key={i} delay={i * 80}>
+                <Link to={`/newsroom/${post.slug}`} className="bg-warm-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow group block">
+                  {post.featured_image && <img src={post.featured_image} alt={post.title} loading="lazy" className="w-full h-48 object-cover" />}
                   <div className="p-6">
-                    <span className="text-xs text-primary font-medium">{post.category || 'News'}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs text-primary font-medium">{post.category || 'News'}</span>
+                      {post.published_at && (
+                        <span className="text-xs text-gray-400">{new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      )}
+                    </div>
                     <h3 className="font-bold text-gray-900 mt-2 mb-2 group-hover:text-primary transition-colors">{post.title}</h3>
                     <p className="text-sm text-gray-500 line-clamp-2">{post.excerpt}</p>
                     <span className="inline-flex items-center gap-1 text-primary font-medium text-sm mt-4 group-hover:gap-2 transition-all">Read More <FiArrowRight className="w-4 h-4" /></span>
                   </div>
                 </Link>
+                </ScrollReveal>
               ))}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </section>

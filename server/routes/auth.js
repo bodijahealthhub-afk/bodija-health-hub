@@ -23,7 +23,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const valid = bcrypt.compareSync(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -56,7 +56,7 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = await bcrypt.hash(password, 10);
     const result = await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
       name, email, hash, 'receptionist', phone || null
     );
@@ -97,10 +97,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
     }
 
     if (new_password) {
-      if (!current_password || !bcrypt.compareSync(current_password, user.password_hash)) {
+      if (!current_password || !(await bcrypt.compare(current_password, user.password_hash))) {
         return res.status(400).json({ error: 'Current password is incorrect' });
       }
-      const hash = bcrypt.hashSync(new_password, 10);
+      const hash = await bcrypt.hash(new_password, 10);
       await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.user.id);
     }
 
@@ -141,7 +141,7 @@ router.post('/create-admin', authenticateToken, requireRole('admin', 'super_admi
     if (existing) {
       return res.status(409).json({ error: 'Email already exists' });
     }
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = await bcrypt.hash(password, 10);
     const result = await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
       name, email, hash, finalRole, phone || null
     );
@@ -159,7 +159,7 @@ router.put('/reset-password', authenticateToken, requireRole('admin', 'super_adm
     if (!user_id || !new_password) {
       return res.status(400).json({ error: 'User ID and new password are required' });
     }
-    const hash = bcrypt.hashSync(new_password, 10);
+    const hash = await bcrypt.hash(new_password, 10);
     await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, user_id);
     res.json({ success: true, message: 'Password reset successfully' });
   } catch (err) {

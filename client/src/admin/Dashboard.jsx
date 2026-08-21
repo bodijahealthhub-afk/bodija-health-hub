@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminToken } from '../utils/api';
+import { BarChart, LineChart, Donut } from './AdminCharts';
 
 function useAdminFetch(url) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
+      setError(false);
       const token = getAdminToken();
       const res = await fetch(url, {
         headers: { Authorization: 'Bearer ' + token },
@@ -17,6 +21,7 @@ function useAdminFetch(url) {
       setData(json);
     } catch {
       setData(null);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -26,7 +31,7 @@ function useAdminFetch(url) {
     fetchData();
   }, [fetchData]);
 
-  return [data, loading];
+  return [data, loading, error, fetchData];
 }
 
 function getGreeting() {
@@ -215,8 +220,9 @@ function ActivityItem({ entry }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  const [healthData, healthLoading] = useAdminFetch('/api/admin/system-health');
+  const [healthData, healthLoading, healthError, refetchHealth] = useAdminFetch('/api/admin/system-health');
   const [servicesData, servicesLoading] = useAdminFetch('/api/admin/services');
   const [partnersData, partnersLoading] = useAdminFetch('/api/admin/partners');
   const [programmesData, programmesLoading] = useAdminFetch('/api/admin/programmes');
@@ -228,6 +234,10 @@ export default function Dashboard() {
   const [blogData, blogLoading] = useAdminFetch('/api/blog/admin');
   const [testimonialsData, testimonialsLoading] = useAdminFetch('/api/testimonials');
   const [galleryData, galleryLoading] = useAdminFetch('/api/gallery');
+
+  useEffect(() => {
+    if (!healthLoading) setLastUpdated(new Date());
+  }, [healthLoading]);
 
   const serverHealthy = healthData?.status?.server === 'healthy';
 
@@ -320,7 +330,7 @@ export default function Dashboard() {
     { label: 'Add Partner', path: '/admin/partners/new', iconPath: 'M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z' },
     { label: 'Write Article', path: '/admin/blog/new', iconPath: 'M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10' },
     { label: 'Upload Media', path: '/admin/media', iconPath: 'M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5' },
-    { label: 'Open Inbox', path: '/admin/inbox', iconPath: 'M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.98l7.5-4.04a2.25 2.25 0 0 1 2.134 0l7.5 4.04a2.25 2.25 0 0 1 1.183 1.98V19.5Z' },
+    { label: 'Open Inbox', path: '/admin/messages', iconPath: 'M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.98l7.5-4.04a2.25 2.25 0 0 1 2.134 0l7.5 4.04a2.25 2.25 0 0 1 1.183 1.98V19.5Z' },
   ];
 
   function getStatusColor(status) {
@@ -370,9 +380,20 @@ export default function Dashboard() {
                   {serverHealthy ? 'System Healthy' : healthLoading ? 'Checking...' : 'Offline'}
                 </span>
               </div>
-              <div className="text-xs text-gray-500 hidden sm:block">
-                Last synced {timeAgo(healthData?.lastChecked || healthData?.timestamp)}
-              </div>
+              {lastUpdated && (
+                <div className="text-xs text-gray-500 hidden sm:block">
+                  Updated {lastUpdated.toLocaleTimeString()}
+                </div>
+              )}
+              <button
+                onClick={() => refetchHealth()}
+                className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                title="Refresh"
+              >
+                <svg className={`w-4 h-4 ${healthLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -681,7 +702,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Inbox</h2>
                 <button
-                  onClick={function () { navigate('/admin/inbox'); }}
+                  onClick={function () { navigate('/admin/messages'); }}
                   className="text-sm font-medium text-teal-600 hover:text-teal-700 flex items-center gap-1"
                 >
                   Open Inbox <IconChevron />
@@ -739,7 +760,7 @@ export default function Dashboard() {
                       <div
                         key={key}
                         className="flex items-start gap-3 cursor-pointer rounded-lg p-2 -m-2 hover:bg-gray-50 transition-colors"
-                        onClick={function () { navigate('/admin/inbox'); }}
+                        onClick={function () { navigate('/admin/messages'); }}
                       >
                         <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0">
                           <span className="text-xs font-semibold text-teal-600">
@@ -805,6 +826,77 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ═══════════════════ ANALYTICS CHARTS ═══════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* ── Appointments Trend ── */}
+          <div className="rounded-2xl bg-white border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Appointments Trend</h2>
+            {dashboardLoading ? (
+              <SkeletonBlock className="h-40" />
+            ) : (
+              <LineChart
+                data={dashboardData?.trends?.appointments || [
+                  { label: 'Mon', value: 3 },
+                  { label: 'Tue', value: 5 },
+                  { label: 'Wed', value: 2 },
+                  { label: 'Thu', value: 8 },
+                  { label: 'Fri', value: 6 },
+                  { label: 'Sat', value: 4 },
+                  { label: 'Sun', value: 1 },
+                ]}
+                height={140}
+              />
+            )}
+          </div>
+
+          {/* ── Services by Category ── */}
+          <div className="rounded-2xl bg-white border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Services Overview</h2>
+            {servicesLoading ? (
+              <SkeletonBlock className="h-40" />
+            ) : (
+              <Donut
+                segments={
+                  servicesData?.services
+                    ? Object.entries(
+                        servicesData.services.reduce((acc, s) => {
+                          const cat = s.category || 'Other';
+                          acc[cat] = (acc[cat] || 0) + 1;
+                          return acc;
+                        }, {})
+                      ).slice(0, 5).map(([label, value], i) => ({
+                        label,
+                        value,
+                        color: ['#0D9488', '#10B981', '#3B82F6', '#F59E0B', '#EF4444'][i],
+                      }))
+                    : []
+                }
+                size={130}
+              />
+            )}
+          </div>
+
+          {/* ── Content Summary ── */}
+          <div className="rounded-2xl bg-white border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Content Activity</h2>
+            {dashboardLoading ? (
+              <SkeletonBlock className="h-40" />
+            ) : (
+              <BarChart
+                data={[
+                  { label: 'Services', value: publishedServicesCount },
+                  { label: 'Partners', value: activePartnersCount },
+                  { label: 'Programmes', value: programmesCount },
+                  { label: 'Blog', value: blogPosts.length },
+                  { label: 'Gallery', value: galleryImages.length },
+                  { label: 'Testimonials', value: testimonialsList.length },
+                ]}
+                height={140}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@
 Bodija Health Hub (BHH) is a community-based integrated healthcare ecosystem website. It connects clinics, specialists, wellness services, and digital platforms under one hub — making accessible, connected, and continuous care a reality for families in Ibadan, Nigeria.
 
 **Live Website:** https://client-six-eta-66.vercel.app  
-**Backend API:** https://backend-production-f347f.up.railway.app  
+**Backend API:** https://bodija-health-hub.onrender.com  
 **Admin Panel:** https://client-six-eta-66.vercel.app/admin  
 **GitHub:** https://github.com/bodijahealthhub-afk/bodija-health-hub
 
@@ -16,27 +16,27 @@ Bodija Health Hub (BHH) is a community-based integrated healthcare ecosystem web
 The website and the admin panel are the **same React app** — the admin lives at `/admin`. Every API call uses same-origin relative paths (`/api/...`), so the browser never talks cross-origin:
 
 - **Local dev:** `npm run dev` starts Express (`server/index.js`, port `PORT` from `.env`, default 5000) and Vite on port 5173. Vite forwards `/api`, `/uploads`, `/robots.txt`, `/sitemap.xml` to the Express server via `client/vite.config.js`. Override the target with `VITE_API_TARGET` (e.g. `VITE_API_TARGET=http://localhost:10000`).
-- **Production:** Vercel serves the built app and proxies `/api/*` → the Railway backend via `client/vercel.json` rewrites.
+- **Production:** Vercel serves the built app and proxies `/api/*` → the Render backend via `client/vercel.json` rewrites.
 - **Port rule:** `PORT` in the root `.env` must match the Vite proxy target. If `PORT` is changed, update `client/vite.config.js` (or set `VITE_API_TARGET`).
 
-Default local credentials: `admin@bodijahealthhub.com` / `admin123` (seeded on first run).
+Default local credentials: `admin@bodijahealthhub.com` / `admin123` (seeded on first run, change in production via ADMIN_EMAIL/ADMIN_PASSWORD env vars).
 
-## Production environment variables (Railway)
+## Production environment variables (Render)
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `PORT` | — | Set automatically by Railway |
+| `PORT` | — | Set automatically by Render |
 | `JWT_SECRET` | ✅ | JWT signing secret — use `openssl rand -hex 32` |
 | `ADMIN_EMAIL` | ✅ | Bootstrap admin email; also receives new-message / new-booking alerts |
 | `ADMIN_PASSWORD` | ✅ | Bootstrap admin password. Server fails fast on hosted deploys if missing |
 | `CORS_ORIGINS` | ✅ | Browser origins allowed to call the API directly (your Vercel URL(s)) |
 | `DATABASE_URL` | — | Set to switch from SQLite to Postgres |
-| `DB_PATH` | — | SQLite file path (default `./data/database.sqlite`) |
+| `DB_PATH` | — | SQLite file path (default `/data/database.sqlite` on Render) |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | — | Enables booking + admin alert emails |
 | `SENTRY_DSN` | — | Error tracking |
 | `AUTO_BACKUP_ENABLED` / `BACKUP_CRON` / `BACKUP_RETENTION` | — | Auto-backup schedule (default nightly 3am UTC, keep 14) |
 
-**Required on any hosted deploy:** `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGINS`. The API refuses to start on a hosted environment (Postgres/`NODE_ENV=production`) without admin credentials.
+**Required on any hosted deploy:** `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGINS`. The API refuses to start on a hosted environment (`NODE_ENV=production`) without these env vars.
 
 ## Tech Stack
 
@@ -46,7 +46,7 @@ Default local credentials: `admin@bodijahealthhub.com` / `admin123` (seeded on f
 | Backend | Node.js + Express.js | REST API server |
 | Database | SQLite (better-sqlite3) | Persistent data storage |
 | Hosting (Frontend) | Vercel | Static hosting, CDN, HTTPS |
-| Hosting (Backend) | Railway | Node.js server hosting with persistent volume |
+| Hosting (Backend) | Render | Node.js server hosting with persistent volume |
 | Auth | JWT (jsonwebtoken) | Session management |
 | Password Hashing | bcryptjs | Secure password storage |
 | File Uploads | Multer | Image handling |
@@ -391,27 +391,27 @@ All website content is stored in the `site_content` database table as key-value 
 - **Build command:** `npm run build`
 - **Output directory:** `dist`
 - **Framework:** Vite
-- **Rewrites:** `/api/*` → `https://backend-production-f347f.up.railway.app/api/*`
-- **Rewrites:** `/uploads/*` → `https://backend-production-f347f.up.railway.app/uploads/*`
+- **Rewrites:** `/api/*` → `https://bodija-health-hub.onrender.com/api/*`
+- **Rewrites:** `/uploads/*` → `https://bodija-health-hub.onrender.com/uploads/*`
 - **SPA fallback:** All non-asset routes → `/index.html`
 
-### Backend (Railway)
+### Backend (Render)
 
-- **Service:** `backend` (Railway project `feisty-creativity`)
-- **Build:** Nixpacks (`railway up` from repo root, or GitHub source)
-- **Start command:** `node server/index.js`
-- **Node version:** pinned via `engines` (Node 22 — required for better-sqlite3 prebuilt binaries)
-- **Port:** 8080 (from PORT env var)
-- **Persistent volume:** `backend-volume` mounted at `/data`
+- **Service:** `bodija-health-hub` (Render account)
+- **Build:** Auto-deploy from GitHub
+- **Start command:** `node index.js`
+- **Node version:** pinned via `.nvmrc` (Node 22 — required for better-sqlite3 prebuilt binaries)
+- **Port:** Set automatically by Render
+- **Persistent volume:** 1GB mounted at `/data`
   - `DB_PATH=/data/database.sqlite`
   - `UPLOADS_DIR=/data/uploads`
-- **Domain:** `https://backend-production-f347f.up.railway.app`
+- **Domain:** `https://bodija-health-hub.onrender.com`
 
 ### Redeploying the backend
 
 ```bash
-cd BodijaHealthHub
-railway up --service backend --detach --json
+# Push to GitHub — Render auto-deploys on main branch push
+git push origin main
 ```
 
 ---
@@ -439,8 +439,8 @@ Admin credentials are **not stored in this repository**. On first boot the serve
 
 | Setting | Value | Purpose |
 |---------|-------|---------|
-| Rewrites /api/* | https://backend-production-f347f.up.railway.app/api/* | Proxy API calls to backend |
-| Rewrites /uploads/* | https://backend-production-f347f.up.railway.app/uploads/* | Proxy uploaded images |
+| Rewrites /api/* | https://bodija-health-hub.onrender.com/api/* | Proxy API calls to backend |
+| Rewrites /uploads/* | https://bodija-health-hub.onrender.com/uploads/* | Proxy uploaded images |
 
 ---
 

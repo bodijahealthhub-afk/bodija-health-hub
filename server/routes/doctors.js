@@ -103,7 +103,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (
       if (existing) {
         userId = existing.id;
       } else {
-        const hash = bcrypt.hashSync(password, 10);
+        const hash = await bcrypt.hash(password, 10);
         const userResult = await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
           name, email, hash, 'doctor', req.body.phone || null
         );

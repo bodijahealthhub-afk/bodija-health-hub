@@ -29,6 +29,11 @@ const SEARCH_ENDPOINTS = [
   { url: '/api/admin/programmes', label: 'Programme', group: 'Content', map: (d) => (d.programmes || []).map((p) => ({ label: p.title, sub: p.category, path: '/admin/programmes' })) },
   { url: '/api/events/admin', label: 'Event', group: 'Content', map: (d) => (d.events || []).map((e) => ({ label: e.title, sub: e.date, path: '/admin/events' })) },
   { url: '/api/blog/admin', label: 'Blog Post', group: 'Content', map: (d) => (d.posts || []).map((p) => ({ label: p.title, sub: p.status, path: '/admin/blog' })) },
+  { url: '/api/admin/patients', label: 'Patient', group: 'People', map: (d) => (d.patients || []).map((p) => ({ label: p.name || p.patient_name, sub: p.email, path: '/admin/patients' })) },
+  { url: '/api/admin/appointments', label: 'Appointment', group: 'Operations', map: (d) => (d.appointments || []).map((a) => ({ label: a.patient_name || a.patient_email, sub: a.service_name || a.status, path: '/admin/appointments' })) },
+  { url: '/api/messages', label: 'Message', group: 'Content', map: (d) => (Array.isArray(d) ? d : d?.messages || []).map((m) => ({ label: m.name, sub: m.subject || m.email, path: '/admin/messages' })) },
+  { url: '/api/admin/gallery', label: 'Media', group: 'Content', map: (d) => (d.images || d.gallery || []).map((g) => ({ label: g.title || g.filename, sub: g.category, path: '/admin/media' })) },
+  { url: '/api/testimonials', label: 'Testimonial', group: 'Content', map: (d) => (Array.isArray(d) ? d : d?.testimonials || []).map((t) => ({ label: t.name || t.author, sub: t.content?.substring(0, 50), path: '/admin/testimonials' })) },
 ];
 
 export default function CommandPalette({ open, onClose }) {

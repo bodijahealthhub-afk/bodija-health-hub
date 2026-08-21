@@ -76,7 +76,7 @@ export default function BlogPost() {
       <article className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4">
           {post.featured_image && (
-            <img src={post.featured_image} alt={post.title} className="w-full h-64 sm:h-80 object-cover rounded-2xl mb-10" />
+            <img src={post.featured_image} alt={post.title} loading="lazy" className="w-full h-64 sm:h-80 object-cover rounded-2xl mb-10" />
           )}
           <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
             {post.content}

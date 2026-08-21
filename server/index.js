@@ -18,16 +18,38 @@ const { authenticateToken, requireRole } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const crypto = require('crypto');
 
 app.set('trust proxy', 1);
 
+// Request ID middleware
+app.use((req, res, next) => {
+  req.id = crypto.randomUUID();
+  res.setHeader('X-Request-Id', req.id);
+  next();
+});
+
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      frameSrc: ["https://www.google.com"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: [],
+    }
+  },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
 const allowedOrigins = (process.env.CORS_ORIGINS ||
-  'https://client-six-eta-66.vercel.app,https://client-nt8gk3ac6-team-bhh.vercel.app'
+  'https://client-six-eta-66.vercel.app'
 ).split(',').map((s) => s.trim()).filter(Boolean);
 
 app.use(cors({
@@ -38,12 +60,12 @@ app.use(cors({
 }));
 
 app.use(express.json({
-  limit: '50mb',
+  limit: '1mb',
   verify: (req, res, buf) => {
     req.rawBody = buf.toString('utf8');
   },
 }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -172,7 +194,7 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   if (Sentry) Sentry.captureException(err);
-  console.error(err.stack);
+  console.error(`[${req.id || 'no-id'}]`, err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });
 

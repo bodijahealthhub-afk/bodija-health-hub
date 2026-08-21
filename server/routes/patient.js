@@ -54,7 +54,7 @@ router.post('/register', async (req, res) => {
       'SELECT id FROM patients WHERE email = ? OR phone = ? ORDER BY id ASC LIMIT 1'
     ).get(email, phone || null);
 
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = await bcrypt.hash(password, 10);
     const result = await db.prepare(
       'INSERT INTO patient_accounts (name, email, phone, password_hash, patient_id) VALUES (?, ?, ?, ?, ?)'
     ).run(name, email, phone || null, hash, patient ? patient.id : null);
@@ -78,7 +78,7 @@ router.post('/login', async (req, res) => {
     }
 
     const account = await db.prepare('SELECT * FROM patient_accounts WHERE email = ?').get(email);
-    if (!account || !bcrypt.compareSync(password, account.password_hash)) {
+    if (!account || !(await bcrypt.compare(password, account.password_hash))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 

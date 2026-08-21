@@ -78,6 +78,8 @@ export default function Appointments() {
   const [form, setForm] = useState(emptyForm)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(null)
+  const [errors, setErrors] = useState({})
+  const [touched, setTouched] = useState({})
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -111,24 +113,45 @@ export default function Appointments() {
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    if (errors[e.target.name]) {
+      setErrors(prev => ({ ...prev, [e.target.name]: '' }))
+    }
+  }
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target
+    setTouched(prev => ({ ...prev, [name]: true }))
+    let error = ''
+    if (name === 'patient_name' && (!value || value.trim().length < 2)) error = 'Name must be at least 2 characters'
+    else if (name === 'patient_email') {
+      if (!value) error = 'Email is required'
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Please enter a valid email'
+    } else if (name === 'patient_age' && value && (isNaN(value) || Number(value) < 1 || Number(value) > 120)) {
+      error = 'Please enter a valid age (1-120)'
+    }
+    setErrors(prev => ({ ...prev, [name]: error }))
   }
 
   const reset = () => {
     setBookingType(null)
     setForm(emptyForm)
     setSubmitted(null)
+    setErrors({})
+    setTouched({})
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.patient_name || !form.patient_email) {
-      toast.error('Please provide your name and email')
-      return
-    }
+    const newErrors = {}
+    if (!form.patient_name || form.patient_name.trim().length < 2) newErrors.patient_name = 'Name must be at least 2 characters'
+    if (!form.patient_email) newErrors.patient_email = 'Email is required'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.patient_email)) newErrors.patient_email = 'Please enter a valid email'
     if ((bookingType === 'partner_appointment' || bookingType === 'external') && !form.provider_id) {
-      toast.error('Please choose a provider')
-      return
+      newErrors.provider_id = 'Please choose a provider'
     }
+    setErrors(newErrors)
+    setTouched({ patient_name: true, patient_email: true })
+    if (Object.keys(newErrors).length > 0) return
 
     const payload = {
       booking_type: bookingType,
@@ -273,13 +296,16 @@ export default function Appointments() {
                       {bookingType === 'partner_appointment' && (
                         <div className="sm:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-2">Provider *</label>
-                          <select name="provider_id" value={form.provider_id} onChange={handleChange} required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+                          <select name="provider_id" value={form.provider_id} onChange={handleChange}
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all ${
+                              touched.provider_id && errors.provider_id ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-primary'
+                            }`}>
                             <option value="">Select a partner provider</option>
                             {typeProviders.map((p) => (
                               <option key={p.id} value={p.id}>{p.name}{p.location ? ` — ${p.location}` : ''}</option>
                             ))}
                           </select>
+                          {touched.provider_id && errors.provider_id && <p className="text-red-500 text-xs mt-1">{errors.provider_id}</p>}
                         </div>
                       )}
                       <div className="sm:col-span-2">
@@ -319,13 +345,16 @@ export default function Appointments() {
                   {bookingType === 'external' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Partner Portal *</label>
-                      <select name="provider_id" value={form.provider_id} onChange={handleChange} required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary">
+                      <select name="provider_id" value={form.provider_id} onChange={handleChange}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all ${
+                          touched.provider_id && errors.provider_id ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-primary'
+                        }`}>
                         <option value="">Select a partner to continue on their portal</option>
                         {externalProviders.map((p) => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                       </select>
+                      {touched.provider_id && errors.provider_id && <p className="text-red-500 text-xs mt-1">{errors.provider_id}</p>}
                     </div>
                   )}
 
@@ -356,13 +385,19 @@ export default function Appointments() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                      <input type="text" name="patient_name" value={form.patient_name} onChange={handleChange} required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Your name" />
+                      <input type="text" name="patient_name" value={form.patient_name} onChange={handleChange} onBlur={handleBlur}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all ${
+                          touched.patient_name && errors.patient_name ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-primary'
+                        }`} placeholder="Your name" />
+                      {touched.patient_name && errors.patient_name && <p className="text-red-500 text-xs mt-1">{errors.patient_name}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                      <input type="email" name="patient_email" value={form.patient_email} onChange={handleChange} required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary" placeholder="your@email.com" />
+                      <input type="email" name="patient_email" value={form.patient_email} onChange={handleChange} onBlur={handleBlur}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all ${
+                          touched.patient_email && errors.patient_email ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-primary'
+                        }`} placeholder="your@email.com" />
+                      {touched.patient_email && errors.patient_email && <p className="text-red-500 text-xs mt-1">{errors.patient_email}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>

@@ -134,7 +134,7 @@ const Messages = () => {
               <div
                 key={msg.id}
                 onClick={() => openMessage(msg)}
-                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                className={`group p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                   !msg.is_read ? 'bg-teal-50/50' : ''
                 }`}
               >

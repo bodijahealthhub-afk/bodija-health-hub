@@ -58,6 +58,8 @@ export default function Contact() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [errors, setErrors] = useState({})
+  const [touched, setTouched] = useState({})
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -98,14 +100,46 @@ export default function Contact() {
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    if (errors[e.target.name]) {
+      setErrors(prev => ({ ...prev, [e.target.name]: '' }))
+    }
+  }
+
+  const handleBlur = (e) => {
+    setTouched(prev => ({ ...prev, [e.target.name]: true }))
+    validateField(e.target.name, formData[e.target.name])
+  }
+
+  const validateField = (name, value) => {
+    let error = ''
+    if (name === 'name' && (!value || value.trim().length < 2)) {
+      error = 'Name must be at least 2 characters'
+    } else if (name === 'email') {
+      if (!value) error = 'Email is required'
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Please enter a valid email'
+    } else if (name === 'message') {
+      if (!value) error = 'Message is required'
+      else if (value.trim().length < 10) error = 'Message must be at least 10 characters'
+    }
+    setErrors(prev => ({ ...prev, [name]: error }))
+    return error
+  }
+
+  const validate = () => {
+    const newErrors = {}
+    if (!formData.name || formData.name.trim().length < 2) newErrors.name = 'Name must be at least 2 characters'
+    if (!formData.email) newErrors.email = 'Email is required'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Please enter a valid email'
+    if (!formData.message) newErrors.message = 'Message is required'
+    else if (formData.message.trim().length < 10) newErrors.message = 'Message must be at least 10 characters'
+    setErrors(newErrors)
+    setTouched({ name: true, email: true, message: true })
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.name || !formData.email || !formData.message) {
-      toast.error('Please fill in all required fields')
-      return
-    }
+    if (!validate()) return
     setSubmitting(true)
     try {
       const res = await fetch('/api/messages', {
@@ -131,12 +165,14 @@ export default function Contact() {
       {/* Hero */}
       <section className="relative bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-6">
-            {headline}
-          </h1>
-          <p className="text-lg text-teal-100 max-w-2xl mx-auto leading-relaxed">
-            {subtext}
-          </p>
+          <ScrollReveal>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-6">
+              {headline}
+            </h1>
+            <p className="text-lg text-teal-100 max-w-2xl mx-auto leading-relaxed">
+              {subtext}
+            </p>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -144,12 +180,12 @@ export default function Contact() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {actionCards.map(({ icon: Icon, title, description, link, linkText }) => (
-              <Link
-                key={title}
-                to={link}
-                className="bg-warm-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-all group"
-              >
+            {actionCards.map(({ icon: Icon, title, description, link, linkText }, i) => (
+              <ScrollReveal key={title} delay={i * 80}>
+                <Link
+                  to={link}
+                  className="bg-warm-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-all group block"
+                >
                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6 text-primary" />
                 </div>
@@ -158,7 +194,8 @@ export default function Contact() {
                 <span className="inline-flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
                   {linkText} <FiArrowRight className="w-4 h-4" />
                 </span>
-              </Link>
+                </Link>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -169,7 +206,8 @@ export default function Contact() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Left: Details + Map */}
-            <div className="space-y-8">
+            <ScrollReveal direction="left">
+              <div className="space-y-8">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -227,9 +265,11 @@ export default function Contact() {
                   )}
                 </div>
               </div>
-            </div>
+              </div>
+            </ScrollReveal>
 
             {/* Right: Contact Form */}
+            <ScrollReveal direction="right">
             <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Send Us a Message</h2>
               <p className="text-gray-500 mb-8">We'll get back to you within 24 hours.</p>
@@ -267,9 +307,13 @@ export default function Contact() {
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                        onBlur={handleBlur}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all ${
+                          touched.name && errors.name ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-primary'
+                        }`}
                         placeholder="Your full name"
                       />
+                      {touched.name && errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
@@ -278,9 +322,13 @@ export default function Contact() {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                        onBlur={handleBlur}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all ${
+                          touched.email && errors.email ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-primary'
+                        }`}
                         placeholder="your@email.com"
                       />
+                      {touched.email && errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                     </div>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-5">
@@ -313,10 +361,18 @@ export default function Contact() {
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       rows={5}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none"
+                      maxLength={500}
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all resize-none ${
+                        touched.message && errors.message ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-primary'
+                      }`}
                       placeholder="How can we help you?"
                     />
+                    <div className="flex justify-between mt-1">
+                      {touched.message && errors.message ? <p className="text-red-500 text-xs">{errors.message}</p> : <span />}
+                      <span className="text-xs text-gray-400 ml-auto">{formData.message.length}/500</span>
+                    </div>
                   </div>
                   <button
                     type="submit"
@@ -328,6 +384,7 @@ export default function Contact() {
                 </form>
               )}
             </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>

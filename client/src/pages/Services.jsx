@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiArrowRight, FiSearch } from 'react-icons/fi'
+import { ServicesSkeleton } from '../components/SkeletonLoader'
+import ScrollReveal from '../components/ScrollReveal'
 
 export default function Services() {
   const [services, setServices] = useState([])
@@ -53,6 +55,7 @@ export default function Services() {
       {/* Hero */}
       <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-primary/90 text-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal>
           <div className="max-w-3xl">
             <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Our Services</span>
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">Care for Every Stage of Your Health Journey</h1>
@@ -60,6 +63,7 @@ export default function Services() {
               From everyday consultations to specialized care, our services are delivered by trusted providers across the Bodija Health Hub ecosystem.
             </p>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -104,11 +108,18 @@ export default function Services() {
               </div>
             </div>
           )}
+          {(activeCategory || query) && (
+            <div className="flex items-center justify-between mb-8">
+              <p className="text-sm text-gray-500">Showing {filtered.length} of {services.length} services</p>
+              <button
+                onClick={() => { setActiveCategory(''); setQuery('') }}
+                className="text-sm text-primary font-medium hover:underline"
+              >Clear filters</button>
+            </div>
+          )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-24">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-            </div>
+            <ServicesSkeleton />
           ) : filtered.length === 0 ? (
             <div className="text-center py-24">
               <h3 className="text-2xl font-bold text-gray-900 mb-3">No services found</h3>
@@ -123,7 +134,8 @@ export default function Services() {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filtered.map((service) => (
+              {filtered.map((service, i) => (
+                <ScrollReveal key={service.id} delay={i * 80}>
                 <Link
                   key={service.id}
                   to={`/services/${service.slug || service.id}`}
@@ -157,6 +169,7 @@ export default function Services() {
                     <span className="text-sm font-medium text-primary group-hover:underline">Learn more →</span>
                   </div>
                 </Link>
+                </ScrollReveal>
               ))}
             </div>
           )}

@@ -86,3 +86,31 @@ export function TestimonialsSkeleton() {
     </div>
   )
 }
+
+export function PartnerSkeleton() {
+  return (
+    <div className="bg-warm-white rounded-3xl p-8 border border-gray-100">
+      <div className="flex items-start gap-4 mb-6">
+        <Pulse className="w-14 h-14 rounded-2xl shrink-0" />
+        <div className="flex-1">
+          <Pulse className="h-5 w-2/3 mb-2" />
+        </div>
+      </div>
+      <Pulse className="h-3 w-full mb-2" />
+      <Pulse className="h-3 w-3/4 mb-4" />
+      <div className="flex gap-2">
+        <Pulse className="h-6 w-16 rounded-full" />
+        <Pulse className="h-6 w-20 rounded-full" />
+        <Pulse className="h-6 w-14 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
+export function PartnersSkeleton() {
+  return (
+    <div className="grid md:grid-cols-2 gap-8">
+      {[...Array(4)].map((_, i) => <PartnerSkeleton key={i} />)}
+    </div>
+  )
+}

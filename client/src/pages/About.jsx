@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiHeart, FiLink, FiClock, FiEye, FiTarget } from 'react-icons/fi'
+import ScrollReveal from '../components/ScrollReveal'
 
 const defaultCoreValues = [
   {
@@ -48,6 +49,7 @@ export default function About() {
       {/* Hero */}
       <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-primary/90 text-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal>
           <div className="max-w-3xl">
             <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">
               About Us
@@ -59,6 +61,7 @@ export default function About() {
               More Than a Service. A Connected Health Ecosystem.
             </p>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -66,6 +69,7 @@ export default function About() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <ScrollReveal direction="left">
             <div>
               <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
                 Our Story
@@ -79,12 +83,15 @@ export default function About() {
                 </p>
               ))}
             </div>
+            </ScrollReveal>
+            <ScrollReveal direction="right">
             <div className="bg-gradient-to-br from-primary/5 to-emerald-50 rounded-3xl p-10 border border-primary/10">
               <blockquote className="text-xl sm:text-2xl font-medium text-gray-900 leading-relaxed italic">
                 "Because care works best when people and systems work together."
               </blockquote>
               <div className="mt-6 w-12 h-1 bg-primary rounded-full" />
             </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -92,6 +99,7 @@ export default function About() {
       {/* Core Values */}
       <section className="py-20 bg-warm-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal>
           <div className="text-center mb-14">
             <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
               Core Values
@@ -100,15 +108,18 @@ export default function About() {
               What We Stand For
             </h2>
           </div>
+          </ScrollReveal>
           <div className="grid md:grid-cols-3 gap-8">
-            {defaultCoreValues.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
+            {defaultCoreValues.map(({ icon: Icon, title, description }, i) => (
+              <ScrollReveal key={title} delay={i * 100}>
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
                   <Icon className="w-8 h-8 text-primary" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
                 <p className="text-gray-500 leading-relaxed">{description}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -118,6 +129,7 @@ export default function About() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-8">
+            <ScrollReveal direction="left">
             <div className="bg-warm-white rounded-3xl p-10 border border-gray-100">
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
                 <FiEye className="w-7 h-7 text-primary" />
@@ -127,6 +139,8 @@ export default function About() {
                 {content.about_vision}
               </p>
             </div>
+            </ScrollReveal>
+            <ScrollReveal direction="right">
             <div className="bg-warm-white rounded-3xl p-10 border border-gray-100">
               <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-6">
                 <FiTarget className="w-7 h-7 text-emerald-600" />
@@ -136,6 +150,7 @@ export default function About() {
                 {content.about_mission}
               </p>
             </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>

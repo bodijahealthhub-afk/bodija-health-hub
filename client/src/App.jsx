@@ -177,7 +177,8 @@ function PublicLayout() {
       <Navbar />
       <main className="flex-1">
         <Suspense fallback={<PageLoader />}>
-          <Routes>
+          <div key={location.pathname} className="page-enter">
+            <Routes location={location}>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/ecosystem" element={<Ecosystem />} />
@@ -205,7 +206,8 @@ function PublicLayout() {
             <Route path="/events" element={<FeatureGate {...FEATURE_ROUTES['/events']}><Events /></FeatureGate>} />
             <Route path="/events/:slug" element={<FeatureGate {...FEATURE_ROUTES['/events']}><EventDetail /></FeatureGate>} />
             <Route path="/programmes" element={<FeatureGate {...FEATURE_ROUTES['/programmes']}><Programmes /></FeatureGate>} />
-          </Routes>
+            </Routes>
+          </div>
         </Suspense>
       </main>
       <Footer />

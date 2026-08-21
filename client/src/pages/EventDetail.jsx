@@ -78,7 +78,7 @@ export default function EventDetail() {
       <article className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4">
           {event.image && (
-            <img src={event.image} alt={event.title} className="w-full h-64 sm:h-80 object-cover rounded-2xl mb-10" />
+            <img src={event.image} alt={event.title} loading="lazy" className="w-full h-64 sm:h-80 object-cover rounded-2xl mb-10" />
           )}
           {event.description && (
             <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">

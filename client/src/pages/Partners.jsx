@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiActivity, FiHeart, FiHeadphones, FiThermometer } from 'react-icons/fi'
+import { PartnersSkeleton } from '../components/SkeletonLoader'
+import ScrollReveal from '../components/ScrollReveal'
 
 const icons = [FiActivity, FiHeart, FiHeadphones, FiThermometer]
 const colors = ['primary', 'emerald', 'blue', 'orange']
@@ -18,6 +20,26 @@ export default function Partners() {
   })
   const [partners, setPartners] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [activeService, setActiveService] = useState(null)
+
+  const allServices = useMemo(() => {
+    const svcSet = new Set()
+    partners.forEach(p => (p.services || []).forEach(s => svcSet.add(s)))
+    return Array.from(svcSet).sort()
+  }, [partners])
+
+  const filtered = useMemo(() => {
+    let result = partners
+    if (search) {
+      const q = search.toLowerCase()
+      result = result.filter(p => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
+    }
+    if (activeService) {
+      result = result.filter(p => (p.services || []).includes(activeService))
+    }
+    return result
+  }, [partners, search, activeService])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,11 +121,13 @@ export default function Partners() {
       {/* Hero */}
       <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-primary/90 text-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal>
           <div className="max-w-3xl">
             <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Our Partners</span>
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">{content.partners_headline}</h1>
             <p className="text-lg text-gray-300 leading-relaxed">{content.partners_description}</p>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -111,9 +135,7 @@ export default function Partners() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {loading ? (
-            <div className="flex items-center justify-center py-24">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-            </div>
+            <PartnersSkeleton />
           ) : partners.length === 0 ? (
             <div className="text-center py-24">
               <h3 className="text-2xl font-bold text-gray-900 mb-3">No partners yet</h3>
@@ -123,21 +145,51 @@ export default function Partners() {
               </Link>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-8">
-              {partners.map((partner, i) => {
+            <>
+              <div className="mb-8">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search partners..."
+                  className="w-full px-5 py-3.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-warm-white"
+                />
+                {allServices.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <button
+                      onClick={() => setActiveService(null)}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        !activeService ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >All</button>
+                    {allServices.map(svc => (
+                      <button
+                        key={svc}
+                        onClick={() => setActiveService(activeService === svc ? null : svc)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          activeService === svc ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >{svc}</button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm text-gray-400 mt-3">Showing {filtered.length} of {partners.length} partners</p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-8">
+                {filtered.map((partner, i) => {
               const Icon = icons[i % icons.length]
               const color = colors[i % colors.length]
               const colors2 = colorMap[color]
               const partnerLink = `/partner/${partner.slug || partner.id}`
               return (
+                <ScrollReveal key={partner.slug || partner.id || i} delay={i * 100}>
                 <Link
-                  key={partner.slug || partner.id || i}
                   to={partnerLink}
                   className="bg-warm-white rounded-3xl p-8 border border-gray-100 hover:shadow-lg transition-shadow block"
                 >
                   <div className="flex items-start gap-4 mb-6">
                     {partner.image ? (
-                      <img src={partner.image} alt={partner.name} className="w-14 h-14 rounded-2xl object-cover" />
+                      <img src={partner.image} alt={partner.name} loading="lazy" className="w-14 h-14 rounded-2xl object-cover" />
                     ) : (
                       <div className={`w-14 h-14 ${colors2.bg} rounded-2xl flex items-center justify-center flex-shrink-0`}>
                         <Icon className={`w-7 h-7 ${colors2.text}`} />
@@ -156,9 +208,11 @@ export default function Partners() {
                     ))}
                   </div>
                 </Link>
+                </ScrollReveal>
               )
             })}
             </div>
+            </>
           )}
         </div>
       </section>
@@ -166,6 +220,7 @@ export default function Partners() {
       {/* CTA */}
       <section className="py-20 bg-warm-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <ScrollReveal>
           <div className="bg-white rounded-3xl p-12 shadow-sm border border-gray-100">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
               Are you a healthcare provider interested in joining the BHH ecosystem?
@@ -177,6 +232,7 @@ export default function Partners() {
               Partner With Us
             </Link>
           </div>
+          </ScrollReveal>
         </div>
       </section>
     </div>

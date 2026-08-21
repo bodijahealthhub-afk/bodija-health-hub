@@ -7,6 +7,9 @@ database.sqlite-wal
 data/
 server/uploads/
 .env
+.env.*
+!.env.example
+server/.env
 *.log
 .DS_Store
 dist/
