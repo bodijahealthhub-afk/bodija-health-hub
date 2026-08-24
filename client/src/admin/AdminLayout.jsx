@@ -3,6 +3,8 @@ import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import CommandPalette from './CommandPalette';
+import useAdminFetch from './useAdminFetch';
+import { PermissionProvider } from '../context/PermissionContext';
 
 const BREADCRUMB_MAP = {
   dashboard: 'Dashboard',
@@ -23,17 +25,19 @@ const BREADCRUMB_MAP = {
   'site-content': 'Site Content',
   'hero-content': 'Hero Content',
   'footer-content': 'Footer Content',
-  'navigation-content': 'Navigation Content',
+  'navigation-content': 'Navigation',
   'page-content': 'Page Content',
-  'site-settings': 'Site Settings',
+  'site-settings': 'Site Appearance',
   media: 'Media Library',
-  seo: 'SEO Settings',
-  backup: 'Backup & Restore',
+  seo: 'SEO',
+  backup: 'Backups',
   'system-health': 'System Health',
   payments: 'Payments',
   features: 'Feature Flags',
-  'admin-users': 'Admin Users',
+  'admin-users': 'Users',
 };
+
+const DYNAMIC_SEGMENTS = new Set(['new']);
 
 function Breadcrumbs() {
   const location = useLocation();
@@ -42,10 +46,12 @@ function Breadcrumbs() {
 
   return (
     <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-4">
-      <Link to="/admin" className="hover:text-primary transition-colors">Admin</Link>
+      <Link to="/admin" className="hover:text-primary transition-colors">Home</Link>
       {segments.slice(1).map((seg, i) => {
-        const label = BREADCRUMB_MAP[seg] || seg.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         const isLast = i === segments.length - 2;
+        const label = DYNAMIC_SEGMENTS.has(seg)
+          ? seg.charAt(0).toUpperCase() + seg.slice(1)
+          : BREADCRUMB_MAP[seg] || seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
         return (
           <span key={i} className="flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,13 +69,25 @@ function Breadcrumbs() {
   );
 }
 
-const AdminLayout = () => {
+const AdminLayoutInner = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [dashboardData] = useAdminFetch('/api/admin/dashboard');
+  const [messagesData] = useAdminFetch('/api/messages');
+  const unreadMessages = Array.isArray(messagesData)
+    ? messagesData.filter((m) => m.status === 'unread' || !m.read).length
+    : messagesData?.messages?.filter((m) => m.status === 'unread' || !m.read).length || 0;
+  const pendingBookings = dashboardData?.stats?.pendingAppointments || 0;
+
+  const badges = {};
+  if (unreadMessages > 0) badges['/admin/messages'] = unreadMessages;
+  if (pendingBookings > 0) badges['/admin/appointments'] = pendingBookings;
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -79,6 +97,10 @@ const AdminLayout = () => {
       try { setUser(JSON.parse(storedUser)); } catch { setUser({ name: 'Admin', role: 'admin' }); }
     }
   }, [navigate]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handler = () => setCommandPaletteOpen(true);
@@ -105,6 +127,7 @@ const AdminLayout = () => {
       <Sidebar
         collapsed={isMobile ? !mobileMenuOpen : sidebarCollapsed}
         onToggle={handleSidebarToggle}
+        badges={badges}
       />
 
       <div
@@ -125,5 +148,11 @@ const AdminLayout = () => {
     </div>
   );
 };
+
+const AdminLayout = () => (
+  <PermissionProvider>
+    <AdminLayoutInner />
+  </PermissionProvider>
+);
 
 export default AdminLayout;

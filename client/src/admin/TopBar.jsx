@@ -92,9 +92,15 @@ const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
                 {notifications.map((notif) => (
                   <div
                     key={notif.id}
-                    className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      !notif.read ? 'bg-teal-50/50' : ''
-                    }`}
+                    className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+                      notif.link ? 'cursor-pointer' : ''
+                    } ${!notif.read ? 'bg-teal-50/50' : ''}`}
+                    onClick={() => {
+                      if (notif.link) {
+                        navigate(notif.link);
+                        setShowNotifications(false);
+                      }
+                    }}
                   >
                     <p className="text-sm text-gray-900">{notif.text}</p>
                     <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
@@ -117,7 +123,9 @@ const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
             </div>
             <div className="hidden md:block text-left">
               <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin'}</p>
-              <p className="text-[11px] text-gray-500 capitalize">{user?.role || 'admin'}</p>
+              <span className="inline-block px-1.5 py-0.5 text-[10px] font-medium rounded bg-teal-50 text-teal-600 capitalize">
+                {user?.role || 'admin'}
+              </span>
             </div>
             <svg className="w-4 h-4 text-gray-400 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

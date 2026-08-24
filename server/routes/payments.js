@@ -1,7 +1,8 @@
 const express = require('express');
 const crypto = require('crypto');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { requireFeature } = require('../middleware/features');
 
 const router = express.Router();
@@ -205,7 +206,7 @@ router.post('/webhook', (req, res) => {
 });
 
 // GET /api/payments (admin)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('payments.view'), async (req, res) => {
   try {
     const { status, search } = req.query;
     let query = `SELECT p.*, a.patient_name, a.date as appointment_date

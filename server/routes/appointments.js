@@ -1,7 +1,8 @@
 const express = require('express');
 const crypto = require('crypto');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
 
@@ -183,7 +184,7 @@ router.get('/booking-options', requireFeature('appointment_booking'), async (req
 });
 
 // GET /api/appointments/available-slots (admin)
-router.get('/available-slots', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.get('/available-slots', authenticateToken, requirePermission('bookings.view'), async (req, res) => {
   try {
     const { doctor_id, date } = req.query;
     if (!doctor_id || !date) {
@@ -207,7 +208,7 @@ router.get('/available-slots', authenticateToken, requireRole('admin', 'super_ad
 });
 
 // GET /api/appointments (admin)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('bookings.view'), async (req, res) => {
   try {
     const { status, booking_type, date, doctor_id, provider_id, search } = req.query;
     let query = `${bookingSelect} WHERE 1=1`;
@@ -247,7 +248,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
 });
 
 // PATCH /api/appointments/:id/status (admin)
-router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.patch('/:id/status', authenticateToken, requirePermission('bookings.update'), async (req, res) => {
   try {
     const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {
@@ -288,7 +289,7 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
 });
 
 // PATCH /api/appointments/:id/notes (admin)
-router.patch('/:id/notes', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.patch('/:id/notes', authenticateToken, requirePermission('bookings.update'), async (req, res) => {
   try {
     const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {
@@ -306,7 +307,7 @@ router.patch('/:id/notes', authenticateToken, requireRole('admin', 'super_admin'
 });
 
 // GET /api/appointments/:id
-router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.get('/:id', authenticateToken, requirePermission('bookings.view'), async (req, res) => {
   try {
     const appointment = await db.prepare(`${bookingSelect} WHERE a.id = ?`).get(req.params.id);
 
@@ -320,7 +321,7 @@ router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
 });
 
 // PUT /api/appointments/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('bookings.update'), async (req, res) => {
   try {
     const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {
@@ -357,7 +358,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
 });
 
 // DELETE /api/appointments/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('bookings.cancel'), async (req, res) => {
   try {
     const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
     if (!appointment) {

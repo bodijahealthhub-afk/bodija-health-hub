@@ -1,8 +1,17 @@
 const db = require('../models/database');
 
-// Append an entry to the audit log. Best-effort: never throws so callers
-// don't need to wrap audit writes in their own error handling.
-async function logAudit({ action, entityType, entityId, actor, before, after, ip }) {
+const VALID_ACTIONS = [
+  'LOGIN_SUCCESS', 'LOGIN_FAILURE',
+  'USER_CREATED', 'USER_DELETED', 'USER_DISABLED', 'USER_ENABLED',
+  'ROLE_CHANGED', 'PASSWORD_RESET',
+  'CONTENT_CREATED', 'CONTENT_UPDATED', 'CONTENT_DELETED', 'CONTENT_PUBLISHED', 'CONTENT_ARCHIVED',
+  'BOOKING_CREATED', 'BOOKING_UPDATED', 'BOOKING_CANCELLED',
+  'SETTINGS_CHANGED', 'FEATURE_TOGGLED',
+  'BACKUP_CREATED', 'BACKUP_RESTORED',
+  'MEDIA_UPLOADED', 'MEDIA_DELETED',
+];
+
+async function logAudit({ action, entityType, entityId, actor, before_state, after_state, ip }) {
   try {
     await db.prepare(
       'INSERT INTO audit_logs (action, entity_type, entity_id, actor, before_state, after_state, ip) VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -11,8 +20,8 @@ async function logAudit({ action, entityType, entityId, actor, before, after, ip
       entityType,
       entityId == null ? null : String(entityId),
       actor || 'unknown',
-      before == null ? null : JSON.stringify(before),
-      after == null ? null : JSON.stringify(after),
+      before_state == null ? null : JSON.stringify(before_state),
+      after_state == null ? null : JSON.stringify(after_state),
       ip || null
     );
   } catch (err) {
@@ -20,4 +29,4 @@ async function logAudit({ action, entityType, entityId, actor, before, after, ip
   }
 }
 
-module.exports = { logAudit };
+module.exports = { logAudit, VALID_ACTIONS };

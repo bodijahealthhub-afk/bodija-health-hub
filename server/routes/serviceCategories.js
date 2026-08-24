@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { logAudit } = require('../utils/audit');
 
 const publicRouter = express.Router();
@@ -38,7 +39,7 @@ publicRouter.get('/', async (req, res) => {
 });
 
 // GET /api/admin/service-categories — all categories
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('service_categories.view'), async (req, res) => {
   try {
     const rows = await db.prepare(
       'SELECT * FROM service_categories ORDER BY display_order ASC, name ASC'
@@ -50,7 +51,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'content_
 });
 
 // POST /api/admin/service-categories
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('service_categories.create'), async (req, res) => {
   try {
     const { name, description, icon, display_order, status } = req.body;
     if (!name) {
@@ -87,7 +88,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/admin/service-categories/:id
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('service_categories.update'), async (req, res) => {
   try {
     const category = await db.prepare('SELECT * FROM service_categories WHERE id = ?').get(req.params.id);
     if (!category) {
@@ -143,7 +144,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // PATCH /api/admin/service-categories/:id/status
-router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.patch('/:id/status', authenticateToken, requirePermission('service_categories.update'), async (req, res) => {
   try {
     const category = await db.prepare('SELECT * FROM service_categories WHERE id = ?').get(req.params.id);
     if (!category) {
@@ -160,7 +161,7 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
 });
 
 // DELETE /api/admin/service-categories/:id — archive instead of hard delete
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('service_categories.delete'), async (req, res) => {
   try {
     const category = await db.prepare('SELECT * FROM service_categories WHERE id = ?').get(req.params.id);
     if (!category) {

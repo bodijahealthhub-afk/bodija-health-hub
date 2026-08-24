@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ router.get('/:pageId', async (req, res) => {
 });
 
 // PUT /api/page-content/:pageId — admin: update page meta and sections
-router.put('/:pageId', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/:pageId', authenticateToken, requirePermission('page_content.update'), async (req, res) => {
   try {
     const { pageId } = req.params;
     const { title, metaTitle, metaDescription, sections } = req.body;

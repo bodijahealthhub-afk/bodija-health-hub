@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -99,7 +100,7 @@ const generateSitemapXml = async (hostOverride) => {
 };
 
 // GET /api/seo (admin — all pages + robots + sitemap)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('seo.view'), async (req, res) => {
   try {
     const rows = await db.prepare('SELECT * FROM seo_settings ORDER BY page_id').all();
     const pages = {};
@@ -118,7 +119,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
 });
 
 // PUT /api/seo (admin — save all pages + robots + sitemap)
-router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/', authenticateToken, requirePermission('seo.manage'), async (req, res) => {
   try {
     const { pages, robots, sitemap } = req.body || {};
 
@@ -174,7 +175,7 @@ router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
 });
 
 // PUT /api/seo/robots (admin — save robots.txt content)
-router.put('/robots', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/robots', authenticateToken, requirePermission('seo.manage'), async (req, res) => {
   try {
     const { content } = req.body || {};
     await setSetting('robots_txt', content || '');
@@ -186,7 +187,7 @@ router.put('/robots', authenticateToken, requireRole('admin', 'super_admin'), as
 });
 
 // POST /api/seo/sitemap/generate (admin — generate sitemap)
-router.post('/sitemap/generate', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/sitemap/generate', authenticateToken, requirePermission('seo.manage'), async (req, res) => {
   try {
     const sitemap = await generateSitemapXml();
     await setSetting('sitemap', sitemap);
@@ -213,7 +214,7 @@ router.get('/:pageId', async (req, res) => {
 });
 
 // PUT /api/seo/:pageId (admin)
-router.put('/:pageId', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/:pageId', authenticateToken, requirePermission('seo.manage'), async (req, res) => {
   try {
     const { meta_title, meta_description, og_title, og_description, og_image, twitter_card, twitter_title, twitter_description, twitter_image, canonical, noindex, nofollow } = req.body;
     const existing = await db.prepare('SELECT id FROM seo_settings WHERE page_id = ?').get(req.params.pageId);

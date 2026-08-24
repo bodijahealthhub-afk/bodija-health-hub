@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { getAdminToken, clearAdminSession, apiFetch } from '../utils/api';
 
+const VALID_ADMIN_ROLES = ['admin', 'super_admin', 'receptionist', 'content_manager', 'accountant'];
+
 const AdminRoute = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [user, setUser] = useState(null);
@@ -20,14 +22,11 @@ const AdminRoute = () => {
 
       try {
         const parsedUser = JSON.parse(storedUser);
-        if (parsedUser.role !== 'admin' && parsedUser.role !== 'super_admin') {
+        if (!VALID_ADMIN_ROLES.includes(parsedUser.role)) {
           if (active) setIsAuthenticated(false);
           return;
         }
 
-        // Validate the token server-side so an expired/invalid token (or one
-        // signed under a different JWT_SECRET) is caught here instead of
-        // failing every save with "Invalid or expired token".
         const res = await apiFetch('/api/auth/me');
         if (!res.ok) {
           clearAdminSession();

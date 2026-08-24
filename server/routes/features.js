@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { getAllFlags, getFlag } = require('../utils/features');
 const { logAudit } = require('../utils/audit');
 
@@ -23,7 +24,7 @@ const publicFlag = (flag) => {
   };
 };
 
-const adminOnly = [authenticateToken, requireRole('admin', 'super_admin')];
+const adminOnly = [authenticateToken, requirePermission('feature_flags.view')];
 
 // ---------------------------------------------------------------------------
 // Public
@@ -71,7 +72,7 @@ router.get('/', ...adminOnly, async (req, res) => {
 });
 
 // POST /api/admin/features — create a new feature flag
-router.post('/', ...adminOnly, async (req, res) => {
+router.post('/', authenticateToken, requirePermission('feature_flags.manage'), async (req, res) => {
   try {
     const { key, name, description, status, enabled, public_visible, navigation_visible, admin_visible, requires_admin_confirmation, config } = req.body;
     if (!key || !name) {
@@ -112,7 +113,7 @@ router.post('/', ...adminOnly, async (req, res) => {
 });
 
 // PUT /api/admin/features/:key — update a feature flag
-router.put('/:key', ...adminOnly, async (req, res) => {
+router.put('/:key', authenticateToken, requirePermission('feature_flags.manage'), async (req, res) => {
   try {
     const { key } = req.params;
     const before = await getFlag(key);
@@ -162,7 +163,7 @@ router.put('/:key', ...adminOnly, async (req, res) => {
 });
 
 // POST /api/admin/features/:key/toggle — flip the enabled bit
-router.post('/:key/toggle', ...adminOnly, async (req, res) => {
+router.post('/:key/toggle', authenticateToken, requirePermission('feature_flags.manage'), async (req, res) => {
   try {
     const { key } = req.params;
     const before = await getFlag(key);
@@ -190,7 +191,7 @@ router.post('/:key/toggle', ...adminOnly, async (req, res) => {
 });
 
 // POST /api/admin/features/:key/archive — archive or unarchive a feature
-router.post('/:key/archive', ...adminOnly, async (req, res) => {
+router.post('/:key/archive', authenticateToken, requirePermission('feature_flags.manage'), async (req, res) => {
   try {
     const { key } = req.params;
     const before = await getFlag(key);

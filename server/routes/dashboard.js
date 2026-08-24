@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -76,7 +77,7 @@ const buildStats = async () => {
 };
 
 // GET /api/dashboard (admin — wrapped for admin panel)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('dashboard.view'), async (req, res) => {
   try {
     res.json(await buildStats());
   } catch (err) {
@@ -85,7 +86,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'accounta
 });
 
 // GET /api/dashboard/stats (admin — flat stats, backward compatible)
-router.get('/stats', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), async (req, res) => {
+router.get('/stats', authenticateToken, requirePermission('dashboard.view'), async (req, res) => {
   try {
     const { stats, recentAppointments } = await buildStats();
     res.json({ ...stats, recentAppointments });
@@ -104,7 +105,7 @@ function dateSeries(days) {
 }
 
 // GET /api/dashboard/analytics?days=30 (admin — trend data for the dashboard charts)
-router.get('/analytics', authenticateToken, requireRole('admin', 'super_admin', 'accountant'), async (req, res) => {
+router.get('/analytics', authenticateToken, requirePermission('dashboard.view'), async (req, res) => {
   try {
     const days = Math.min(365, Math.max(1, parseInt(req.query.days, 10) || 30));
     const start = dateSeries(days)[0];

@@ -38,6 +38,7 @@ const BlogPost = lazy(() => import('./pages/BlogPost'))
 const Events = lazy(() => import('./pages/Events'))
 const EventDetail = lazy(() => import('./pages/EventDetail'))
 const Programmes = lazy(() => import('./pages/Programmes'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 // Admin (code-split — biggest chunk)
 const AdminLogin = lazy(() => import('./admin/AdminLogin'))
@@ -71,6 +72,7 @@ const AdminBackupRestore = lazy(() => import('./admin/BackupRestore'))
 const AdminSystemHealth = lazy(() => import('./admin/SystemHealth'))
 const AdminPayments = lazy(() => import('./admin/Payments'))
 const AdminFeatures = lazy(() => import('./admin/Features'))
+const AdminNotFound = lazy(() => import('./admin/AdminNotFound'))
 
 // Patient portal
 const PortalLayout = lazy(() => import('./portal/PortalLayout'))
@@ -206,6 +208,7 @@ function PublicLayout() {
             <Route path="/events" element={<FeatureGate {...FEATURE_ROUTES['/events']}><Events /></FeatureGate>} />
             <Route path="/events/:slug" element={<FeatureGate {...FEATURE_ROUTES['/events']}><EventDetail /></FeatureGate>} />
             <Route path="/programmes" element={<FeatureGate {...FEATURE_ROUTES['/programmes']}><Programmes /></FeatureGate>} />
+            <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
         </Suspense>
@@ -221,9 +224,6 @@ export default function App() {
     <AuthProvider>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Public routes */}
-          <Route path="/*" element={<PublicLayout />} />
-
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminRoute />}>
@@ -257,6 +257,7 @@ export default function App() {
               <Route path="payments" element={<AdminPayments />} />
               <Route path="features" element={<AdminFeatures />} />
               <Route path="admin-users" element={<AdminManagement />} />
+              <Route path="*" element={<AdminNotFound />} />
             </Route>
           </Route>
 
@@ -275,6 +276,9 @@ export default function App() {
           </Route>
           <Route path="/portal/login" element={<FeatureGate featureKey="patient_portal" featureName="Patient Portal"><PortalLogin /></FeatureGate>} />
           <Route path="/portal/register" element={<FeatureGate featureKey="patient_portal" featureName="Patient Portal"><PortalRegister /></FeatureGate>} />
+
+          {/* Public routes — catch-all LAST */}
+          <Route path="/*" element={<PublicLayout />} />
         </Routes>
       </Suspense>
     </AuthProvider>

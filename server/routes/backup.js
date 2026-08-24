@@ -2,7 +2,8 @@ const express = require('express');
 const zlib = require('zlib');
 const db = require('../models/database');
 const { exportAll, importData } = require('../utils/backupData');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const toClient = (b) => ({
 });
 
 // GET /api/admin/backups — list stored server backups
-router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('backups.view'), async (req, res) => {
   try {
     const backups = await db.prepare('SELECT * FROM backups ORDER BY created_at DESC').all();
     res.json({ backups: backups.map(toClient) });
@@ -26,7 +27,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
 });
 
 // GET /api/admin/backups/export?format=json — export all data (gzip when accepted)
-router.get('/export', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/export', authenticateToken, requirePermission('backups.view'), async (req, res) => {
   try {
     const snapshot = await exportAll();
     const json = JSON.stringify(snapshot);
@@ -56,7 +57,7 @@ router.get('/export', authenticateToken, requireRole('admin', 'super_admin'), as
 });
 
 // POST /api/admin/backups/import — import data (also aliased at POST /)
-router.post('/import', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/import', authenticateToken, requirePermission('backups.restore'), async (req, res) => {
   try {
     const body = req.body || {};
     const data = body.data || body;
@@ -72,7 +73,7 @@ router.post('/import', authenticateToken, requireRole('admin', 'super_admin'), a
 });
 
 // POST /api/admin/backups/reset — reset content to defaults
-router.post('/reset', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/reset', authenticateToken, requirePermission('backups.restore'), async (req, res) => {
   try {
     await db.resetContentToDefaults();
     res.json({ success: true, message: 'All content reset to defaults' });
@@ -83,7 +84,7 @@ router.post('/reset', authenticateToken, requireRole('admin', 'super_admin'), as
 });
 
 // POST /api/admin/backups/create — create a stored server backup
-router.post('/create', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/create', authenticateToken, requirePermission('backups.create'), async (req, res) => {
   try {
     const snapshot = await exportAll();
     const json = JSON.stringify(snapshot);
@@ -101,7 +102,7 @@ router.post('/create', authenticateToken, requireRole('admin', 'super_admin'), a
 });
 
 // POST /api/admin/backups/:id/restore — restore from a stored backup
-router.post('/:id/restore', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/:id/restore', authenticateToken, requirePermission('backups.restore'), async (req, res) => {
   try {
     const backup = await db.prepare('SELECT * FROM backups WHERE id = ?').get(req.params.id);
     if (!backup || !backup.data) {
@@ -122,7 +123,7 @@ router.post('/:id/restore', authenticateToken, requireRole('admin', 'super_admin
 });
 
 // POST /api/admin/backups — alias for import (kept for backward compatibility)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('backups.restore'), async (req, res) => {
   try {
     const body = req.body || {};
     const data = body.data || body;
@@ -138,7 +139,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (
 });
 
 // DELETE /api/admin/backups/:id
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('backups.view'), async (req, res) => {
   try {
     const backup = await db.prepare('SELECT * FROM backups WHERE id = ?').get(req.params.id);
     if (!backup) {

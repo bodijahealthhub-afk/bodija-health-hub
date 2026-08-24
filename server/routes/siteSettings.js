@@ -1,11 +1,12 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
 // GET /api/admin/site-settings — get all site settings
-router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('site_settings.view'), async (req, res) => {
   try {
     const rows = await db.prepare('SELECT key, value FROM site_settings').all();
     const settings = {};
@@ -20,7 +21,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
 });
 
 // PUT /api/admin/site-settings — update site settings
-router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/', authenticateToken, requirePermission('site_settings.manage'), async (req, res) => {
   try {
     const updates = req.body;
     const upsert = db.prepare(

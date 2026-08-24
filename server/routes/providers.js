@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -91,7 +92,7 @@ router.get('/:idOrSlug', async (req, res) => {
 });
 
 // POST /api/providers (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('providers.create'), async (req, res) => {
   try {
     const {
       name, provider_type, description, logo, location, contact_email, contact_phone, website,
@@ -138,7 +139,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (
 });
 
 // PATCH /api/providers/:id/status (admin)
-router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.patch('/:id/status', authenticateToken, requirePermission('providers.update'), async (req, res) => {
   try {
     const provider = await db.prepare('SELECT * FROM providers WHERE id = ?').get(req.params.id);
     if (!provider) {
@@ -155,7 +156,7 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
 });
 
 // PUT /api/providers/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('providers.update'), async (req, res) => {
   try {
     const provider = await db.prepare('SELECT * FROM providers WHERE id = ?').get(req.params.id);
     if (!provider) {
@@ -229,7 +230,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async
 });
 
 // DELETE /api/providers/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('providers.delete'), async (req, res) => {
   try {
     const provider = await db.prepare('SELECT * FROM providers WHERE id = ?').get(req.params.id);
     if (!provider) {

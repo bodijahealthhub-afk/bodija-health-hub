@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // PUT /api/site-content — admin: update multiple key-value pairs
-router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/', authenticateToken, requirePermission('content.update'), async (req, res) => {
   try {
     const updates = req.body;
     const upsert = db.prepare(
@@ -82,7 +83,7 @@ router.get('/:section', async (req, res) => {
 });
 
 // PUT /api/site-content/:section — admin: update a specific section
-router.put('/:section', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/:section', authenticateToken, requirePermission('content.update'), async (req, res) => {
   try {
     const { section } = req.params;
     const updates = req.body;

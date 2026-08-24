@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
 
@@ -36,7 +37,7 @@ router.post('/', requireFeature('contact_form'), async (req, res) => {
 });
 
 // GET /api/messages (admin)
-router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('messages.view'), async (req, res) => {
   try {
     const { is_read, search } = req.query;
     let query = 'SELECT * FROM messages WHERE 1=1';
@@ -60,7 +61,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin', 'receptio
 });
 
 // GET /api/messages/:id
-router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.get('/:id', authenticateToken, requirePermission('messages.view'), async (req, res) => {
   try {
     const message = await db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
     if (!message) {
@@ -73,7 +74,7 @@ router.get('/:id', authenticateToken, requireRole('admin', 'super_admin', 'recep
 });
 
 // PUT /api/messages/:id/read
-router.put('/:id/read', authenticateToken, requireRole('admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.put('/:id/read', authenticateToken, requirePermission('messages.update'), async (req, res) => {
   try {
     const message = await db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
     if (!message) {
@@ -88,7 +89,7 @@ router.put('/:id/read', authenticateToken, requireRole('admin', 'super_admin', '
 });
 
 // DELETE /api/messages/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('messages.delete'), async (req, res) => {
   try {
     const message = await db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
     if (!message) {

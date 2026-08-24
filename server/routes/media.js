@@ -3,7 +3,8 @@ const multer = require('multer');
 const fs = require('fs');
 const db = require('../models/database');
 const { uploadsDir } = require('../utils/uploads');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { uploadFile, configured: storageConfigured } = require('../utils/objectStorage');
 
 const router = express.Router();
@@ -60,7 +61,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/admin/media/upload (admin — multipart, field "images")
-router.post('/upload', authenticateToken, requireRole('admin', 'super_admin'), upload.array('images', 20), async (req, res) => {
+router.post('/upload', authenticateToken, requirePermission('media.upload'), upload.array('images', 20), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
@@ -91,7 +92,7 @@ router.post('/upload', authenticateToken, requireRole('admin', 'super_admin'), u
 });
 
 // POST /api/media (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('media.upload'), async (req, res) => {
   try {
     const { name, url, thumbnail, category, size, mime_type } = req.body;
     if (!name || !url) {
@@ -106,7 +107,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (
 });
 
 // DELETE /api/media/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('media.delete'), async (req, res) => {
   try {
     await db.prepare('DELETE FROM media WHERE id = ?').run(req.params.id);
     res.json({ success: true });

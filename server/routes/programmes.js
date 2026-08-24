@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
 
 const router = express.Router();
@@ -70,7 +71,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/programmes (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('programmes.create'), async (req, res) => {
   try {
     const { title, description, category, schedule, frequency, location, image, status } = req.body;
     if (!title) {
@@ -99,7 +100,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/programmes/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('programmes.update'), async (req, res) => {
   try {
     const programme = await db.prepare('SELECT * FROM programmes WHERE id = ?').get(req.params.id);
     if (!programme) {
@@ -133,7 +134,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // PATCH /api/programmes/:id/status (admin)
-router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.patch('/:id/status', authenticateToken, requirePermission('programmes.update'), async (req, res) => {
   try {
     const programme = await db.prepare('SELECT * FROM programmes WHERE id = ?').get(req.params.id);
     if (!programme) {
@@ -150,7 +151,7 @@ router.patch('/:id/status', authenticateToken, requireRole('admin', 'super_admin
 });
 
 // DELETE /api/programmes/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('programmes.delete'), async (req, res) => {
   try {
     const programme = await db.prepare('SELECT * FROM programmes WHERE id = ?').get(req.params.id);
     if (!programme) {

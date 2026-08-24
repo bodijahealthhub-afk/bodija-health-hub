@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
 
 const router = express.Router();
@@ -104,7 +105,7 @@ router.get('/:idOrSlug', async (req, res) => {
 });
 
 // POST /api/services (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('services.create'), async (req, res) => {
   try {
     const {
       name, description, short_description, category, price, image, icon, status,
@@ -153,7 +154,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/services/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('services.update'), async (req, res) => {
   try {
     const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
     if (!service) {
@@ -229,7 +230,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // DELETE /api/services/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('services.delete'), async (req, res) => {
   try {
     const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(req.params.id);
     if (!service) {

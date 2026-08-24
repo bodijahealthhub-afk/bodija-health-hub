@@ -1,9 +1,10 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const router = express.Router();
 
-router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/', authenticateToken, requirePermission('dashboard.view'), async (req, res) => {
   try {
     const notifications = [];
     const unreadMessages = await db.prepare('SELECT COUNT(*) as count FROM messages WHERE is_read = 0').get();
@@ -30,7 +31,7 @@ router.get('/', authenticateToken, requireRole('admin', 'super_admin'), async (r
   }
 });
 
-router.get('/count', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/count', authenticateToken, requirePermission('dashboard.view'), async (req, res) => {
   try {
     const unreadMessages = await db.prepare('SELECT COUNT(*) as count FROM messages WHERE is_read = 0').get();
     const pendingAppts = await db.prepare("SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending','requested')").get();

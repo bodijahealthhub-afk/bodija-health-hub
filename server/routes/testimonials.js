@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/testimonials/all (admin — all)
-router.get('/all', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/all', authenticateToken, requirePermission('testimonials.view'), async (req, res) => {
   try {
     const testimonials = await db.prepare('SELECT * FROM testimonials ORDER BY created_at DESC').all();
     res.json({ testimonials: testimonials.map(toClient) });
@@ -58,7 +59,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/testimonials (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('testimonials.create'), async (req, res) => {
   try {
     const { name, patient_name, content, rating, photo, active, is_active } = req.body;
     if ((!name && !patient_name) || !content) {
@@ -84,7 +85,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin'), async (
 });
 
 // PUT /api/testimonials/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('testimonials.update'), async (req, res) => {
   try {
     const testimonial = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
     if (!testimonial) {
@@ -119,7 +120,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin'), async
 });
 
 // DELETE /api/testimonials/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('testimonials.delete'), async (req, res) => {
   try {
     const testimonial = await db.prepare('SELECT * FROM testimonials WHERE id = ?').get(req.params.id);
     if (!testimonial) {

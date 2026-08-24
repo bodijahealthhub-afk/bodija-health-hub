@@ -380,6 +380,23 @@ const SCHEMA = `
     ip TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    module TEXT NOT NULL,
+    action TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS role_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role TEXT NOT NULL,
+    permission_id INTEGER NOT NULL REFERENCES permissions(id),
+    UNIQUE(role, permission_id)
+  );
 `;
 
 async function insertUsers() {
@@ -1055,6 +1072,73 @@ async function seedPartners() {
   console.log(`[seed] Partners: ${PARTNER_CATALOG.length} baseline partners seeded.`);
 }
 
+async function migrateRbac() {
+  const { backend } = impl;
+  try {
+    if (backend === 'sqlite') {
+      const cols = (await impl.all("PRAGMA table_info(users)")).map(c => c.name);
+      if (!cols.includes('status')) {
+        await impl.run("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'");
+      }
+      if (!cols.includes('last_login')) {
+        await impl.run("ALTER TABLE users ADD COLUMN last_login DATETIME");
+      }
+    } else {
+      await impl.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`);
+      await impl.exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login DATETIME`);
+    }
+  } catch (err) {
+    if (!err.message.includes('duplicate column') && !err.message.includes('already exists')) {
+      console.error('[migrate] RBAC migration warning:', err.message);
+    }
+  }
+}
+
+async function seedPermissions() {
+  const { PERMISSIONS } = require('../config/permissions');
+  const { ROLE_PERMISSIONS } = require('../config/rolePermissions');
+
+  const existing = await db.prepare('SELECT COUNT(*) as count FROM permissions').get();
+  if (existing.count >= PERMISSIONS.length) return;
+
+  const insertPerm = db.prepare(
+    `INSERT OR IGNORE INTO permissions (key, name, description, module, action) VALUES (?, ?, ?, ?, ?)`
+  );
+  for (const p of PERMISSIONS) {
+    await insertPerm.run(p.key, p.name, p.description, p.module, p.action);
+  }
+
+  const allPerms = await db.prepare('SELECT id, key FROM permissions').all();
+  const permMap = {};
+  for (const p of allPerms) permMap[p.key] = p.id;
+
+  const insertRolePerm = db.prepare(
+    `INSERT OR IGNORE INTO role_permissions (role, permission_id) VALUES (?, ?)`
+  );
+
+  for (const [role, perms] of Object.entries(ROLE_PERMISSIONS)) {
+    if (perms.length === 1 && perms[0] === '*') {
+      for (const p of allPerms) {
+        await insertRolePerm.run(role, p.id);
+      }
+    } else {
+      for (const permKey of perms) {
+        if (permKey.endsWith('.*')) {
+          const module = permKey.split('.')[0];
+          for (const p of allPerms) {
+            if (p.key === permKey || p.key.startsWith(module + '.')) {
+              await insertRolePerm.run(role, p.id);
+            }
+          }
+        } else if (permMap[permKey]) {
+          await insertRolePerm.run(role, permMap[permKey]);
+        }
+      }
+    }
+  }
+  console.log(`[seed] RBAC: ${PERMISSIONS.length} permissions seeded, role mappings applied.`);
+}
+
 async function init() {
   await impl.ready;
   if (impl.backend === 'sqlite') {
@@ -1066,9 +1150,11 @@ async function init() {
   await migratePhase3();
   await migratePartnersLink();
   await migrateSeoSettings();
+  await migrateRbac();
   await seedIfEmpty();
   await syncAdminPassword();
   await ensureDefaultAdmin();
+  await seedPermissions();
   await archiveFakeSeedData();
   await reactivateServiceCatalog();
   await republishBlogPosts();

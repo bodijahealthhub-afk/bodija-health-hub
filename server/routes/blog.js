@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
 
 const router = express.Router();
@@ -76,7 +77,7 @@ async function handlePublicList(req, res) {
 }
 
 // GET /api/blog/admin (admin — all posts)
-router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.get('/admin', authenticateToken, requirePermission('blog.view'), async (req, res) => {
   try {
     const { status, category } = req.query;
     let query = `SELECT bp.*, u.name as author
@@ -142,7 +143,7 @@ router.get('/:slug', async (req, res) => {
 });
 
 // POST /api/blog (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('blog.create'), async (req, res) => {
   try {
     const { title, content, excerpt, category, featured_image, status } = req.body;
     if (!title || !content) {
@@ -173,7 +174,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/blog/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('blog.update'), async (req, res) => {
   try {
     const post = await db.prepare('SELECT * FROM blog_posts WHERE id = ?').get(req.params.id);
     if (!post) {
@@ -214,7 +215,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // DELETE /api/blog/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('blog.delete'), async (req, res) => {
   try {
     const post = await db.prepare('SELECT * FROM blog_posts WHERE id = ?').get(req.params.id);
     if (!post) {

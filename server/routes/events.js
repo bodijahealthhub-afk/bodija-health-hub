@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
 
 const router = express.Router();
@@ -45,7 +46,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/events/admin (admin — all events)
-router.get('/admin', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.get('/admin', authenticateToken, requirePermission('events.view'), async (req, res) => {
   try {
     const events = await db.prepare('SELECT * FROM events ORDER BY date DESC').all();
     res.json({ events: events.map(toClient) });
@@ -75,7 +76,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/events (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('events.create'), async (req, res) => {
   try {
     const { title, description, date, location, image, type } = req.body;
     if (!title) {
@@ -97,7 +98,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/events/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('events.update'), async (req, res) => {
   try {
     const event = await db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     if (!event) {
@@ -132,7 +133,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // DELETE /api/events/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('events.delete'), async (req, res) => {
   try {
     const event = await db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     if (!event) {

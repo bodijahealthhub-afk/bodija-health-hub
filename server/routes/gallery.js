@@ -3,7 +3,8 @@ const multer = require('multer');
 const fs = require('fs');
 const db = require('../models/database');
 const { uploadsDir } = require('../utils/uploads');
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { uploadFile, configured: storageConfigured } = require('../utils/objectStorage');
 
 const router = express.Router();
@@ -84,7 +85,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/gallery (admin)
-router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), upload.single('image'), async (req, res) => {
+router.post('/', authenticateToken, requirePermission('gallery.create'), upload.single('image'), async (req, res) => {
   try {
     const { title, category, album } = req.body;
     let image_url = req.body.image_url;
@@ -114,7 +115,7 @@ router.post('/', authenticateToken, requireRole('admin', 'super_admin', 'content
 });
 
 // PUT /api/gallery/:id (admin)
-router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'content_manager'), upload.single('image'), async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('gallery.update'), upload.single('image'), async (req, res) => {
   try {
     const item = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     if (!item) {
@@ -150,7 +151,7 @@ router.put('/:id', authenticateToken, requireRole('admin', 'super_admin', 'conte
 });
 
 // DELETE /api/gallery/:id (admin)
-router.delete('/:id', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('gallery.delete'), async (req, res) => {
   try {
     const item = await db.prepare('SELECT * FROM gallery WHERE id = ?').get(req.params.id);
     if (!item) {
