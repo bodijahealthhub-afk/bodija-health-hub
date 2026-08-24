@@ -1,0 +1,13 @@
+{
+  "installCommand": "cd client && npm install",
+  "buildCommand": "cd client && npm run build",
+  "outputDirectory": "client/dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/robots.txt", "destination": "https://bodija-health-hub.onrender.com/robots.txt" },
+    { "source": "/sitemap.xml", "destination": "https://bodija-health-hub.onrender.com/sitemap.xml" },
+    { "source": "/api/(.*)", "destination": "https://bodija-health-hub.onrender.com/api/$1" },
+    { "source": "/uploads/(.*)", "destination": "https://bodija-health-hub.onrender.com/uploads/$1" },
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
+}
