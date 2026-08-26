@@ -3,6 +3,7 @@ import DataTable from './DataTable';
 import StatusBadge from './StatusBadge';
 import SearchBar from './SearchBar';
 import AppointmentDetail from './AppointmentDetail';
+import { FiCheckCircle, FiXCircle } from 'react-icons/fi';
 
 const TYPE_LABELS = {
   appointment: 'Healthcare',
@@ -13,7 +14,7 @@ const TYPE_LABELS = {
   external: 'External',
 };
 
-const STATUS_OPTIONS = ['requested', 'pending', 'confirmed', 'completed', 'cancelled', 'declined', 'expired', 'archived'];
+const STATUS_OPTIONS = ['requested', 'new', 'under_review', 'reviewed', 'contacted', 'confirmed', 'rescheduled', 'in_progress', 'completed', 'cancelled', 'declined', 'expired', 'no_show', 'archived'];
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -182,11 +183,38 @@ const Appointments = () => {
 
   const providers = [...new Set(appointments.map((a) => a.providerName).filter(Boolean))];
 
+  const handleBulkStatus = async (action, ids) => {
+    const statusMap = { confirm: 'confirmed', decline: 'declined', cancel: 'cancelled', complete: 'completed' };
+    const newStatus = statusMap[action];
+    if (!newStatus) return;
+    const token = localStorage.getItem('adminToken');
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/admin/appointments/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setAppointments((prev) => prev.map((a) => (a.id === id ? updated : a)));
+        }
+      } catch { /* continue */ }
+    }
+  };
+
+  const bulkActions = [
+    { key: 'confirm', label: 'Confirm', icon: <FiCheckCircle className="w-4 h-4 text-blue-600" /> },
+    { key: 'complete', label: 'Complete', icon: <FiCheckCircle className="w-4 h-4 text-green-600" /> },
+    { key: 'decline', label: 'Decline', icon: <FiXCircle className="w-4 h-4 text-red-600" /> },
+    { key: 'cancel', label: 'Cancel', icon: <FiXCircle className="w-4 h-4 text-red-600" /> },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Bookings & Registrations</h1>
-        <p className="text-gray-500 mt-1">Manage appointment, partner, programme, event, and training bookings</p>
+        <h1 className="text-2xl font-bold text-gray-900">Service Requests</h1>
+        <p className="text-gray-500 mt-1">Manage bookings, registrations, and service requests across the BHH ecosystem</p>
       </div>
 
       {/* Filters */}
@@ -237,6 +265,8 @@ const Appointments = () => {
           data={filteredAppointments}
           pageSize={10}
           onRowClick={(row) => { setSelectedAppointment(row); setShowDetail(true); }}
+          onBulkAction={handleBulkStatus}
+          bulkActions={bulkActions}
         />
       )}
 

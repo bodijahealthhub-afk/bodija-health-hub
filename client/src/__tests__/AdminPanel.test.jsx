@@ -139,7 +139,7 @@ describe('Sidebar', () => {
   it('renders Communications items', async () => {
     renderWithProviders(<Sidebar collapsed={false} onToggle={() => {}} />)
     await waitFor(() => {
-      expect(screen.getByText('Bookings')).toBeTruthy()
+      expect(screen.getByText('Service Requests')).toBeTruthy()
     })
     expect(screen.getByText('Messages')).toBeTruthy()
     expect(screen.getByText('Newsletter')).toBeTruthy()

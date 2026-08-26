@@ -495,12 +495,12 @@ async function insertContentDefaults() {
       { label: 'Home', url: '/' },
       { label: 'About Us', url: '/about' },
       { label: 'Services', url: '/services' },
-      { label: 'Blog', url: '/blog' },
+      { label: 'Newsroom', url: '/newsroom' },
       { label: 'Contact', url: '/contact' },
     ])],
     ['footer_platform_links', JSON.stringify([
-      { label: 'LiveCare', url: '/platforms/livecare' },
-      { label: 'hEar Menders', url: '/platforms/hear-menders' },
+      { label: 'LiveCare', url: '/livecare' },
+      { label: 'hEar Menders', url: '/hear-menders' },
     ])],
     ['footer_social_links', JSON.stringify({
       facebook: 'https://facebook.com/bodijahealthhub',
@@ -541,7 +541,7 @@ async function insertContentDefaults() {
     ['events', 'Events - Bodija Health Hub', 'Health talks, screenings and events at Bodija Health Hub.', 'https://bodijahealthhub.com/events'],
     ['programmes', 'Programmes - Bodija Health Hub', 'Community programmes and initiatives at Bodija Health Hub.', 'https://bodijahealthhub.com/programmes'],
     ['platforms', 'Our Platforms - Bodija Health Hub', 'Discover our digital health platforms.', 'https://bodijahealthhub.com/platforms'],
-    ['blog', 'Blog - Bodija Health Hub', 'Health tips and news from our experts.', 'https://bodijahealthhub.com/blog'],
+    ['blog', 'Newsroom - Bodija Health Hub', 'Health tips and news from our experts.', 'https://bodijahealthhub.com/newsroom'],
     ['contact', 'Contact Us - Bodija Health Hub', 'Get in touch with Bodija Health Hub.', 'https://bodijahealthhub.com/contact'],
     ['ecosystem', 'The Ecosystem - Bodija Health Hub', 'Our connected healthcare ecosystem.', 'https://bodijahealthhub.com/ecosystem'],
     ['partners', 'Our Partners - Bodija Health Hub', 'Meet our healthcare partner network.', 'https://bodijahealthhub.com/partners'],
@@ -1072,6 +1072,283 @@ async function seedPartners() {
   console.log(`[seed] Partners: ${PARTNER_CATALOG.length} baseline partners seeded.`);
 }
 
+// Wave 1: Extend appointments table with service request fields.
+// Idempotent — checks for each column before adding.
+async function migrateServiceRequests() {
+  const cols = [
+    { name: 'partner_id', ddl: 'INTEGER REFERENCES partners(id)' },
+    { name: 'programme_id', ddl: 'INTEGER REFERENCES programmes(id)' },
+    { name: 'event_id', ddl: 'INTEGER REFERENCES events(id)' },
+    { name: 'assigned_to', ddl: 'INTEGER REFERENCES users(id)' },
+    { name: 'alternative_date', ddl: 'TEXT' },
+    { name: 'alternative_time', ddl: 'TEXT' },
+    { name: 'location_preference', ddl: 'TEXT' },
+    { name: 'internal_notes', ddl: 'TEXT' },
+    { name: 'source', ddl: "TEXT DEFAULT 'website'" },
+    { name: 'reviewed_at', ddl: 'DATETIME' },
+    { name: 'confirmed_at', ddl: 'DATETIME' },
+    { name: 'cancelled_at', ddl: 'DATETIME' },
+    { name: 'completed_at', ddl: 'DATETIME' },
+  ];
+  if (db.backend === 'sqlite') {
+    const existing = new Set((await db.prepare('PRAGMA table_info(appointments)').all()).map((c) => c.name));
+    for (const col of cols) {
+      if (!existing.has(col.name)) {
+        await db.prepare(`ALTER TABLE appointments ADD COLUMN ${col.name} ${col.ddl}`).run();
+      }
+    }
+  } else {
+    for (const col of cols) {
+      const type = col.ddl.includes('INTEGER') ? 'INTEGER'
+        : col.ddl.includes('DATETIME') ? 'DATETIME'
+          : 'TEXT';
+      await db.prepare(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS ${col.name} ${type}`).run();
+    }
+  }
+}
+
+// Extend appointments CHECK constraint to support full service-request lifecycle statuses.
+// SQLite requires table recreation to modify CHECK constraints. Idempotent.
+async function migrateAppointmentsStatusCheck() {
+  if (impl.backend !== 'sqlite') return;
+  const tableInfo = await impl.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='appointments'");
+  if (!tableInfo) return;
+  const currentSql = tableInfo.sql;
+  const targetStatuses = "'pending','requested','new','under_review','reviewed','contacted','confirmed','rescheduled','in_progress','completed','cancelled','declined','expired','no_show','archived'";
+  // If the CHECK already contains 'under_review', the constraint is up to date
+  if (currentSql.includes('under_review')) return;
+  console.log('[migrate] Extending appointments status CHECK constraint to support full lifecycle...');
+  impl.pragma('foreign_keys = OFF');
+  try {
+    await impl.exec(`
+      CREATE TABLE IF NOT EXISTS appointments_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        booking_reference TEXT UNIQUE,
+        booking_type TEXT DEFAULT 'appointment',
+        category TEXT,
+        patient_name TEXT NOT NULL,
+        patient_email TEXT,
+        patient_phone TEXT,
+        patient_age INTEGER,
+        doctor_id INTEGER REFERENCES doctors(id),
+        service_id INTEGER REFERENCES services(id),
+        provider_id INTEGER REFERENCES providers(id),
+        provider_type TEXT DEFAULT 'BHH',
+        date TEXT,
+        time TEXT,
+        preferred_date TEXT,
+        preferred_time TEXT,
+        booking_method TEXT DEFAULT 'BHH_MANAGED',
+        external_booking_url TEXT,
+        contact_method TEXT,
+        notes TEXT,
+        status TEXT DEFAULT 'pending' CHECK(status IN (${targetStatuses})),
+        payment_status TEXT DEFAULT 'not_required' CHECK(payment_status IN ('not_required','unpaid','pending','paid','failed','refunded')),
+        partner_id INTEGER REFERENCES partners(id),
+        programme_id INTEGER REFERENCES programmes(id),
+        event_id INTEGER REFERENCES events(id),
+        assigned_to INTEGER REFERENCES users(id),
+        alternative_date TEXT,
+        alternative_time TEXT,
+        location_preference TEXT,
+        internal_notes TEXT,
+        source TEXT DEFAULT 'website',
+        reviewed_at DATETIME,
+        confirmed_at DATETIME,
+        cancelled_at DATETIME,
+        completed_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    // Copy all existing data
+    await impl.exec(`INSERT INTO appointments_new SELECT * FROM appointments`);
+    // Drop old table and rename
+    await impl.exec(`DROP TABLE appointments`);
+    await impl.exec(`ALTER TABLE appointments_new RENAME TO appointments`);
+    // Recreate indexes
+    await impl.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status)`);
+    await impl.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(date)`);
+    await impl.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON appointments(doctor_id)`);
+    await impl.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_reference ON appointments(booking_reference)`);
+    console.log('[migrate] Appointments status CHECK constraint extended successfully.');
+  } catch (err) {
+    console.error('[migrate] Failed to extend appointments CHECK constraint:', err.message);
+  } finally {
+    impl.pragma('foreign_keys = ON');
+  }
+}
+
+// Wave 1: Add lifecycle `status` TEXT column to services, partners, programmes, events.
+// Keeps `is_active` in sync for backward compatibility. Idempotent.
+const LIFECYCLE_TABLES = ['services', 'partners', 'programmes', 'events'];
+
+async function migrateLifecycleStatus() {
+  for (const table of LIFECYCLE_TABLES) {
+    if (db.backend === 'sqlite') {
+      const cols = await db.prepare(`PRAGMA table_info(${table})`).all();
+      if (!cols.some((c) => c.name === 'status')) {
+        await db.prepare(`ALTER TABLE ${table} ADD COLUMN status TEXT DEFAULT 'active'`).run();
+      }
+    } else {
+      await db.prepare(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`).run();
+    }
+  }
+}
+
+// Wave 1: Content revision history table.
+async function createRevisionsTable() {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS content_revisions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity_type TEXT NOT NULL,
+      entity_id INTEGER NOT NULL,
+      version INTEGER NOT NULL,
+      snapshot TEXT NOT NULL,
+      changed_by INTEGER,
+      change_summary TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  if (db.backend === 'sqlite') {
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_revisions_entity ON content_revisions(entity_type, entity_id)').run();
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_revisions_version ON content_revisions(entity_type, entity_id, version)').run();
+  } else {
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_revisions_entity ON content_revisions(entity_type, entity_id)').run();
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_revisions_version ON content_revisions(entity_type, entity_id, version)').run();
+  }
+}
+
+// Wave 2: Notifications table for admin notification centre.
+async function createNotificationsTable() {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recipient_user_id INTEGER REFERENCES users(id),
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT,
+      link TEXT,
+      entity_type TEXT,
+      entity_id TEXT,
+      read_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  if (db.backend === 'sqlite') {
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(recipient_user_id, read_at)').run();
+  } else {
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(recipient_user_id, read_at)').run();
+  }
+}
+
+// Wave 2: Content workflow + scheduled publishing columns on blog_posts, events, programmes.
+async function migrateContentWorkflow() {
+  const blogCols = [
+    { name: 'reviewed_by', ddl: 'INTEGER REFERENCES users(id)' },
+    { name: 'published_at', ddl: 'DATETIME' },
+    { name: 'publish_at', ddl: 'DATETIME' },
+    { name: 'unpublish_at', ddl: 'DATETIME' },
+  ];
+  const eventCols = [
+    { name: 'publish_at', ddl: 'DATETIME' },
+    { name: 'unpublish_at', ddl: 'DATETIME' },
+  ];
+  const programmeCols = [
+    { name: 'publish_at', ddl: 'DATETIME' },
+    { name: 'unpublish_at', ddl: 'DATETIME' },
+  ];
+
+  const addCols = async (table, cols) => {
+    if (db.backend === 'sqlite') {
+      const existing = new Set((await db.prepare(`PRAGMA table_info(${table})`).all()).map((c) => c.name));
+      for (const col of cols) {
+        if (!existing.has(col.name)) {
+          await db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col.name} ${col.ddl}`).run();
+        }
+      }
+    } else {
+      for (const col of cols) {
+        await db.prepare(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col.name} DATETIME`).run();
+      }
+    }
+  };
+
+  await addCols('blog_posts', blogCols);
+  await addCols('events', eventCols);
+  await addCols('programmes', programmeCols);
+}
+
+// Wave 3 Phase 2: Ecosystem categories table + partner extensions.
+async function migrateEcosystemCategories() {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS ecosystem_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      description TEXT,
+      icon TEXT,
+      display_order INTEGER DEFAULT 0,
+      is_active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  // Add category_id, social_links, gallery to partners
+  const partnerCols = [
+    { name: 'category_id', ddl: 'INTEGER REFERENCES ecosystem_categories(id)' },
+    { name: 'social_links', ddl: 'TEXT' },
+    { name: 'gallery', ddl: 'TEXT' },
+  ];
+  if (db.backend === 'sqlite') {
+    const existing = new Set((await db.prepare('PRAGMA table_info(partners)').all()).map((c) => c.name));
+    for (const col of partnerCols) {
+      if (!existing.has(col.name)) {
+        await db.prepare(`ALTER TABLE partners ADD COLUMN ${col.name} ${col.ddl}`).run();
+      }
+    }
+  } else {
+    for (const col of partnerCols) {
+      await db.prepare(`ALTER TABLE partners ADD COLUMN IF NOT EXISTS ${col.name} TEXT`).run();
+    }
+  }
+}
+
+// Wave 3 Phase 6: CRM contacts and contact_notes tables.
+async function migrateCrmContacts() {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS contacts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      organisation TEXT,
+      interests TEXT,
+      source TEXT,
+      status TEXT DEFAULT 'new',
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS contact_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contact_id INTEGER NOT NULL REFERENCES contacts(id),
+      author_id INTEGER REFERENCES users(id),
+      note TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  if (db.backend === 'sqlite') {
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email)').run();
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status)').run();
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_contact_notes_contact ON contact_notes(contact_id)').run();
+  }
+}
+
 async function migrateRbac() {
   const { backend } = impl;
   try {
@@ -1151,6 +1428,14 @@ async function init() {
   await migratePartnersLink();
   await migrateSeoSettings();
   await migrateRbac();
+  await migrateServiceRequests();
+  await migrateAppointmentsStatusCheck();
+  await migrateLifecycleStatus();
+  await createRevisionsTable();
+  await createNotificationsTable();
+  await migrateContentWorkflow();
+  await migrateEcosystemCategories();
+  await migrateCrmContacts();
   await seedIfEmpty();
   await syncAdminPassword();
   await ensureDefaultAdmin();
@@ -1218,5 +1503,58 @@ const db = {
 };
 
 db.ready = init();
+
+// Validate backup JSON before restore
+function validateBackup(data) {
+  const errors = [];
+  if (!data || typeof data !== 'object') {
+    errors.push('Backup data is not an object');
+    return { valid: false, errors };
+  }
+  const required = ['services', 'partners', 'programmes', 'events'];
+  for (const key of required) {
+    if (!Array.isArray(data[key])) {
+      errors.push(`Missing or invalid array: ${key}`);
+    }
+  }
+  if (data.users && !Array.isArray(data.users)) {
+    errors.push('Invalid users array');
+  }
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+  // Check for reasonable sizes
+  const maxSize = 100000;
+  for (const key of Object.keys(data)) {
+    if (Array.isArray(data[key]) && data[key].length > maxSize) {
+      errors.push(`Suspiciously large ${key} array (${data[key].length} items)`);
+    }
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+// Check if a migration is safe (idempotent) by verifying column existence
+function columnExists(table, column) {
+  try {
+    const cols = impl.all(`PRAGMA table_info(${table})`);
+    return cols.some((c) => c.name === column);
+  } catch {
+    return false;
+  }
+}
+
+// Check if a table exists
+function tableExists(table) {
+  try {
+    const result = impl.get(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`, [table]);
+    return !!result;
+  } catch {
+    return false;
+  }
+}
+
+db.validateBackup = validateBackup;
+db.columnExists = columnExists;
+db.tableExists = tableExists;
 
 module.exports = db;

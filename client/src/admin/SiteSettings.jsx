@@ -18,7 +18,7 @@ const SiteSettings = () => {
     text_color: '#1F2937',
     seo_meta_title: 'Bodija Health Hub - Quality Healthcare in Ibadan',
     seo_meta_description: 'Bodija Health Hub provides comprehensive healthcare services in Ibadan, Nigeria.',
-    seo_keywords: 'healthcare, hospital, Ibadan, Nigeria',
+    seo_keywords: 'healthcare, wellness hub, community health, Ibadan, Nigeria',
     social_image: '',
     analytics_id: '',
     maintenance_mode: false,

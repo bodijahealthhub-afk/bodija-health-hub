@@ -3,10 +3,15 @@ const db = require('../models/database');
 const { authenticateToken } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
+const { createRevision } = require('./revisions');
 
 const router = express.Router();
 
-const toClient = (e) => ({ ...e, status: e.is_active ? 'active' : 'inactive' });
+const toClient = (e) => ({
+  ...e,
+  lifecycleStatus: e.status || (e.is_active ? 'active' : 'archived'),
+  status: e.is_active ? 'active' : 'inactive',
+});
 
 // Returns true for public (non-admin) requests whose feature is disabled.
 const featureDisabled = async (req, key) => {
@@ -25,12 +30,16 @@ router.get('/', async (req, res) => {
     if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
-    const { type } = req.query;
+    const { type, status } = req.query;
     let query = 'SELECT * FROM events WHERE 1=1';
     const params = [];
 
     if (!isAdmin) {
-      query += ' AND is_active = 1';
+      query += " AND is_active = 1 AND (status IS NULL OR status = 'active')";
+    }
+    if (isAdmin && status) {
+      query += ' AND status = ?';
+      params.push(status);
     }
     if (type) {
       query += ' AND type = ?';
@@ -104,6 +113,9 @@ router.put('/:id', authenticateToken, requirePermission('events.update'), async 
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
+
+    // Create revision before update
+    await createRevision('events', event.id, req.user?.id, 'Updated event');
 
     const { title, description, date, location, image, type, is_active, status } = req.body;
     if (date && isNaN(Date.parse(date))) {

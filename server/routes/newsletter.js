@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
 
@@ -51,7 +52,7 @@ router.post('/unsubscribe', async (req, res) => {
 });
 
 // GET /api/newsletter/subscribers (admin)
-router.get('/subscribers', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.get('/subscribers', authenticateToken, requirePermission('newsletter.view'), async (req, res) => {
   try {
     const subscribers = await db.prepare('SELECT * FROM newsletter_subscribers ORDER BY created_at DESC').all();
     res.json({

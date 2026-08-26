@@ -15,10 +15,13 @@ const db = require('./models/database');
 const { generateSitemapXml } = require('./routes/seo');
 const { startScheduler } = require('./utils/scheduler');
 const { authenticateToken, requireRole } = require('./middleware/auth');
+const { requireFeature } = require('./middleware/features');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const crypto = require('crypto');
+
+const { sanitizeBody, securityHeaders } = require('./utils/security');
 
 app.set('trust proxy', 1);
 
@@ -47,6 +50,14 @@ app.use(helmet({
   },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
+
+// Security headers
+app.use(securityHeaders);
+
+// Body sanitizer
+app.use(sanitizeBody);
+
+// Rate limiter for auth endpoints (using express-rate-limit above)
 
 const allowedOrigins = (process.env.CORS_ORIGINS ||
   'https://client-six-eta-66.vercel.app'
@@ -105,6 +116,38 @@ app.use('/api/upcoming-registrations', publicWriteLimiter);
 
 app.use('/uploads', express.static(process.env.UPLOADS_DIR || path.join(__dirname, 'uploads')));
 
+// Cache headers for public read-only data (10 minutes)
+app.use('/api/services', (req, res, next) => {
+  if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
+    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+  }
+  next();
+});
+app.use('/api/partners', (req, res, next) => {
+  if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
+    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+  }
+  next();
+});
+app.use('/api/programmes', (req, res, next) => {
+  if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
+    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+  }
+  next();
+});
+app.use('/api/events', (req, res, next) => {
+  if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
+    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+  }
+  next();
+});
+app.use('/api/blog', (req, res, next) => {
+  if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=120');
+  }
+  next();
+});
+
 app.get('/robots.txt', async (req, res) => {
   const row = await db.prepare("SELECT value FROM site_settings WHERE key = 'robots_txt'").get();
   const content = (row && row.value) || 'User-agent: *\nAllow: /';
@@ -124,12 +167,12 @@ app.get('/sitemap.xml', async (req, res) => {
 
 // Public routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/doctors', require('./routes/doctors'));
+app.use('/api/doctors', requireFeature('doctors'), require('./routes/doctors'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/providers', require('./routes/providers'));
 app.use('/api/partners', require('./routes/partners'));
 app.use('/api/appointments', require('./routes/appointments'));
-app.use('/api/patients', require('./routes/patients'));
+app.use('/api/patients', requireFeature('patient_portal'), require('./routes/patients'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/programmes', require('./routes/programmes'));
@@ -151,7 +194,7 @@ app.use('/api/search', require('./routes/search'));
 app.use('/api/service-categories', require('./routes/serviceCategories'));
 const paymentsRouter = require('./routes/payments');
 app.use('/api/payments', paymentsRouter);
-app.use('/api/admin/payments', paymentsRouter);
+app.use('/api/ecosystem', require('./routes/ecosystem'));
 app.use('/api/patient', require('./routes/patient'));
 
 // Admin routes — mount-level authentication ensures all /api/admin/* routes require
@@ -173,19 +216,28 @@ app.use('/api/admin/messages', ...adminAuth, require('./routes/messages'));
 app.use('/api/admin/events', ...adminAuth, require('./routes/events'));
 app.use('/api/admin/programmes', ...adminAuth, require('./routes/programmes'));
 app.use('/api/admin/gallery', ...adminAuth, require('./routes/gallery'));
-app.use('/api/admin/doctors', ...adminAuth, require('./routes/doctors'));
+app.use('/api/admin/doctors', ...adminAuth, requireFeature('doctors'), require('./routes/doctors'));
 app.use('/api/admin/providers', ...adminAuth, require('./routes/providers'));
 app.use('/api/admin/partners', ...adminAuth, require('./routes/partners'));
 app.use('/api/admin/service-categories', ...adminAuth, require('./routes/serviceCategories').router);
 app.use('/api/admin/appointments', ...adminAuth, require('./routes/appointments'));
-app.use('/api/admin/patients', ...adminAuth, require('./routes/patients'));
-app.use('/api/admin/notifications', ...adminAuth, require('./routes/notifications'));
+app.use('/api/admin/patients', ...adminAuth, requireFeature('patient_portal'), require('./routes/patients'));
+app.use('/api/admin/notifications', ...adminAuth, require('./routes/adminNotifications'));
+app.use('/api/admin/revisions', ...adminAuth, require('./routes/revisions'));
+app.use('/api/admin/contacts', ...adminAuth, require('./routes/contacts'));
+app.use('/api/admin/ecosystem', ...adminAuth, require('./routes/ecosystem'));
+app.use('/api/admin/analytics', ...adminAuth, require('./routes/analytics'));
 app.use('/api/admin/dashboard', ...adminAuth, require('./routes/dashboard'));
 app.use('/api/admin/features', ...adminAuth, require('./routes/features').router);
 app.use('/api/admin/audit-logs', ...adminAuth, require('./routes/features').auditRouter);
+app.use('/api/admin/payments', ...adminAuth, paymentsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/blog', (req, res) => {
+  res.redirect(301, '/newsroom');
 });
 
 app.use((req, res) => {

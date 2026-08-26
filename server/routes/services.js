@@ -3,6 +3,7 @@ const db = require('../models/database');
 const { authenticateToken } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
+const { createRevision } = require('./revisions');
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ const toClient = (s) => ({
   bookingType: s.booking_type,
   bookingUrl: s.booking_url,
   featured: Boolean(s.featured),
+  lifecycleStatus: s.status || (s.is_active ? 'active' : 'archived'),
   status: s.is_active ? 'active' : 'inactive',
 });
 
@@ -45,13 +47,17 @@ router.get('/', async (req, res) => {
     if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
-    const { category, featured, q } = req.query;
+    const { category, featured, q, status } = req.query;
     let query = 'SELECT * FROM services';
     const params = [];
     const where = [];
 
     if (!isAdmin) {
-      where.push('is_active = 1');
+      where.push("(is_active = 1 AND (status IS NULL OR status = 'active'))");
+    }
+    if (isAdmin && status) {
+      where.push('status = ?');
+      params.push(status);
     }
     if (category) {
       where.push('(category = ? OR category LIKE ?)');
@@ -98,7 +104,25 @@ router.get('/:idOrSlug', async (req, res) => {
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
     }
-    res.json(toClient(service));
+
+    // Fetch related services (same category, excluding self)
+    let relatedServices = [];
+    if (service.category) {
+      relatedServices = await db.prepare(
+        "SELECT id, name, slug, short_description, category, icon, price FROM services WHERE is_active = 1 AND category = ? AND id != ? ORDER BY display_order ASC LIMIT 4"
+      ).all(service.category, service.id);
+    }
+    if (relatedServices.length < 4) {
+      const more = await db.prepare(
+        "SELECT id, name, slug, short_description, category, icon, price FROM services WHERE is_active = 1 AND id != ? ORDER BY display_order ASC LIMIT ?"
+      ).all(service.id, 4 - relatedServices.length);
+      const existingIds = new Set(relatedServices.map((s) => s.id));
+      for (const s of more) {
+        if (!existingIds.has(s.id)) relatedServices.push(s);
+      }
+    }
+
+    res.json({ ...toClient(service), relatedServices });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch service' });
   }
@@ -108,12 +132,15 @@ router.get('/:idOrSlug', async (req, res) => {
 router.post('/', authenticateToken, requirePermission('services.create'), async (req, res) => {
   try {
     const {
-      name, description, short_description, category, price, image, icon, status,
+      name, description, short_description, category, price, image, icon, lifecycle_status, status,
       featured, display_order, booking_type, booking_url, provider_id, location,
     } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Service name is required' });
     }
+
+    const lifecycleStatus = lifecycle_status || status || 'active';
+    const isActive = lifecycleStatus === 'archived' || lifecycleStatus === 'draft' ? 0 : 1;
     if (price !== undefined && price !== null && price !== '' && (isNaN(Number(price)) || Number(price) < 0)) {
       return res.status(400).json({ error: 'Price must be a non-negative number' });
     }
@@ -125,8 +152,8 @@ router.post('/', authenticateToken, requirePermission('services.create'), async 
     const finalSlug = await makeUniqueSlug(slug || name, null);
 
     const result = await db.prepare(
-      `INSERT INTO services (name, slug, short_description, description, category, price, image, icon, featured, display_order, booking_type, booking_url, provider_id, location, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO services (name, slug, short_description, description, category, price, image, icon, featured, display_order, booking_type, booking_url, provider_id, location, is_active, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       name,
       finalSlug,
@@ -142,7 +169,8 @@ router.post('/', authenticateToken, requirePermission('services.create'), async 
       booking_url || null,
       provider_id || null,
       location || null,
-      status === undefined ? 1 : (status === 'active' ? 1 : 0)
+      isActive,
+      lifecycleStatus
     );
 
     const service = await db.prepare('SELECT * FROM services WHERE id = ?').get(result.lastInsertRowid);
@@ -161,10 +189,17 @@ router.put('/:id', authenticateToken, requirePermission('services.update'), asyn
       return res.status(404).json({ error: 'Service not found' });
     }
 
+    // Create revision before update
+    await createRevision('services', service.id, req.user?.id, 'Updated service');
+
     const {
-      name, description, short_description, category, price, image, icon, is_active, status,
+      name, description, short_description, category, price, image, icon, is_active, status, lifecycle_status,
       featured, display_order, booking_type, booking_url, provider_id, location,
     } = req.body;
+
+    // Derive lifecycle status: explicit lifecycle_status > status > existing > active
+    const lifecycleStatus = lifecycle_status || status || service.status || 'active';
+    const isActive = lifecycleStatus === 'archived' || lifecycleStatus === 'draft' ? 0 : (is_active !== undefined ? (is_active ? 1 : 0) : (service.is_active || 1));
 
     if (price !== undefined && price !== null && price !== '' && (isNaN(Number(price)) || Number(price) < 0)) {
       return res.status(400).json({ error: 'Price must be a non-negative number' });
@@ -200,7 +235,8 @@ router.put('/:id', authenticateToken, requirePermission('services.update'), asyn
         booking_url = COALESCE(?, booking_url),
         provider_id = COALESCE(?, provider_id),
         location = COALESCE(?, location),
-        is_active = COALESCE(?, is_active)
+        is_active = COALESCE(?, is_active),
+        status = COALESCE(?, status)
        WHERE id = ?`
     ).run(
       name || null,
@@ -217,7 +253,8 @@ router.put('/:id', authenticateToken, requirePermission('services.update'), asyn
       booking_url || null,
       provider_id ?? null,
       location || null,
-      (is_active !== undefined ? is_active : (status !== undefined ? (status === 'active' ? 1 : 0) : null)),
+      isActive,
+      lifecycleStatus,
       req.params.id
     );
 

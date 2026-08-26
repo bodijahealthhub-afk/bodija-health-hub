@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { PatientAuthProvider } from './portal/PatientAuthContext'
+import { PermissionProvider } from './context/PermissionContext'
 import { useFeatures } from './context/FeatureContext'
 import useSeo from './hooks/useSeo'
 import Navbar from './components/Navbar'
@@ -44,6 +45,7 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 const AdminLogin = lazy(() => import('./admin/AdminLogin'))
 const AdminLayout = lazy(() => import('./admin/AdminLayout'))
 const AdminRoute = lazy(() => import('./admin/AdminRoute'))
+const PermissionRoute = lazy(() => import('./admin/PermissionRoute'))
 const AdminDashboard = lazy(() => import('./admin/Dashboard'))
 const AdminAppointments = lazy(() => import('./admin/Appointments'))
 const AdminPatients = lazy(() => import('./admin/Patients'))
@@ -72,6 +74,8 @@ const AdminBackupRestore = lazy(() => import('./admin/BackupRestore'))
 const AdminSystemHealth = lazy(() => import('./admin/SystemHealth'))
 const AdminPayments = lazy(() => import('./admin/Payments'))
 const AdminFeatures = lazy(() => import('./admin/Features'))
+const AdminContacts = lazy(() => import('./admin/Contacts'))
+const AdminAnalytics = lazy(() => import('./admin/Analytics'))
 const AdminNotFound = lazy(() => import('./admin/AdminNotFound'))
 
 // Patient portal
@@ -227,36 +231,38 @@ export default function App() {
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminRoute />}>
-            <Route element={<AdminLayout />}>
+            <Route element={<PermissionProvider><AdminLayout /></PermissionProvider>}>
               <Route index element={<AdminDashboard />} />
               <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="appointments" element={<AdminAppointments />} />
-              <Route path="patients" element={<AdminPatients />} />
-              <Route path="services" element={<AdminServices />} />
-              <Route path="service-categories" element={<AdminServiceCategories />} />
-              <Route path="providers" element={<AdminProviders />} />
-              <Route path="partners" element={<AdminPartners />} />
-              <Route path="blog" element={<AdminBlog />} />
-              <Route path="events" element={<AdminEvents />} />
-              <Route path="programmes" element={<AdminProgrammes />} />
-              <Route path="gallery" element={<AdminGallery />} />
-              <Route path="messages" element={<AdminMessages />} />
-              <Route path="newsletter" element={<AdminNewsletter />} />
-              <Route path="testimonials" element={<AdminTestimonials />} />
-              <Route path="settings" element={<AdminSettings />} />
-              <Route path="site-content" element={<AdminSiteContent />} />
-              <Route path="hero-content" element={<AdminHeroContent />} />
-              <Route path="footer-content" element={<AdminFooterContent />} />
-              <Route path="navigation-content" element={<AdminNavigationContent />} />
-              <Route path="page-content" element={<AdminPageContent />} />
-              <Route path="site-settings" element={<AdminSiteSettings />} />
-              <Route path="media" element={<AdminMediaLibrary />} />
-              <Route path="seo" element={<AdminSeoSettings />} />
-              <Route path="backup" element={<AdminBackupRestore />} />
-              <Route path="system-health" element={<AdminSystemHealth />} />
-              <Route path="payments" element={<AdminPayments />} />
-              <Route path="features" element={<AdminFeatures />} />
-              <Route path="admin-users" element={<AdminManagement />} />
+              <Route path="appointments" element={<PermissionRoute permission="bookings.view"><AdminAppointments /></PermissionRoute>} />
+              <Route path="patients" element={<PermissionRoute permission="bookings.view"><AdminPatients /></PermissionRoute>} />
+              <Route path="services" element={<PermissionRoute permission="services.view"><AdminServices /></PermissionRoute>} />
+              <Route path="service-categories" element={<PermissionRoute permission="service_categories.view"><AdminServiceCategories /></PermissionRoute>} />
+              <Route path="providers" element={<PermissionRoute permission="providers.view"><AdminProviders /></PermissionRoute>} />
+              <Route path="partners" element={<PermissionRoute permission="partners.view"><AdminPartners /></PermissionRoute>} />
+              <Route path="blog" element={<PermissionRoute permission="blog.view"><AdminBlog /></PermissionRoute>} />
+              <Route path="events" element={<PermissionRoute permission="events.view"><AdminEvents /></PermissionRoute>} />
+              <Route path="programmes" element={<PermissionRoute permission="programmes.view"><AdminProgrammes /></PermissionRoute>} />
+              <Route path="gallery" element={<PermissionRoute permission="media.view"><AdminGallery /></PermissionRoute>} />
+              <Route path="messages" element={<PermissionRoute permission="messages.view"><AdminMessages /></PermissionRoute>} />
+              <Route path="newsletter" element={<PermissionRoute permission="newsletter.view"><AdminNewsletter /></PermissionRoute>} />
+              <Route path="testimonials" element={<PermissionRoute permission="testimonials.view"><AdminTestimonials /></PermissionRoute>} />
+              <Route path="settings" element={<PermissionRoute permission="settings.view"><AdminSettings /></PermissionRoute>} />
+              <Route path="site-content" element={<PermissionRoute permission="content.view"><AdminSiteContent /></PermissionRoute>} />
+              <Route path="hero-content" element={<PermissionRoute permission="content.view"><AdminHeroContent /></PermissionRoute>} />
+              <Route path="footer-content" element={<PermissionRoute permission="content.view"><AdminFooterContent /></PermissionRoute>} />
+              <Route path="navigation-content" element={<PermissionRoute permission="content.view"><AdminNavigationContent /></PermissionRoute>} />
+              <Route path="page-content" element={<PermissionRoute permission="content.view"><AdminPageContent /></PermissionRoute>} />
+              <Route path="site-settings" element={<PermissionRoute permission="site_settings.view"><AdminSiteSettings /></PermissionRoute>} />
+              <Route path="media" element={<PermissionRoute permission="media.view"><AdminMediaLibrary /></PermissionRoute>} />
+              <Route path="seo" element={<PermissionRoute permission="seo.view"><AdminSeoSettings /></PermissionRoute>} />
+              <Route path="backup" element={<PermissionRoute permission="backups.view"><AdminBackupRestore /></PermissionRoute>} />
+              <Route path="system-health" element={<PermissionRoute permission="system_health.view"><AdminSystemHealth /></PermissionRoute>} />
+              <Route path="payments" element={<PermissionRoute permission="payments.view"><AdminPayments /></PermissionRoute>} />
+              <Route path="features" element={<PermissionRoute permission="feature_flags.view"><AdminFeatures /></PermissionRoute>} />
+              <Route path="admin-users" element={<PermissionRoute permission="users.view"><AdminManagement /></PermissionRoute>} />
+              <Route path="contacts" element={<PermissionRoute permission="contacts.view"><AdminContacts /></PermissionRoute>} />
+              <Route path="analytics" element={<PermissionRoute permission="analytics.view"><AdminAnalytics /></PermissionRoute>} />
               <Route path="*" element={<AdminNotFound />} />
             </Route>
           </Route>

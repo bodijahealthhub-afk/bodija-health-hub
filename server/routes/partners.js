@@ -13,6 +13,7 @@ const toClient = (p) => ({
   servicesOffered: p.services_offered ? p.services_offered.split(',').map((s) => s.trim()).filter(Boolean) : [],
   featured: Boolean(p.featured),
   displayOrder: p.display_order,
+  lifecycleStatus: p.status || (p.is_active ? 'active' : 'archived'),
   status: p.is_active ? 'active' : 'inactive',
 });
 
@@ -34,12 +35,16 @@ router.get('/', async (req, res) => {
     if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
-    const { partner_type, featured } = req.query;
+    const { partner_type, featured, status } = req.query;
     let query = 'SELECT * FROM partners WHERE 1=1';
     const params = [];
 
     if (!isAdmin) {
-      query += ' AND is_active = 1';
+      query += " AND is_active = 1 AND (status IS NULL OR status = 'active')";
+    }
+    if (isAdmin && status) {
+      query += ' AND status = ?';
+      params.push(status);
     }
     if (partner_type) {
       query += ' AND partner_type = ?';

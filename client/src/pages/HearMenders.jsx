@@ -33,7 +33,7 @@ export default function HearMenders() {
               </p>
               <div className="flex flex-wrap gap-4">
                 <a href="/upcoming" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-900 font-semibold rounded-full hover:bg-blue-50 transition-colors">
-                  Download on Google Play
+                  Coming Soon — Google Play
                 </a>
                 <Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-colors">
                   Learn More
@@ -98,9 +98,9 @@ export default function HearMenders() {
       <section className="py-20 bg-blue-900 text-white text-center">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Hearing Care?</h2>
-          <p className="text-blue-200 mb-8">Download hEar Menders today and connect with hearing specialists instantly.</p>
+          <p className="text-blue-200 mb-8">hEar Menders is coming soon — connect with hearing specialists instantly.</p>
           <a href="/upcoming" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-900 font-semibold rounded-full hover:bg-blue-50 transition-colors">
-            Download hEar Menders
+            Coming Soon
           </a>
         </div>
       </section>

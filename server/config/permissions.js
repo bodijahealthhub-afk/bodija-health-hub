@@ -57,10 +57,11 @@ const PERMISSIONS = [
   { key: 'testimonials.update', name: 'Update Testimonials', description: 'Edit testimonials', module: 'testimonials', action: 'update' },
   { key: 'testimonials.delete', name: 'Delete Testimonials', description: 'Delete testimonials', module: 'testimonials', action: 'delete' },
 
-  // Bookings / Appointments
-  { key: 'bookings.view', name: 'View Bookings', description: 'View bookings and appointments', module: 'bookings', action: 'view' },
+  // Bookings / Service Requests
+  { key: 'bookings.view', name: 'View Bookings', description: 'View bookings and service requests', module: 'bookings', action: 'view' },
   { key: 'bookings.create', name: 'Create Bookings', description: 'Create new bookings', module: 'bookings', action: 'create' },
   { key: 'bookings.update', name: 'Update Bookings', description: 'Update booking status and details', module: 'bookings', action: 'update' },
+  { key: 'bookings.assign', name: 'Assign Bookings', description: 'Assign bookings to team members', module: 'bookings', action: 'assign' },
   { key: 'bookings.cancel', name: 'Cancel Bookings', description: 'Cancel bookings', module: 'bookings', action: 'cancel' },
 
   // Messages
@@ -131,6 +132,22 @@ const PERMISSIONS = [
   { key: 'backups.view', name: 'View Backups', description: 'View backup list', module: 'backups', action: 'view' },
   { key: 'backups.create', name: 'Create Backups', description: 'Create new backups', module: 'backups', action: 'create' },
   { key: 'backups.restore', name: 'Restore Backups', description: 'Restore from backup', module: 'backups', action: 'restore' },
+
+  // Content Revisions
+  { key: 'content.revisions.view', name: 'View Content Revisions', description: 'View content revision history', module: 'content', action: 'revisions.view' },
+  { key: 'content.revisions.restore', name: 'Restore Content Revisions', description: 'Restore content to a previous revision', module: 'content', action: 'revisions.restore' },
+
+  // Notifications
+  { key: 'notifications.view', name: 'View Notifications', description: 'View admin notifications', module: 'notifications', action: 'view' },
+  { key: 'notifications.manage', name: 'Manage Notifications', description: 'Mark notifications as read, delete', module: 'notifications', action: 'manage' },
+
+  // Analytics
+  { key: 'analytics.view', name: 'View Analytics', description: 'View site analytics and reports', module: 'analytics', action: 'view' },
+
+  // Contacts (CRM)
+  { key: 'contacts.view', name: 'View Contacts', description: 'View CRM contact list', module: 'contacts', action: 'view' },
+  { key: 'contacts.create', name: 'Create Contacts', description: 'Create new CRM contacts', module: 'contacts', action: 'create' },
+  { key: 'contacts.update', name: 'Update Contacts', description: 'Edit CRM contact details', module: 'contacts', action: 'update' },
 
   // Audit Logs
   { key: 'audit_logs.view', name: 'View Audit Logs', description: 'View audit log entries', module: 'audit_logs', action: 'view' },

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useFeatures } from '../context/FeatureContext'
+import { isPathHidden } from '../utils/featureRoutes'
 
-const columns = [
+const allColumns = [
   {
     title: 'Main Pages',
     links: [
@@ -22,11 +24,11 @@ const columns = [
   {
     title: 'Our Platforms',
     links: [
-      { name: 'LiveCare', path: '/platforms' },
-      { name: 'hEar Menders', path: '/platforms' },
+      { name: 'LiveCare', path: '/livecare' },
+      { name: 'hEar Menders', path: '/hear-menders' },
       { name: 'Events', path: '/events' },
       { name: 'Programmes', path: '/programmes' },
-      { name: 'Upcoming: BACR', path: '/upcoming' },
+      { name: 'Upcoming: BACR', path: '/bacr' },
     ],
   },
   {
@@ -47,6 +49,15 @@ const columns = [
 ]
 
 export default function Sitemap() {
+  const { isEnabled } = useFeatures()
+
+  const columns = allColumns
+    .map((col) => ({
+      ...col,
+      links: col.links.filter((link) => !link.external && !isPathHidden(link.path, isEnabled)),
+    }))
+    .filter((col) => col.links.length > 0)
+
   return (
     <div>
       {/* Hero */}
@@ -76,23 +87,12 @@ export default function Sitemap() {
                 <ul className="space-y-3">
                   {col.links.map((link) => (
                     <li key={link.name}>
-                      {link.external ? (
-                        <a
-                          href={link.path}
-                          className="text-gray-600 hover:text-primary transition-colors text-sm font-medium"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {link.name}
-                        </a>
-                      ) : (
-                        <Link
-                          to={link.path}
-                          className="text-gray-600 hover:text-primary transition-colors text-sm font-medium"
-                        >
-                          {link.name}
-                        </Link>
-                      )}
+                      <Link
+                        to={link.path}
+                        className="text-gray-600 hover:text-primary transition-colors text-sm font-medium"
+                      >
+                        {link.name}
+                      </Link>
                     </li>
                   ))}
                 </ul>

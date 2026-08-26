@@ -22,7 +22,6 @@ const IMPORTABLE_TABLES = [
 ];
 
 const ALL_TABLES = [
-  'users',
   'doctors',
   'providers',
   'services',
@@ -44,7 +43,6 @@ const ALL_TABLES = [
   'career_applications',
   'upcoming_registrations',
   'feature_flags',
-  'audit_logs',
 ];
 
 const exportAll = async () => {

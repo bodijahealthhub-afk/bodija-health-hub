@@ -11,12 +11,12 @@ const FooterContent = () => {
       { label: 'Home', url: '/' },
       { label: 'About Us', url: '/about' },
       { label: 'Services', url: '/services' },
-      { label: 'Blog', url: '/blog' },
+      { label: 'Newsroom', url: '/newsroom' },
       { label: 'Contact', url: '/contact' },
     ],
     platformLinks: [
-      { label: 'LiveCare', url: '/platforms/livecare' },
-      { label: 'hEar Menders', url: '/platforms/hear-menders' },
+      { label: 'LiveCare', url: '/livecare' },
+      { label: 'hEar Menders', url: '/hear-menders' },
     ],
     socialLinks: {
       facebook: 'https://facebook.com/bodijahealthhub',

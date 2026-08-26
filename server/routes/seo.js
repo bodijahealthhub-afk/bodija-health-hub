@@ -89,6 +89,20 @@ const generateSitemapXml = async (hostOverride) => {
     }
   }
 
+  if (await flagEnabled('services')) {
+    const services = await db.prepare("SELECT id, slug, created_at FROM services WHERE is_active = 1 AND (status IS NULL OR status = 'active')").all();
+    for (const svc of services) {
+      urls.push({ loc: `${baseUrl}/services/${svc.slug || svc.id}`, lastmod: svc.created_at, priority: 0.7 });
+    }
+  }
+
+  if (await flagEnabled('programme_registration')) {
+    const programmes = await db.prepare("SELECT id, title, updated_at FROM programmes WHERE is_active = 1 AND (status IS NULL OR status = 'active')").all();
+    for (const prog of programmes) {
+      urls.push({ loc: `${baseUrl}/programmes/${prog.id}`, lastmod: prog.updated_at, priority: 0.6 });
+    }
+  }
+
   const urlTags = urls
     .map(
       (u) =>

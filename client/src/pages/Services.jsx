@@ -1,8 +1,92 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FiArrowRight, FiSearch } from 'react-icons/fi'
+import { FiArrowRight, FiSearch, FiArrowLeft } from 'react-icons/fi'
 import { ServicesSkeleton } from '../components/SkeletonLoader'
 import ScrollReveal from '../components/ScrollReveal'
+
+const CONCERNS = [
+  { label: 'General health check', category: 'Primary Care' },
+  { label: 'Pain or discomfort', category: 'Specialist' },
+  { label: 'Mental health', category: 'Therapy & Counseling' },
+  { label: 'Child health', category: 'Pediatrics' },
+  { label: 'Women\'s health', category: 'Gynecology' },
+  { label: 'Lab test or scan', category: 'Diagnostics & Lab' },
+  { label: 'Physiotherapy or rehab', category: 'Therapy & Rehab' },
+  { label: 'Vaccination', category: 'Primary Care' },
+]
+
+const AGE_GROUPS = [
+  { label: 'Infant or toddler (0–3)', filter: 'pediatric,child' },
+  { label: 'Child (4–12)', filter: 'pediatric,child' },
+  { label: 'Teenager (13–17)', filter: 'teen,adolescent' },
+  { label: 'Adult (18–64)', filter: '' },
+  { label: 'Senior (65+)', filter: 'geriatric,elderly,senior' },
+]
+
+function ServiceWizard({ onSelect }) {
+  const [step, setStep] = useState(0)
+  const [concern, setConcern] = useState(null)
+  const [ageGroup, setAgeGroup] = useState(null)
+
+  const handleComplete = (age) => {
+    setAgeGroup(age)
+    onSelect({ concern, ageGroup: age })
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-10">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+          <span className="text-xl">🩺</span>
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">Quick Service Finder</h3>
+          <p className="text-sm text-gray-500">Answer a quick question to find the right service</p>
+        </div>
+      </div>
+
+      {step === 0 ? (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-700 mb-3">What do you need help with?</p>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {CONCERNS.map((c) => (
+              <button
+                key={c.label}
+                onClick={() => { setConcern(c); setStep(1) }}
+                className={`text-left px-4 py-3 rounded-xl border transition-all hover:border-primary hover:bg-primary/5 ${
+                  concern?.label === c.label ? 'border-primary bg-primary/5' : 'border-gray-100'
+                }`}
+              >
+                <span className="text-sm font-medium text-gray-900">{c.label}</span>
+                <span className="text-xs text-gray-500 block">{c.category}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-3">
+            <button onClick={() => setStep(0)} className="text-gray-400 hover:text-gray-600">
+              <FiArrowLeft className="w-4 h-4" />
+            </button>
+            <p className="text-sm font-medium text-gray-700">Who is this for?</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {AGE_GROUPS.map((a) => (
+              <button
+                key={a.label}
+                onClick={() => handleComplete(a)}
+                className="text-left px-4 py-3 rounded-xl border border-gray-100 hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <span className="text-sm font-medium text-gray-900">{a.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Services() {
   const [services, setServices] = useState([])
@@ -10,6 +94,7 @@ export default function Services() {
   const [activeCategory, setActiveCategory] = useState('')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [wizardHint, setWizardHint] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +119,13 @@ export default function Services() {
     }
     fetchData()
   }, [])
+
+  const handleWizardSelect = ({ concern }) => {
+    if (concern) {
+      setActiveCategory(concern.category)
+      setWizardHint(concern.label)
+    }
+  }
 
   const filtered = services
     .filter((s) => {
@@ -70,6 +162,8 @@ export default function Services() {
       {/* Services */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ServiceWizard onSelect={handleWizardSelect} />
+
           {/* Category filter */}
           {(categories.length > 0 || query) && (
             <div className="mb-10 space-y-4">

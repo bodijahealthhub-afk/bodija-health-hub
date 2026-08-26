@@ -64,6 +64,11 @@ router.post('/import', authenticateToken, requirePermission('backups.restore'), 
     if (!data || typeof data !== 'object') {
       return res.status(400).json({ error: 'No data provided' });
     }
+    // Validate backup structure
+    const validation = db.validateBackup(data);
+    if (!validation.valid) {
+      return res.status(400).json({ error: 'Invalid backup structure', details: validation.errors });
+    }
     await importData(data);
     res.json({ success: true, message: 'Data imported successfully' });
   } catch (err) {
@@ -114,7 +119,13 @@ router.post('/:id/restore', authenticateToken, requirePermission('backups.restor
     } catch (e) {
       return res.status(400).json({ error: 'Backup data is corrupted' });
     }
-    await importData(snapshot.data || snapshot);
+    const dataToRestore = snapshot.data || snapshot;
+    // Validate backup structure before restore
+    const validation = db.validateBackup(dataToRestore);
+    if (!validation.valid) {
+      return res.status(400).json({ error: 'Backup structure invalid', details: validation.errors });
+    }
+    await importData(dataToRestore);
     res.json({ success: true, message: 'Backup restored successfully' });
   } catch (err) {
     console.error('Error restoring backup:', err);
@@ -130,6 +141,11 @@ router.post('/', authenticateToken, requirePermission('backups.restore'), async 
     if (!data || typeof data !== 'object') {
       return res.status(400).json({ error: 'No data provided' });
     }
+    // Validate backup structure before import
+    const validation = db.validateBackup(data);
+    if (!validation.valid) {
+      return res.status(400).json({ error: 'Invalid backup structure', details: validation.errors });
+    }
     await importData(data);
     res.json({ success: true, message: 'Data imported successfully' });
   } catch (err) {
@@ -139,7 +155,7 @@ router.post('/', authenticateToken, requirePermission('backups.restore'), async 
 });
 
 // DELETE /api/admin/backups/:id
-router.delete('/:id', authenticateToken, requirePermission('backups.view'), async (req, res) => {
+router.delete('/:id', authenticateToken, requirePermission('backups.restore'), async (req, res) => {
   try {
     const backup = await db.prepare('SELECT * FROM backups WHERE id = ?').get(req.params.id);
     if (!backup) {

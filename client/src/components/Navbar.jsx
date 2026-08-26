@@ -8,7 +8,7 @@ const defaultLinks = [
   { name: 'Ecosystem', path: '/ecosystem' },
   { name: 'Services', path: '/services' },
   { name: 'Partners', path: '/partners' },
-  { name: 'Resources', path: '/newsroom' },
+  { name: 'Newsroom', path: '/newsroom' },
   { name: 'Contact', path: '/contact' },
 ]
 

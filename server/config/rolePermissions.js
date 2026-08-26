@@ -33,6 +33,9 @@ const ROLE_PERMISSIONS = {
     'users.manage_roles',
     'system_health.view',
     'backups.*',
+    'analytics.view',
+    'notifications.*',
+    'contacts.*',
     'audit_logs.view',
   ],
 
@@ -56,6 +59,8 @@ const ROLE_PERMISSIONS = {
     'footer.update',
     'page_content.view',
     'page_content.update',
+    'analytics.view',
+    'notifications.view',
   ],
 
   receptionist: [
@@ -68,6 +73,9 @@ const ROLE_PERMISSIONS = {
     'bookings.*',
     'messages.*',
     'newsletter.view',
+    'contacts.view',
+    'contacts.update',
+    'notifications.view',
   ],
 
   accountant: [
@@ -75,6 +83,7 @@ const ROLE_PERMISSIONS = {
     'services.view',
     'payments.*',
     'bookings.view',
+    'analytics.view',
   ],
 
   doctor: [],

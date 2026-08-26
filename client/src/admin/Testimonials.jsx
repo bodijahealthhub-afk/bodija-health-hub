@@ -142,7 +142,7 @@ const Testimonials = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Testimonials</h1>
-          <p className="text-gray-500 mt-1">Manage patient testimonials</p>
+          <p className="text-gray-500 mt-1">Manage testimonials</p>
         </div>
         <button
           onClick={() => {

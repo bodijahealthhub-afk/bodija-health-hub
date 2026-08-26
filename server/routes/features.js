@@ -102,7 +102,7 @@ router.post('/', authenticateToken, requirePermission('feature_flags.manage'), a
       entityType: 'feature_flag',
       entityId: key,
       actor: getActor(req),
-      after: { key, name, status, enabled: !!enabled },
+      after_state: { key, name, status, enabled: !!enabled },
       ip: getIp(req),
     });
     res.status(201).json(await getFlag(key));
@@ -151,8 +151,8 @@ router.put('/:key', authenticateToken, requirePermission('feature_flags.manage')
       entityType: 'feature_flag',
       entityId: key,
       actor: getActor(req),
-      before,
-      after,
+      before_state: before,
+      after_state: after,
       ip: getIp(req),
     });
     res.json(after);
@@ -179,8 +179,8 @@ router.post('/:key/toggle', authenticateToken, requirePermission('feature_flags.
       entityType: 'feature_flag',
       entityId: key,
       actor: getActor(req),
-      before,
-      after,
+      before_state: before,
+      after_state: after,
       ip: getIp(req),
     });
     res.json(after);
@@ -207,8 +207,8 @@ router.post('/:key/archive', authenticateToken, requirePermission('feature_flags
       entityType: 'feature_flag',
       entityId: key,
       actor: getActor(req),
-      before,
-      after,
+      before_state: before,
+      after_state: after,
       ip: getIp(req),
     });
     res.json(after);

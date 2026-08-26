@@ -71,21 +71,7 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
-    const hash = await bcrypt.hash(password, 10);
-    const result = await db.prepare('INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)').run(
-      name, email, hash, 'receptionist', phone || null
-    );
-
-    const user = await db.prepare('SELECT id, name, email, role, avatar, phone, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    await logAudit({ action: 'USER_CREATED', entityType: 'user', entityId: String(user.id), actor: 'self-registration', after_state: { name: user.name, email: user.email, role: user.role }, ip: req.ip });
-
-    res.status(201).json({ token, user });
+    return res.status(403).json({ error: 'Public registration is disabled. Contact an administrator to create an account.' });
   } catch (err) {
     res.status(500).json({ error: 'Registration failed' });
   }

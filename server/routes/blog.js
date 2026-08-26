@@ -3,6 +3,8 @@ const db = require('../models/database');
 const { authenticateToken } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
+const { createRevision } = require('./revisions');
+const { createNotification } = require('./adminNotifications');
 
 const router = express.Router();
 
@@ -160,13 +162,36 @@ router.post('/', authenticateToken, requirePermission('blog.create'), async (req
       counter++;
     }
 
+    // Normalize status: only admin/super_admin can publish directly
+    const allowedStatuses = ['draft', 'pending_review', 'published'];
+    let finalStatus = status || 'draft';
+    if (!allowedStatuses.includes(finalStatus)) finalStatus = 'draft';
+    if (finalStatus === 'published' && !['admin', 'super_admin'].includes(req.user.role)) {
+      finalStatus = 'pending_review';
+    }
+
+    const publishedAt = finalStatus === 'published' ? new Date().toISOString() : null;
+
     const result = await db.prepare(
-      `INSERT INTO blog_posts (title, slug, content, excerpt, category, featured_image, author_id, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO blog_posts (title, slug, content, excerpt, category, featured_image, author_id, status, published_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(title, finalSlug, content, excerpt || null, category || null, featured_image || null,
-      req.user.id, status || 'draft');
+      req.user.id, finalStatus, publishedAt);
 
     const post = await db.prepare('SELECT * FROM blog_posts WHERE id = ?').get(result.lastInsertRowid);
+
+    // Notify if submitted for review
+    if (finalStatus === 'pending_review') {
+      await createNotification({
+        type: 'content_submitted',
+        title: 'Blog post submitted for review',
+        message: `"${title}" is ready for review`,
+        link: '/admin/blog',
+        entityType: 'blog_posts',
+        entityId: result.lastInsertRowid,
+      });
+    }
+
     res.status(201).json(post);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create blog post' });
@@ -182,6 +207,25 @@ router.put('/:id', authenticateToken, requirePermission('blog.update'), async (r
     }
 
     const { title, content, excerpt, category, featured_image, status } = req.body;
+
+    // Create revision before update
+    await createRevision('blog_posts', post.id, req.user.id, 'Updated blog post');
+
+    // Handle workflow transitions
+    let publishedAt = post.published_at;
+    let reviewedBy = post.reviewed_by;
+    if (status === 'published' && post.status !== 'published') {
+      publishedAt = new Date().toISOString();
+      reviewedBy = req.user.id;
+      await createNotification({
+        type: 'content_published',
+        title: 'Blog post published',
+        message: `"${title || post.title}" is now live`,
+        link: `/blog/${post.slug}`,
+        entityType: 'blog_posts',
+        entityId: post.id,
+      });
+    }
 
     let slug = post.slug;
     if (title && title !== post.title) {
@@ -202,10 +246,12 @@ router.put('/:id', authenticateToken, requirePermission('blog.update'), async (r
         category = COALESCE(?, category),
         featured_image = COALESCE(?, featured_image),
         status = COALESCE(?, status),
+        reviewed_by = COALESCE(?, reviewed_by),
+        published_at = COALESCE(?, published_at),
         updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`
     ).run(title || null, slug, content || null, excerpt || null, category || null,
-      featured_image || null, status || null, req.params.id);
+      featured_image || null, status || null, reviewedBy || null, publishedAt || null, req.params.id);
 
     const updated = await db.prepare('SELECT * FROM blog_posts WHERE id = ?').get(req.params.id);
     res.json(updated);

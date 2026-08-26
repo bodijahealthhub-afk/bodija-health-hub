@@ -58,6 +58,82 @@ function startScheduler() {
 
   cron.schedule(schedule, run);
   console.log(`[scheduler] auto-backups scheduled at cron "${schedule}" (retention=${retention}, dir=${backupsDir})`);
+
+  // Scheduled publishing: check every minute for content with publish_at/unpublish_at
+  cron.schedule('* * * * *', async () => {
+    try {
+      const now = new Date().toISOString();
+
+      // Publish blog posts whose publish_at has arrived
+      const blogToPublish = await db.prepare(
+        `SELECT id, title, slug FROM blog_posts WHERE status = 'pending_review' AND publish_at IS NOT NULL AND publish_at <= ?`
+      ).all(now);
+      for (const post of blogToPublish) {
+        await db.prepare(
+          `UPDATE blog_posts SET status = 'published', published_at = ?, publish_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+        ).run(now, post.id);
+        console.log(`[scheduler] Auto-published blog post: "${post.title}" (id=${post.id})`);
+      }
+
+      // Unpublish blog posts whose unpublish_at has arrived
+      const blogToUnpublish = await db.prepare(
+        `SELECT id, title, slug FROM blog_posts WHERE status = 'published' AND unpublish_at IS NOT NULL AND unpublish_at <= ?`
+      ).all(now);
+      for (const post of blogToUnpublish) {
+        await db.prepare(
+          `UPDATE blog_posts SET status = 'archived', unpublish_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+        ).run(post.id);
+        console.log(`[scheduler] Auto-unpublished blog post: "${post.title}" (id=${post.id})`);
+      }
+
+      // Publish events
+      const eventsToPublish = await db.prepare(
+        `SELECT id, title FROM events WHERE (status IS NULL OR status = 'draft') AND publish_at IS NOT NULL AND publish_at <= ?`
+      ).all(now);
+      for (const evt of eventsToPublish) {
+        await db.prepare(
+          `UPDATE events SET status = 'active', is_active = 1, publish_at = NULL WHERE id = ?`
+        ).run(evt.id);
+        console.log(`[scheduler] Auto-published event: "${evt.title}" (id=${evt.id})`);
+      }
+
+      // Unpublish events
+      const eventsToUnpublish = await db.prepare(
+        `SELECT id, title FROM events WHERE status = 'active' AND unpublish_at IS NOT NULL AND unpublish_at <= ?`
+      ).all(now);
+      for (const evt of eventsToUnpublish) {
+        await db.prepare(
+          `UPDATE events SET status = 'archived', is_active = 0, unpublish_at = NULL WHERE id = ?`
+        ).run(evt.id);
+        console.log(`[scheduler] Auto-unpublished event: "${evt.title}" (id=${evt.id})`);
+      }
+
+      // Publish programmes
+      const programmesToPublish = await db.prepare(
+        `SELECT id, title FROM programmes WHERE (status IS NULL OR status = 'draft') AND publish_at IS NOT NULL AND publish_at <= ?`
+      ).all(now);
+      for (const prog of programmesToPublish) {
+        await db.prepare(
+          `UPDATE programmes SET status = 'active', is_active = 1, publish_at = NULL WHERE id = ?`
+        ).run(prog.id);
+        console.log(`[scheduler] Auto-published programme: "${prog.title}" (id=${prog.id})`);
+      }
+
+      // Unpublish programmes
+      const programmesToUnpublish = await db.prepare(
+        `SELECT id, title FROM programmes WHERE status = 'active' AND unpublish_at IS NOT NULL AND unpublish_at <= ?`
+      ).all(now);
+      for (const prog of programmesToUnpublish) {
+        await db.prepare(
+          `UPDATE programmes SET status = 'archived', is_active = 0, unpublish_at = NULL WHERE id = ?`
+        ).run(prog.id);
+        console.log(`[scheduler] Auto-unpublished programme: "${prog.title}" (id=${prog.id})`);
+      }
+    } catch (err) {
+      console.error('[scheduler] Scheduled publishing check failed:', err.message);
+    }
+  });
+  console.log('[scheduler] Scheduled publishing checker running every minute');
 }
 
 module.exports = { startScheduler };

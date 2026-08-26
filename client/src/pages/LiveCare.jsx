@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { FiHeart, FiShield, FiUsers, FiClock, FiBell, FiSmartphone, FiCheckCircle, FiArrowRight, FiPhone } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 
@@ -17,9 +18,16 @@ const steps = [
   { num: '04', title: 'Stay Connected', description: 'Get real-time updates, coordinate care, and rest easy knowing they are supported.' },
 ]
 
-const testimonials = []
-
 export default function LiveCare() {
+  const [testimonials, setTestimonials] = useState([])
+
+  useEffect(() => {
+    fetch('/api/testimonials')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => { if (Array.isArray(data)) setTestimonials(data.slice(0, 3)) })
+      .catch(() => {})
+  }, [])
+
   return (
     <div>
       {/* Hero */}
@@ -37,10 +45,10 @@ export default function LiveCare() {
               </p>
               <div className="flex flex-wrap gap-4">
                 <a href="/upcoming" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-colors">
-                  Download for iOS <FiArrowRight className="w-5 h-5" />
+                  Coming Soon — iOS <FiArrowRight className="w-5 h-5" />
                 </a>
                 <a href="/upcoming" className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-colors">
-                  Download for Android
+                  Coming Soon — Android
                 </a>
               </div>
             </div>

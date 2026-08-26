@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/authorize');
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // PUT /api/settings (admin)
-router.put('/', authenticateToken, requireRole('admin', 'super_admin'), async (req, res) => {
+router.put('/', authenticateToken, requirePermission('settings.manage'), async (req, res) => {
   try {
     const updates = req.body;
     const upsert = db.prepare(

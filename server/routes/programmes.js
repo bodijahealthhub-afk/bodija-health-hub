@@ -3,10 +3,15 @@ const db = require('../models/database');
 const { authenticateToken } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
 const { getFlag } = require('../utils/features');
+const { createRevision } = require('./revisions');
 
 const router = express.Router();
 
-const toClient = (p) => ({ ...p, status: p.is_active ? 'active' : 'inactive' });
+const toClient = (p) => ({
+  ...p,
+  lifecycleStatus: p.status || (p.is_active ? 'active' : 'archived'),
+  status: p.is_active ? 'active' : 'inactive',
+});
 
 // Returns true for public (non-admin) requests whose feature is disabled.
 const featureDisabled = async (req, key) => {
@@ -25,12 +30,16 @@ router.get('/', async (req, res) => {
     if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
-    const { category, q } = req.query;
+    const { category, q, status } = req.query;
     let query = 'SELECT * FROM programmes WHERE 1=1';
     const params = [];
 
     if (!isAdmin) {
-      query += ' AND is_active = 1';
+      query += " AND is_active = 1 AND (status IS NULL OR status = 'active')";
+    }
+    if (isAdmin && status) {
+      query += ' AND status = ?';
+      params.push(status);
     }
     if (category) {
       query += ' AND category = ?';
@@ -106,6 +115,9 @@ router.put('/:id', authenticateToken, requirePermission('programmes.update'), as
     if (!programme) {
       return res.status(404).json({ error: 'Programme not found' });
     }
+
+    // Create revision before update
+    await createRevision('programmes', programme.id, req.user?.id, 'Updated programme');
 
     const { title, description, category, schedule, frequency, location, image, is_active, status } = req.body;
 

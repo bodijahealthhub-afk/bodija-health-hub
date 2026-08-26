@@ -88,6 +88,7 @@ test('admin login works', async () => {
   assert.strictEqual(status, 200);
   assert.ok(json.token);
   adminToken = json.token;
+});
 
 test('payments config endpoint discloses mock mode', async () => {
   const { status, json } = await request('GET', '/api/payments/config');
@@ -110,10 +111,9 @@ test('admin system health endpoint returns operational checks', async () => {
   const denied = await request('GET', '/api/admin/system-health');
   assert.strictEqual(denied.status, 401);
 });
-});
 
 test('admin endpoints return wrapped camelCase contract', async () => {
-  for (const url of ['/api/admin/services', '/api/admin/doctors', '/api/admin/appointments', '/api/admin/patients', '/api/admin/blog', '/api/admin/events', '/api/admin/testimonials', '/api/admin/media', '/api/admin/dashboard']) {
+  for (const url of ['/api/admin/services', '/api/admin/appointments', '/api/admin/blog', '/api/admin/events', '/api/admin/testimonials', '/api/admin/media', '/api/admin/dashboard']) {
     const { status, json } = await request('GET', url, { token: adminToken });
     assert.strictEqual(status, 200, `${url} -> ${status}`);
     assert.ok(json, `${url} returned no body`);
@@ -649,4 +649,433 @@ test('feature gate regression: every feature flag returned by public API has req
     assert.strictEqual(typeof flag.public_visible, 'boolean', `"${flag.key}".public_visible must be boolean`);
     assert.strictEqual(typeof flag.navigation_visible, 'boolean', `"${flag.key}".navigation_visible must be boolean`);
   }
+});
+
+// ── Wave 1: Service Request Enhancements ──────────────────────────────────────
+
+test('service request: assign endpoint assigns a booking to a team member', async () => {
+  // Create a booking first
+  const createRes = await request('POST', '/api/appointments', {
+    body: {
+      booking_type: 'appointment',
+      patient_name: 'Assign Test Patient',
+      patient_email: 'assign@test.com',
+      service_id: null,
+      preferred_date: '2026-09-01',
+      preferred_time: '10:00',
+    },
+  });
+  assert.strictEqual(createRes.status, 201);
+  const bookingId = createRes.json.id;
+
+  // Assign to admin user (id=1)
+  const assignRes = await request('PATCH', `/api/admin/appointments/${bookingId}/assign`, {
+    token: adminToken,
+    body: { assigned_to: 1 },
+  });
+  assert.strictEqual(assignRes.status, 200);
+  assert.strictEqual(assignRes.json.assignedTo, 1);
+  assert.strictEqual(assignRes.json.assignedToName, 'Admin User');
+});
+
+test('service request: status transition sets timestamp (confirmed_at)', async () => {
+  const createRes = await request('POST', '/api/appointments', {
+    body: {
+      booking_type: 'appointment',
+      patient_name: 'Timestamp Test',
+      patient_email: 'timestamp@test.com',
+      preferred_date: '2026-09-02',
+    },
+  });
+  assert.strictEqual(createRes.status, 201);
+  const bookingId = createRes.json.id;
+
+  const confirmRes = await request('PATCH', `/api/admin/appointments/${bookingId}/status`, {
+    token: adminToken,
+    body: { status: 'confirmed' },
+  });
+  assert.strictEqual(confirmRes.status, 200);
+  assert.ok(confirmRes.json.confirmedAt, 'confirmedAt should be set after confirming');
+
+  const completeRes = await request('PATCH', `/api/admin/appointments/${bookingId}/status`, {
+    token: adminToken,
+    body: { status: 'completed' },
+  });
+  assert.strictEqual(completeRes.status, 200);
+  assert.ok(completeRes.json.completedAt, 'completedAt should be set after completing');
+});
+
+test('service request: internal_notes are saved via notes endpoint', async () => {
+  const createRes = await request('POST', '/api/appointments', {
+    body: {
+      booking_type: 'appointment',
+      patient_name: 'Internal Notes Test',
+      preferred_date: '2026-09-03',
+    },
+  });
+  const bookingId = createRes.json.id;
+
+  const notesRes = await request('PATCH', `/api/admin/appointments/${bookingId}/notes`, {
+    token: adminToken,
+    body: { internal_notes: 'Internal note for admin eyes only' },
+  });
+  assert.strictEqual(notesRes.status, 200);
+  assert.strictEqual(notesRes.json.internalNotes, 'Internal note for admin eyes only');
+});
+
+test('service request: admin GET supports assigned_to and source filters', async () => {
+  const res = await request('GET', '/api/admin/appointments?assigned_to=1', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.ok(Array.isArray(res.json.appointments));
+});
+
+// ── Wave 1: Lifecycle Status ──────────────────────────────────────────────────
+
+test('lifecycle status: services support status column in admin GET', async () => {
+  const res = await request('GET', '/api/admin/services?status=active', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.ok(Array.isArray(res.json.services));
+});
+
+test('lifecycle status: partners support status column in admin GET', async () => {
+  const res = await request('GET', '/api/admin/partners?status=active', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.ok(Array.isArray(res.json.partners));
+});
+
+test('lifecycle status: services toClient includes lifecycleStatus', async () => {
+  const res = await request('GET', '/api/admin/services', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  const first = res.json.services[0];
+  assert.ok('lifecycleStatus' in first, 'toClient should include lifecycleStatus');
+});
+
+// ── Wave 1: Content Revisions ─────────────────────────────────────────────────
+
+test('content revisions: revisions table exists and is queryable', async () => {
+  const count = await db.prepare('SELECT COUNT(*) as count FROM content_revisions').get();
+  assert.ok(typeof count.count === 'number');
+});
+
+test('content revisions: PUT /api/admin/blog creates a revision', async () => {
+  // Create a blog post
+  const createRes = await request('POST', '/api/admin/blog', {
+    token: adminToken,
+    body: { title: 'Revision Test Post', content: '<p>Original content</p>', status: 'draft' },
+  });
+  assert.strictEqual(createRes.status, 201);
+  const postId = createRes.json.id;
+
+  // Update it
+  const updateRes = await request('PUT', `/api/admin/blog/${postId}`, {
+    token: adminToken,
+    body: { content: '<p>Updated content</p>' },
+  });
+  assert.strictEqual(updateRes.status, 200);
+
+  // Check revisions
+  const revRes = await request('GET', `/api/admin/revisions?entity_type=blog_posts&entity_id=${postId}`, {
+    token: adminToken,
+  });
+  assert.strictEqual(revRes.status, 200);
+  assert.ok(revRes.json.revisions.length >= 1, 'Should have at least 1 revision after update');
+  assert.strictEqual(revRes.json.revisions[0].entity_type, 'blog_posts');
+});
+
+// --- Phase 4: Notifications Centre ---
+
+test('notifications: GET /api/admin/notifications returns empty list', async () => {
+  const res = await request('GET', '/api/admin/notifications', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.ok(Array.isArray(res.json.notifications));
+});
+
+test('notifications: POST /api/admin/notifications creates notification', async () => {
+  const res = await request('POST', '/api/admin/notifications', {
+    token: adminToken,
+    body: { title: 'Test notification', message: 'Hello from tests', type: 'info' },
+  });
+  assert.strictEqual(res.status, 201);
+  assert.ok(res.json.id);
+  assert.strictEqual(res.json.title, 'Test notification');
+});
+
+test('notifications: PATCH marks notification read', async () => {
+  const createRes = await request('POST', '/api/admin/notifications', {
+    token: adminToken,
+    body: { title: 'Read test', message: 'Mark as read', type: 'info' },
+  });
+  assert.strictEqual(createRes.status, 201);
+  const id = createRes.json.id;
+
+  const patchRes = await request('PATCH', `/api/admin/notifications/${id}/read`, { token: adminToken });
+  assert.strictEqual(patchRes.status, 200);
+  assert.ok(patchRes.json.success);
+});
+
+// --- Phase 6: CRM Contacts ---
+
+test('contacts: GET /api/admin/contacts returns empty list', async () => {
+  const res = await request('GET', '/api/admin/contacts', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.ok(Array.isArray(res.json.contacts));
+});
+
+test('contacts: POST creates a contact', async () => {
+  const res = await request('POST', '/api/admin/contacts', {
+    token: adminToken,
+    body: { name: 'Test Contact', email: 'test@example.com', source: 'manual' },
+  });
+  assert.strictEqual(res.status, 201);
+  assert.strictEqual(res.json.name, 'Test Contact');
+  assert.strictEqual(res.json.email, 'test@example.com');
+});
+
+test('contacts: GET by id returns contact', async () => {
+  const createRes = await request('POST', '/api/admin/contacts', {
+    token: adminToken,
+    body: { name: 'Lookup Contact', email: 'lookup@example.com' },
+  });
+  const id = createRes.json.id;
+
+  const res = await request('GET', `/api/admin/contacts/${id}`, { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.json.name, 'Lookup Contact');
+});
+
+// --- Phase 2: Ecosystem Categories ---
+
+test('ecosystem categories: public GET returns empty list', async () => {
+  const res = await request('GET', '/api/ecosystem/categories');
+  assert.strictEqual(res.status, 200);
+  assert.ok(Array.isArray(res.json));
+});
+
+test('ecosystem categories: admin can create category', async () => {
+  const res = await request('POST', '/api/admin/ecosystem/categories', {
+    token: adminToken,
+    body: { name: 'Healthcare', slug: 'healthcare', icon: '🏥' },
+  });
+  assert.strictEqual(res.status, 201);
+  assert.strictEqual(res.json.name, 'Healthcare');
+});
+
+// --- Phase 8: Analytics ---
+
+test('analytics: GET /api/admin/analytics returns metrics', async () => {
+  const res = await request('GET', '/api/admin/analytics', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.ok(res.json.overview, 'Should have overview object');
+  assert.ok(typeof res.json.overview.totalBookings === 'number');
+  assert.ok(typeof res.json.overview.totalContacts === 'number');
+  assert.ok(typeof res.json.overview.totalPosts === 'number');
+});
+
+// --- Phase 14: Admin Search ---
+
+test('admin search: GET /api/search/admin?q=test returns results', async () => {
+  const res = await request('GET', '/api/search/admin?q=test', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.ok(typeof res.json.services === 'object');
+  assert.ok(typeof res.json.blog === 'object');
+});
+
+test('admin search: short query returns empty', async () => {
+  const res = await request('GET', '/api/search/admin?q=a', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+});
+
+// --- Phase 17: Security ---
+
+test('security: input sanitization strips XSS', () => {
+  const { sanitizeString } = require('../utils/security');
+  const dirty = '<script>alert("xss")</script>';
+  const clean = sanitizeString(dirty);
+  assert.ok(!clean.includes('<script>'));
+  assert.ok(clean.includes('&lt;script&gt;'));
+});
+
+test('security: sanitizeObject recurses', () => {
+  const { sanitizeObject } = require('../utils/security');
+  const input = { name: '<b>bold</b>', nested: { desc: 'normal' } };
+  const result = sanitizeObject(input);
+  assert.ok(!result.name.includes('<b>'));
+  assert.strictEqual(result.nested.desc, 'normal');
+});
+
+test('security: isValidEmail validates', () => {
+  const { isValidEmail } = require('../utils/security');
+  assert.ok(isValidEmail('user@example.com'));
+  assert.ok(!isValidEmail('not-an-email'));
+  assert.ok(!isValidEmail(''));
+});
+
+test('security: rateLimit blocks after threshold', () => {
+  const { rateLimit } = require('../utils/security');
+  const key = 'test-ratelimit-' + Date.now();
+  for (let i = 0; i < 5; i++) rateLimit(key, 60000, 5);
+  assert.ok(!rateLimit(key, 60000, 5), 'Should block after 5 requests');
+});
+
+// --- Regression tests for audit security fixes ---
+
+test('C1 regression: /api/admin/payments requires authentication', async () => {
+  const res = await request('GET', '/api/admin/payments/config');
+  assert.strictEqual(res.status, 401, 'Unauthenticated request to /api/admin/payments/config must be rejected');
+});
+
+test('C2 regression: /api/admin/doctors returns 404 when doctors flag is disabled', async () => {
+  await db.prepare("UPDATE feature_flags SET enabled = 0 WHERE key = 'doctors'").run();
+  const res = await request('GET', '/api/admin/doctors', { token: adminToken });
+  assert.strictEqual(res.status, 404, 'Doctors admin endpoint must be 404 when feature flag disabled');
+  await db.prepare("UPDATE feature_flags SET enabled = 1 WHERE key = 'doctors'").run();
+});
+
+test('C2 regression: /api/admin/patients returns 404 when patient_portal flag is disabled', async () => {
+  await db.prepare("UPDATE feature_flags SET enabled = 0 WHERE key = 'patient_portal'").run();
+  const res = await request('GET', '/api/admin/patients', { token: adminToken });
+  assert.strictEqual(res.status, 404, 'Patients admin endpoint must be 404 when feature flag disabled');
+  await db.prepare("UPDATE feature_flags SET enabled = 1 WHERE key = 'patient_portal'").run();
+});
+
+test('C2 regression: /api/doctors (public) returns 404 when doctors flag is disabled', async () => {
+  await db.prepare("UPDATE feature_flags SET enabled = 0 WHERE key = 'doctors'").run();
+  const res = await request('GET', '/api/doctors');
+  assert.strictEqual(res.status, 404, 'Public doctors endpoint must be 404 when feature flag disabled');
+  await db.prepare("UPDATE feature_flags SET enabled = 1 WHERE key = 'doctors'").run();
+});
+
+test('M3 regression: public registration is disabled (returns 403)', async () => {
+  const res = await request('POST', '/api/auth/register', {
+    body: { name: 'Test Reg User', email: `testreg-${Date.now()}@example.com`, password: 'testpass123' },
+  });
+  assert.strictEqual(res.status, 403, 'Public registration must be disabled');
+});
+
+test('C4 regression: /api/admin/contacts requires authentication', async () => {
+  const res = await request('GET', '/api/admin/contacts');
+  assert.strictEqual(res.status, 401, 'Unauthenticated contacts request must be rejected');
+});
+
+test('C4 regression: /api/admin/analytics requires authentication', async () => {
+  const res = await request('GET', '/api/admin/analytics');
+  assert.strictEqual(res.status, 401, 'Unauthenticated analytics request must be rejected');
+});
+
+test('H1 regression: ecosystem admin GET returns all categories including inactive', async () => {
+  // Create an active category
+  const createRes = await request('POST', '/api/admin/ecosystem/categories', {
+    token: adminToken,
+    body: { name: 'Test Active Cat' },
+  });
+  assert.strictEqual(createRes.status, 201);
+  const catId = createRes.json.id;
+
+  // Deactivate it
+  await request('PUT', `/api/admin/ecosystem/categories/${catId}`, {
+    token: adminToken,
+    body: { is_active: 0 },
+  });
+
+  // Admin GET should still return it
+  const adminRes = await request('GET', '/api/admin/ecosystem/categories', { token: adminToken });
+  assert.ok(adminRes.json.categories.some((c) => c.id === catId && c.is_active === 0),
+    'Admin ecosystem categories must include inactive categories');
+
+  // Public GET should NOT return it
+  const publicRes = await request('GET', '/api/ecosystem/categories');
+  assert.ok(!publicRes.json.some((c) => c.id === catId),
+    'Public ecosystem categories must exclude inactive categories');
+});
+
+test('appointment audit logging: status change creates audit entry', async () => {
+  // Create a service request
+  const created = await request('POST', '/api/appointments', {
+    body: {
+      patient_name: 'Audit Test User', patient_email: 'audit@example.com',
+      patient_phone: '08012345678', date: '2026-12-01', time: '10:00',
+    },
+  });
+  assert.strictEqual(created.status, 201);
+  const id = created.json.id;
+
+  // Change status
+  const statusRes = await request('PATCH', `/api/admin/appointments/${id}/status`, {
+    token: adminToken,
+    body: { status: 'under_review' },
+  });
+  assert.strictEqual(statusRes.status, 200);
+  assert.strictEqual(statusRes.json.status, 'under_review');
+
+  // Check audit log
+  const audit = await request('GET', '/api/admin/audit-logs', { token: adminToken });
+  assert.ok(audit.status === 200);
+  assert.ok(audit.json.some((e) => e.action === 'BOOKING_STATUS_CHANGED' && e.entity_id === String(id)),
+    'Status change must create BOOKING_STATUS_CHANGED audit entry');
+
+  // Cleanup
+  await request('DELETE', `/api/admin/appointments/${id}`, { token: adminToken });
+});
+
+test('appointment audit logging: assignment creates audit entry', async () => {
+  // Create a service request
+  const created = await request('POST', '/api/appointments', {
+    body: {
+      patient_name: 'Assign Test User', patient_email: 'assign@example.com',
+      patient_phone: '08012345679', date: '2026-12-02', time: '11:00',
+    },
+  });
+  assert.strictEqual(created.status, 201);
+  const id = created.json.id;
+
+  // Assign to admin user (adminToken user)
+  const me = await request('GET', '/api/auth/me', { token: adminToken });
+  const userId = me.json.id;
+
+  const assignRes = await request('PATCH', `/api/admin/appointments/${id}/assign`, {
+    token: adminToken,
+    body: { assigned_to: userId },
+  });
+  assert.strictEqual(assignRes.status, 200);
+  assert.strictEqual(assignRes.json.assignedTo, userId);
+
+  // Check audit log
+  const audit = await request('GET', '/api/admin/audit-logs', { token: adminToken });
+  assert.ok(audit.json.some((e) => e.action === 'BOOKING_ASSIGNED' && e.entity_id === String(id)),
+    'Assignment must create BOOKING_ASSIGNED audit entry');
+
+  // Cleanup
+  await request('DELETE', `/api/admin/appointments/${id}`, { token: adminToken });
+});
+
+test('backup backward-compat alias validates backup structure', async () => {
+  // Send malformed backup (missing required arrays)
+  const malformed = await request('POST', '/api/admin/backups', {
+    token: adminToken,
+    body: { invalid: 'data' },
+  });
+  assert.strictEqual(malformed.status, 400, 'Malformed backup must be rejected');
+  assert.ok(malformed.json.error);
+
+  // Send incomplete backup (missing required keys)
+  const incomplete = await request('POST', '/api/admin/backups', {
+    token: adminToken,
+    body: { services: [], partners: [] },
+  });
+  assert.strictEqual(incomplete.status, 400, 'Incomplete backup must be rejected');
+
+  // Send valid backup structure
+  const valid = await request('POST', '/api/admin/backups', {
+    token: adminToken,
+    body: { services: [], partners: [], programmes: [], events: [] },
+  });
+  assert.strictEqual(valid.status, 200, 'Valid empty backup must be accepted');
+  assert.strictEqual(valid.json.success, true);
+});
+
+test('backup backward-compat alias rejects unauthorized requests', async () => {
+  const res = await request('POST', '/api/admin/backups', {
+    body: { services: [], partners: [], programmes: [], events: [] },
+  });
+  assert.strictEqual(res.status, 401, 'Unauthenticated backup import must be rejected');
 });

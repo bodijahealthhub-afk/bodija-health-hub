@@ -19,7 +19,7 @@ const buildStats = async () => {
   const totalAppointments = (await db.prepare('SELECT COUNT(*) as count FROM appointments').get()).count;
 
   const pendingAppointments = (await db.prepare(
-    "SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending','requested')"
+    "SELECT COUNT(*) as count FROM appointments WHERE status IN ('pending','requested','new','under_review')"
   ).get()).count;
 
   const completedAppointments = (await db.prepare(
@@ -44,6 +44,26 @@ const buildStats = async () => {
   const appointmentsByStatus = await db.prepare(
     'SELECT status, COUNT(*) as count FROM appointments GROUP BY status'
   ).all();
+
+  // Wave 1-4 metrics
+  const activeServices = (await db.prepare(
+    "SELECT COUNT(*) as count FROM services WHERE is_active = 1 AND (status IS NULL OR status = 'active')"
+  ).get()).count;
+  const activePartners = (await db.prepare(
+    "SELECT COUNT(*) as count FROM partners WHERE is_active = 1 AND (status IS NULL OR status = 'active')"
+  ).get()).count;
+  const activeProgrammes = (await db.prepare(
+    "SELECT COUNT(*) as count FROM programmes WHERE is_active = 1 AND (status IS NULL OR status = 'active')"
+  ).get()).count;
+  const upcomingEvents = (await db.prepare(
+    "SELECT COUNT(*) as count FROM events WHERE is_active = 1 AND date >= ?"
+  ).get(today)).count;
+  const newContacts = (await db.prepare(
+    "SELECT COUNT(*) as count FROM contacts WHERE status = 'new'"
+  ).get()).count;
+  const unreadNotifications = (await db.prepare(
+    'SELECT COUNT(*) as count FROM notifications WHERE read_at IS NULL'
+  ).get()).count;
 
   const recentRows = await db.prepare(
     `SELECT a.*, s.name as service_name
@@ -71,6 +91,12 @@ const buildStats = async () => {
     monthlyRevenue: formatNaira(monthlyRevenueRaw),
     unreadMessages,
     appointmentsByStatus,
+    activeServices,
+    activePartners,
+    activeProgrammes,
+    upcomingEvents,
+    newContacts,
+    unreadNotifications,
   };
 
   return { stats, recentAppointments };

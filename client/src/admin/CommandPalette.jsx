@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { path: '/admin/gallery', label: 'Gallery', group: 'Content & Marketing' },
   { path: '/admin/testimonials', label: 'Testimonials', group: 'Content & Marketing' },
   { path: '/admin/seo', label: 'SEO', group: 'Content & Marketing' },
-  { path: '/admin/appointments', label: 'Bookings', group: 'Communications' },
+  { path: '/admin/appointments', label: 'Service Requests', group: 'Communications' },
   { path: '/admin/messages', label: 'Messages', group: 'Communications' },
   { path: '/admin/newsletter', label: 'Newsletter', group: 'Communications' },
   { path: '/admin/navigation-content', label: 'Navigation', group: 'Site Configuration' },
@@ -53,11 +53,56 @@ export default function CommandPalette({ open, onClose }) {
       return;
     }
     const lower = q.toLowerCase();
-    const found = NAV_ITEMS.filter((item) =>
+    // Navigation matches
+    const navFound = NAV_ITEMS.filter((item) =>
       item.label.toLowerCase().includes(lower) || item.group.toLowerCase().includes(lower)
-    );
-    setResults(found.slice(0, 15));
+    ).map((item) => ({ type: 'nav', ...item }));
+
+    // Debounced API search for data results
+    const timer = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`/api/search/admin?q=${encodeURIComponent(q)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const dataResults = [];
+          for (const [entity, items] of Object.entries(data)) {
+            for (const item of (items || []).slice(0, 3)) {
+              const label = item.name || item.title || item.patient_name || item.booking_reference || '';
+              const targetMap = {
+                services: `/admin/services`,
+                partners: `/admin/partners`,
+                blog: `/admin/blog`,
+                events: `/admin/events`,
+                programmes: `/admin/programmes`,
+                appointments: `/admin/appointments`,
+                contacts: `/admin/contacts`,
+              };
+              dataResults.push({
+                type: 'data',
+                label,
+                sublabel: item.category || item.status || item.booking_type || '',
+                group: entity.charAt(0).toUpperCase() + entity.slice(1),
+                path: targetMap[entity] || '/admin',
+              });
+            }
+          }
+          setResults([...navFound, ...dataResults].slice(0, 20));
+        } else {
+          setResults(navFound);
+        }
+      } catch {
+        setResults(navFound);
+      }
+      setSelectedIndex(0);
+    }, 300);
+
+    // Show nav results immediately
+    setResults(navFound);
     setSelectedIndex(0);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

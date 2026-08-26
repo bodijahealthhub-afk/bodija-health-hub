@@ -33,6 +33,44 @@ export default function ServiceDetail() {
     fetchService()
   }, [idOrSlug])
 
+  // JSON-LD structured data
+  useEffect(() => {
+    if (!service) return
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'MedicalProcedure',
+      name: service.name,
+      description: service.short_description || service.description,
+      url: window.location.href,
+      procedureType: service.category || 'Healthcare Service',
+      offers: service.price ? {
+        '@type': 'Offer',
+        price: service.price,
+        priceCurrency: 'NGN',
+      } : undefined,
+      provider: provider ? {
+        '@type': 'MedicalBusiness',
+        name: provider.name,
+        address: provider.location,
+        telephone: provider.contactPhone,
+        email: provider.contactEmail,
+      } : {
+        '@type': 'MedicalBusiness',
+        name: 'Bodija Health Hub',
+        address: '12 Bodija Road, Ibadan, Oyo State, Nigeria',
+      },
+    }
+    const tag = 'application/ld+json'
+    const prev = document.head.querySelector('script[data-service-jsonld]')
+    const el = document.createElement('script')
+    el.type = tag
+    el.setAttribute('data-service-jsonld', 'true')
+    el.textContent = JSON.stringify(jsonLd)
+    if (prev) prev.replaceWith(el)
+    else document.head.appendChild(el)
+    return () => { if (el.parentNode) el.parentNode.removeChild(el) }
+  }, [service, provider])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -198,6 +236,35 @@ export default function ServiceDetail() {
           </div>
         </div>
       </section>
+
+      {/* Related Services */}
+      {service.relatedServices && service.relatedServices.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Services</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {service.relatedServices.map((rs) => (
+                <Link
+                  key={rs.id}
+                  to={`/services/${rs.slug || rs.id}`}
+                  className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow group"
+                >
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                    <span className="text-2xl">{rs.icon || '🩺'}</span>
+                  </div>
+                  <h3 className="font-bold text-gray-900 group-hover:text-primary transition-colors mb-2">{rs.name}</h3>
+                  {rs.short_description && (
+                    <p className="text-sm text-gray-500 line-clamp-2">{rs.short_description}</p>
+                  )}
+                  {rs.price > 0 && (
+                    <p className="text-sm font-medium text-primary mt-3">₦{Number(rs.price).toLocaleString()}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

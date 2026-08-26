@@ -5,6 +5,9 @@ const { authenticateToken } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
 const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
+const { createNotification } = require('./adminNotifications');
+const { upsertContact } = require('./contacts');
+const { logAudit } = require('../utils/audit');
 
 const router = express.Router();
 
@@ -48,14 +51,30 @@ const toClient = (a) => ({
   preferredTime: a.preferred_time,
   paymentStatus: a.payment_status,
   amount: a.consultation_fee || a.service_price || null,
+  partnerId: a.partner_id,
+  programmeId: a.programme_id,
+  eventId: a.event_id,
+  assignedTo: a.assigned_to,
+  assignedToName: a.assigned_to_name || '',
+  alternativeDate: a.alternative_date,
+  alternativeTime: a.alternative_time,
+  locationPreference: a.location_preference,
+  internalNotes: a.internal_notes,
+  source: a.source || 'website',
+  reviewedAt: a.reviewed_at,
+  confirmedAt: a.confirmed_at,
+  cancelledAt: a.cancelled_at,
+  completedAt: a.completed_at,
 });
 
 const bookingSelect = `
-  SELECT a.*, d.name as doctor_name, d.consultation_fee, s.name as service_name, s.price as service_price, p.name as provider_name
+  SELECT a.*, d.name as doctor_name, d.consultation_fee, s.name as service_name, s.price as service_price, p.name as provider_name,
+    u.name as assigned_to_name
   FROM appointments a
   LEFT JOIN doctors d ON a.doctor_id = d.id
   LEFT JOIN services s ON a.service_id = s.id
   LEFT JOIN providers p ON a.provider_id = p.id
+  LEFT JOIN users u ON a.assigned_to = u.id
 `;
 
 // POST /api/appointments (public booking) — request-based, type aware
@@ -72,6 +91,9 @@ router.post('/', requireFeature('appointment_booking'), async (req, res) => {
       service_id,
       provider_id,
       provider_name,
+      partner_id,
+      programme_id,
+      event_id,
       date,
       time,
       preferred_date,
@@ -80,12 +102,22 @@ router.post('/', requireFeature('appointment_booking'), async (req, res) => {
       external_booking_url,
       contact_method,
       notes,
+      location_preference,
+      source,
     } = req.body;
 
     const type = BOOKING_TYPES[booking_type] || BOOKING_TYPES.appointment;
 
     if (!patient_name) {
       return res.status(400).json({ error: 'Your name is required' });
+    }
+
+    if (patient_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patient_email)) {
+      return res.status(400).json({ error: 'Invalid email address' });
+    }
+
+    if (patient_phone && !/^(\+234|0)[789][01]\d{8}$/.test(patient_phone.replace(/[\s-]/g, ''))) {
+      return res.status(400).json({ error: 'Invalid Nigerian phone number' });
     }
 
     let resolvedProviderId = provider_id || null;
@@ -131,12 +163,14 @@ router.post('/', requireFeature('appointment_booking'), async (req, res) => {
       `INSERT INTO appointments (
         booking_reference, booking_type, category, patient_name, patient_email, patient_phone, patient_age,
         doctor_id, service_id, provider_id, provider_type, date, time, preferred_date, preferred_time,
-        booking_method, external_booking_url, contact_method, notes, status, payment_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'requested', 'not_required')`
+        booking_method, external_booking_url, contact_method, notes, status, payment_status,
+        partner_id, programme_id, event_id, location_preference, source
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'requested', 'not_required', ?, ?, ?, ?, ?)`
     ).run(
       bookingReference, booking_type, category || null, patient_name, patient_email || null, patient_phone || null, patient_age || null,
       doctor_id || null, service_id || null, resolvedProviderId, resolvedProviderType || 'BHH', finalDate, finalTime,
-      preferred_date || null, preferred_time || null, finalMethod, resolvedExternalUrl || null, contact_method || null, notes || null
+      preferred_date || null, preferred_time || null, finalMethod, resolvedExternalUrl || null, contact_method || null, notes || null,
+      partner_id || null, programme_id || null, event_id || null, location_preference || null, source || 'website'
     );
 
     const booking = await db.prepare(`${bookingSelect} WHERE a.id = ?`).get(result.lastInsertRowid);
@@ -157,6 +191,34 @@ router.post('/', requireFeature('appointment_booking'), async (req, res) => {
         text: `A new booking was submitted on the website.\n\nReference: ${bookingReference}\nType: ${type.label}\nName: ${patient_name}\nEmail: ${patient_email || 'N/A'}\nPhone: ${patient_phone || 'N/A'}\nProvider: ${booking.provider_name || 'Bodija Health Hub'}\nService: ${booking.service_name || ''}\nPreferred date: ${preferred_date || finalDate}\nPreferred time: ${preferred_time || finalTime}\nBooking method: ${finalMethod}\nNotes: ${notes || 'N/A'}\n\nReview it in the admin panel.`,
       });
     }
+
+    // Create admin notification
+    await createNotification({
+      type: 'booking_created',
+      title: `New ${type.label} booking`,
+      message: `${patient_name} submitted a ${type.label.toLowerCase()} request (${bookingReference})`,
+      link: '/admin/appointments',
+      entityType: 'appointment',
+      entityId: result.lastInsertRowid,
+    });
+
+    // Auto-create CRM contact
+    await upsertContact({
+      name: patient_name,
+      email: patient_email,
+      phone: patient_phone,
+      source: 'booking',
+    });
+
+    // Audit log
+    await logAudit({
+      action: 'BOOKING_CREATED',
+      entityType: 'appointment',
+      entityId: result.lastInsertRowid,
+      actor: req.user ? req.user.email : 'public',
+      after_state: { bookingReference, bookingType: booking_type, status: 'requested', patientName: patient_name },
+      ip: req.ip,
+    });
 
     res.status(201).json(toClient(booking));
   } catch (err) {
@@ -210,7 +272,7 @@ router.get('/available-slots', authenticateToken, requirePermission('bookings.vi
 // GET /api/appointments (admin)
 router.get('/', authenticateToken, requirePermission('bookings.view'), async (req, res) => {
   try {
-    const { status, booking_type, date, doctor_id, provider_id, search } = req.query;
+    const { status, booking_type, date, doctor_id, provider_id, search, assigned_to, source } = req.query;
     let query = `${bookingSelect} WHERE 1=1`;
     const params = [];
 
@@ -234,6 +296,14 @@ router.get('/', authenticateToken, requirePermission('bookings.view'), async (re
       query += ' AND a.provider_id = ?';
       params.push(provider_id);
     }
+    if (assigned_to) {
+      query += ' AND a.assigned_to = ?';
+      params.push(assigned_to);
+    }
+    if (source) {
+      query += ' AND a.source = ?';
+      params.push(source);
+    }
     if (search) {
       query += ' AND (a.patient_name LIKE ? OR a.patient_email LIKE ? OR a.patient_phone LIKE ? OR a.booking_reference LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
@@ -255,23 +325,71 @@ router.patch('/:id/status', authenticateToken, requirePermission('bookings.updat
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    const { status } = req.body;
+    const { status, alternative_date, alternative_time } = req.body;
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
     }
 
-    await db.prepare('UPDATE appointments SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, req.params.id);
+    // Set lifecycle timestamps based on status transitions
+    const timestampColumns = [];
+    const timestampValues = [];
+    if (status === 'under_review' || status === 'reviewed') {
+      timestampColumns.push('reviewed_at');
+      timestampValues.push(new Date().toISOString());
+    } else if (status === 'confirmed') {
+      timestampColumns.push('confirmed_at');
+      timestampValues.push(new Date().toISOString());
+    } else if (status === 'cancelled' || status === 'declined') {
+      timestampColumns.push('cancelled_at');
+      timestampValues.push(new Date().toISOString());
+    } else if (status === 'completed') {
+      timestampColumns.push('completed_at');
+      timestampValues.push(new Date().toISOString());
+    }
+
+    const setClauses = ['status = ?', 'updated_at = CURRENT_TIMESTAMP'];
+    const params = [status];
+    for (let i = 0; i < timestampColumns.length; i++) {
+      setClauses.push(`${timestampColumns[i]} = ?`);
+      params.push(timestampValues[i]);
+    }
+    if (alternative_date !== undefined) {
+      setClauses.push('alternative_date = ?');
+      params.push(alternative_date || null);
+    }
+    if (alternative_time !== undefined) {
+      setClauses.push('alternative_time = ?');
+      params.push(alternative_time || null);
+    }
+    params.push(req.params.id);
+
+    await db.prepare(`UPDATE appointments SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
 
     const updated = await db.prepare(`${bookingSelect} WHERE a.id = ?`).get(req.params.id);
+
+    // Audit log for status change
+    await logAudit({
+      action: 'BOOKING_STATUS_CHANGED',
+      entityType: 'appointment',
+      entityId: parseInt(req.params.id),
+      actor: req.user ? req.user.email : 'unknown',
+      before_state: { status: appointment.status },
+      after_state: { status, previousStatus: appointment.status },
+      ip: req.ip,
+    });
 
     if (updated.patient_email) {
       const statusText = {
         requested: 'Your booking has been received and is awaiting confirmation.',
+        under_review: 'Your booking is being reviewed by our team.',
+        reviewed: 'Your booking has been reviewed and is being processed.',
         confirmed: 'Your booking has been confirmed.',
+        rescheduled: 'Your booking has been rescheduled. Please check the updated date/time.',
         completed: 'Your booking has been marked as completed. Thank you for using Bodija Health Hub.',
         cancelled: 'Your booking has been cancelled. Please contact us if you would like to reschedule.',
         declined: 'Unfortunately, we are unable to fulfil this booking request. Please contact us for alternatives.',
         expired: 'This booking request has expired because we could not confirm it in time.',
+        no_show: 'This booking has been marked as a no-show.',
       }[status];
       if (statusText) {
         sendMail({
@@ -296,13 +414,65 @@ router.patch('/:id/notes', authenticateToken, requirePermission('bookings.update
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    const { notes } = req.body;
-    await db.prepare('UPDATE appointments SET notes = COALESCE(?, notes), updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(notes ?? null, req.params.id);
+    const { notes, internal_notes } = req.body;
+    await db.prepare(
+      'UPDATE appointments SET notes = COALESCE(?, notes), internal_notes = COALESCE(?, internal_notes), updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).run(notes ?? null, internal_notes ?? null, req.params.id);
 
     const updated = await db.prepare(`${bookingSelect} WHERE a.id = ?`).get(req.params.id);
+
+    // Audit log for notes update
+    await logAudit({
+      action: 'BOOKING_UPDATED',
+      entityType: 'appointment',
+      entityId: parseInt(req.params.id),
+      actor: req.user ? req.user.email : 'unknown',
+      after_state: { field: 'notes', hasNotes: !!(notes || internal_notes) },
+      ip: req.ip,
+    });
+
     res.json(toClient(updated));
   } catch (err) {
     res.status(500).json({ error: 'Failed to update booking notes' });
+  }
+});
+
+// PATCH /api/appointments/:id/assign (admin) — assign a booking to a team member
+router.patch('/:id/assign', authenticateToken, requirePermission('bookings.assign'), async (req, res) => {
+  try {
+    const appointment = await db.prepare('SELECT * FROM appointments WHERE id = ?').get(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const { assigned_to } = req.body;
+    if (assigned_to !== undefined && assigned_to !== null) {
+      const assignee = await db.prepare('SELECT id FROM users WHERE id = ?').get(assigned_to);
+      if (!assignee) {
+        return res.status(400).json({ error: 'Invalid assignee user ID' });
+      }
+    }
+
+    await db.prepare(
+      'UPDATE appointments SET assigned_to = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).run(assigned_to || null, req.params.id);
+
+    const updated = await db.prepare(`${bookingSelect} WHERE a.id = ?`).get(req.params.id);
+
+    // Audit log for assignment
+    await logAudit({
+      action: 'BOOKING_ASSIGNED',
+      entityType: 'appointment',
+      entityId: parseInt(req.params.id),
+      actor: req.user ? req.user.email : 'unknown',
+      before_state: { assignedTo: appointment.assigned_to },
+      after_state: { assignedTo: assigned_to || null, previousAssignee: appointment.assigned_to },
+      ip: req.ip,
+    });
+
+    res.json(toClient(updated));
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to assign booking' });
   }
 });
 
@@ -328,7 +498,8 @@ router.put('/:id', authenticateToken, requirePermission('bookings.update'), asyn
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    const { status, notes, payment_status, doctor_id, service_id, date, time, preferred_date, preferred_time, booking_method, category } = req.body;
+    const { status, notes, payment_status, doctor_id, service_id, date, time, preferred_date, preferred_time, booking_method, category,
+      partner_id, programme_id, event_id, assigned_to, alternative_date, alternative_time, location_preference, internal_notes, source } = req.body;
 
     await db.prepare(
       `UPDATE appointments SET
@@ -343,13 +514,36 @@ router.put('/:id', authenticateToken, requirePermission('bookings.update'), asyn
         preferred_time = COALESCE(?, preferred_time),
         booking_method = COALESCE(?, booking_method),
         category = COALESCE(?, category),
+        partner_id = COALESCE(?, partner_id),
+        programme_id = COALESCE(?, programme_id),
+        event_id = COALESCE(?, event_id),
+        assigned_to = COALESCE(?, assigned_to),
+        alternative_date = COALESCE(?, alternative_date),
+        alternative_time = COALESCE(?, alternative_time),
+        location_preference = COALESCE(?, location_preference),
+        internal_notes = COALESCE(?, internal_notes),
+        source = COALESCE(?, source),
         updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`
     ).run(status || null, notes || null, payment_status || null,
       doctor_id ?? null, service_id ?? null, date || null, time || null,
-      preferred_date || null, preferred_time || null, booking_method || null, category || null, req.params.id);
+      preferred_date || null, preferred_time || null, booking_method || null, category || null,
+      partner_id ?? null, programme_id ?? null, event_id ?? null, assigned_to ?? null,
+      alternative_date || null, alternative_time || null, location_preference || null, internal_notes || null, source || null,
+      req.params.id);
 
     const updated = await db.prepare(`${bookingSelect} WHERE a.id = ?`).get(req.params.id);
+
+    // Audit log for full update
+    await logAudit({
+      action: 'BOOKING_UPDATED',
+      entityType: 'appointment',
+      entityId: parseInt(req.params.id),
+      actor: req.user ? req.user.email : 'unknown',
+      before_state: { status: appointment.status, assignedTo: appointment.assigned_to },
+      after_state: { status: updated.status, assignedTo: updated.assigned_to },
+      ip: req.ip,
+    });
 
     res.json(toClient(updated));
   } catch (err) {
@@ -364,6 +558,17 @@ router.delete('/:id', authenticateToken, requirePermission('bookings.cancel'), a
     if (!appointment) {
       return res.status(404).json({ error: 'Booking not found' });
     }
+
+    // Audit log for deletion
+    await logAudit({
+      action: 'BOOKING_CANCELLED',
+      entityType: 'appointment',
+      entityId: parseInt(req.params.id),
+      actor: req.user ? req.user.email : 'unknown',
+      before_state: { status: appointment.status, bookingReference: appointment.booking_reference },
+      ip: req.ip,
+    });
+
     await db.prepare('DELETE FROM appointments WHERE id = ?').run(req.params.id);
     res.json({ success: true, message: 'Booking deleted' });
   } catch (err) {

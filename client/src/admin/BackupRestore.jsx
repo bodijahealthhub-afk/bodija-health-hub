@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
 
 const BackupRestore = () => {
@@ -11,7 +11,7 @@ const BackupRestore = () => {
   const [fetchingBackups, setFetchingBackups] = useState(true);
   const fileInputRef = useRef(null);
 
-  useState(() => {
+  useEffect(() => {
     const fetchBackups = async () => {
       try {
         const token = localStorage.getItem('adminToken');

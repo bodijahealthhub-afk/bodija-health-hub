@@ -69,7 +69,7 @@ const Payments = () => {
           <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
           <p className="text-gray-500 mt-1">Online payments received via Paystack.</p>
         </div>
-        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by reference, email or patient..." />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by reference, email or name..." />
       </div>
 
       {mockMode && (

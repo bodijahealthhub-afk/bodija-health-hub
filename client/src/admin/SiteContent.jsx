@@ -25,7 +25,6 @@ export default function SiteContent() {
   const fetchContent = async () => {
     try {
       const token = localStorage.getItem('adminToken')
-      console.log('Fetch attempt - token:', token ? 'exists' : 'MISSING')
       if (!token) {
         toast.error('Not logged in')
         setLoading(false)
@@ -34,11 +33,8 @@ export default function SiteContent() {
       const res = await fetch('/api/admin/site-content', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      console.log('Fetch response:', res.status)
       if (res.ok) {
         const data = await res.json()
-        console.log('Fetch data keys:', Object.keys(data))
-        console.log('Fetch hero_headline:', data.hero_headline)
         setContent(data)
       } else {
         toast.error('Failed to load content: ' + res.status)
@@ -54,10 +50,6 @@ export default function SiteContent() {
   const handleSave = async () => {
     setSaving(true)
     const token = localStorage.getItem('adminToken')
-    console.log('=== SAVE DEBUG ===')
-    console.log('Token:', token ? token.substring(0, 20) + '...' : 'MISSING')
-    console.log('Content keys:', Object.keys(content))
-    console.log('Content sample:', JSON.stringify(content).substring(0, 200))
     try {
       const res = await fetch('/api/admin/site-content', {
         method: 'PUT',
@@ -68,8 +60,6 @@ export default function SiteContent() {
         body: JSON.stringify(content)
       })
       const responseText = await res.text()
-      console.log('Response status:', res.status)
-      console.log('Response body:', responseText.substring(0, 200))
       if (res.ok) {
         toast.success('Content saved successfully!')
       } else {

@@ -9,7 +9,6 @@ const apiTarget = process.env.VITE_API_TARGET || 'http://localhost:5000'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    allowedHosts: ['undercut-zombie-harbor.ngrok-free.dev'],
     proxy: {
       '/api': { target: apiTarget, changeOrigin: true },
       '/uploads': { target: apiTarget, changeOrigin: true },

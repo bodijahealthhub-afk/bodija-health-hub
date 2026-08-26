@@ -4,6 +4,8 @@ const { authenticateToken } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
 const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
+const { createNotification } = require('./adminNotifications');
+const { upsertContact } = require('./contacts');
 
 const router = express.Router();
 
@@ -29,6 +31,24 @@ router.post('/', requireFeature('contact_form'), async (req, res) => {
         text: `You received a new message via the Bodija Health Hub contact form.\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nSubject: ${subject || 'N/A'}\n\nMessage:\n${message}`,
       });
     }
+
+    // Create admin notification
+    await createNotification({
+      type: 'message_received',
+      title: 'New message received',
+      message: `${name} sent a message: "${(subject || message || '').slice(0, 80)}"`,
+      link: '/admin/messages',
+      entityType: 'message',
+      entityId: result.lastInsertRowid,
+    });
+
+    // Auto-create CRM contact
+    await upsertContact({
+      name,
+      email,
+      phone,
+      source: 'contact_form',
+    });
 
     res.status(201).json({ success: true, id: msg.id });
   } catch (err) {
