@@ -26,7 +26,8 @@ const AdminLogin = () => {
         throw new Error(data.error || data.message || 'Login failed');
       }
 
-      if (data.user.role !== 'admin' && data.user.role !== 'super_admin') {
+      const ALLOWED_ROLES = ['admin', 'super_admin', 'content_manager', 'receptionist', 'accountant'];
+      if (!ALLOWED_ROLES.includes(data.user.role)) {
         throw new Error('Access denied. Admin privileges required.');
       }
 
