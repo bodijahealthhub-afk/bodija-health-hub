@@ -182,7 +182,7 @@ export default function Dashboard() {
 
   const serverHealthy = healthData?.status?.server === 'healthy';
   const tableCounts = healthData?.tableCounts || {};
-  const featureFlags = healthData?.featureFlags || [];
+  const featureFlags = Array.isArray(healthData?.featureFlags) ? healthData.featureFlags : [];
   const stats = dashboardData?.stats || {};
 
   const pendingBookings = stats.pendingAppointments || 0;
