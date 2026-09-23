@@ -1102,20 +1102,16 @@ const PARTNER_CATALOG = [
 ];
 
 async function seedPartners() {
-  const exists = db.prepare('SELECT 1 FROM partners WHERE slug = ? LIMIT 1');
+  // slug is UNIQUE — INSERT OR IGNORE is idempotent without a pre-check.
+  // (A truthy Promise from .get() would skip inserts if checked first.)
   const insert = db.prepare(
     `INSERT OR IGNORE INTO partners (name, slug, partner_type, description, location, services_offered, featured, is_active)
      VALUES (?, ?, ?, ?, ?, ?, ?, 1)`
   );
-  let added = 0;
   for (const p of PARTNER_CATALOG) {
-    const slug = db.slugify(p.name);
-    if (!exists.get(slug)) {
-      insert.run(p.name, slug, p.partner_type, p.description, p.location, p.services_offered, p.featured);
-      added += 1;
-    }
+    insert.run(p.name, db.slugify(p.name), p.partner_type, p.description, p.location, p.services_offered, p.featured);
   }
-  console.log(`[seed] Partners: ${added} new baseline partners ensured (${PARTNER_CATALOG.length} catalog total).`);
+  console.log(`[seed] Partners: ${PARTNER_CATALOG.length} baseline partners ensured (INSERT OR IGNORE by slug).`);
 }
 
 // Wave 1: Extend appointments table with service request fields.
