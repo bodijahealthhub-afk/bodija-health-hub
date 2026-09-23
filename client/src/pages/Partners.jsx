@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { FiActivity, FiHeart, FiHeadphones, FiThermometer } from 'react-icons/fi'
 import { PartnersSkeleton } from '../components/SkeletonLoader'
@@ -16,7 +16,7 @@ const colorMap = {
 export default function Partners() {
   const [content, setContent] = useState({
     partners_headline: 'Our Partner Network',
-    partners_description: 'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care.',
+    partners_description: 'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care - each an integral part of the BHH ecosystem.',
   })
   const [partners, setPartners] = useState([])
   const [loading, setLoading] = useState(true)

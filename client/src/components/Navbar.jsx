@@ -5,11 +5,12 @@ import { isPathHidden } from '../utils/featureRoutes'
 
 const defaultLinks = [
   { name: 'Home', path: '/' },
-  { name: 'Ecosystem', path: '/ecosystem' },
-  { name: 'Services', path: '/services' },
-  { name: 'Partners', path: '/partners' },
-  { name: 'Newsroom', path: '/newsroom' },
-  { name: 'Contact', path: '/contact' },
+  { name: 'About Us', path: '/about' },
+  { name: 'The Ecosystem', path: '/ecosystem' },
+  { name: 'Our Partners', path: '/partners' },
+  { name: 'Our Platforms', path: '/platforms' },
+  { name: 'Upcoming Projects', path: '/upcoming' },
+  { name: 'Contact Us', path: '/contact' },
 ]
 
 export default function Navbar() {

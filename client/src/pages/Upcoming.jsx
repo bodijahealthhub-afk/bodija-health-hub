@@ -75,11 +75,8 @@ export default function Upcoming() {
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
                 Bodija Advanced Care & Rehabilitation Centre
               </h2>
-              <p className="text-gray-500 leading-relaxed mb-4">
-                A dedicated rehabilitation centre designed to provide specialized therapy services under one roof — bringing together physiotherapy, speech therapy, occupational therapy, and behavioral therapy in a purpose-built facility.
-              </p>
               <p className="text-gray-500 leading-relaxed mb-8">
-                BACR will serve individuals recovering from injuries, managing chronic conditions, or needing ongoing therapeutic support — extending the BHH ecosystem's commitment to whole-person, continuous care.
+                BHH is developing a dedicated rehabilitation centre offering physiotherapy, speech therapy, occupational therapy, and behavioral therapy - expanding the ecosystem to serve individuals on the path to recovery and functional independence.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-4">

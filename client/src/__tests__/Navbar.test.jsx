@@ -22,6 +22,13 @@ function renderNavbar({ features = [], route = '/' } = {}) {
   )
 }
 
+const enabledFeature = (key) => ({
+  key, enabled: true, navigation_visible: true, public_visible: true, admin_visible: true,
+})
+const disabledFeature = (key) => ({
+  key, enabled: false, navigation_visible: false, public_visible: false, admin_visible: false,
+})
+
 beforeEach(() => {
   vi.restoreAllMocks()
   localStorage.clear()
@@ -30,11 +37,11 @@ beforeEach(() => {
 describe('Navbar', () => {
   it('renders all default links when all features enabled', async () => {
     const features = [
-      { key: 'services', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'partners_section', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'blog', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'contact_form', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'appointment_booking', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
+      enabledFeature('partners_section'),
+      enabledFeature('platforms_section'),
+      enabledFeature('upcoming_projects'),
+      enabledFeature('contact_form'),
+      enabledFeature('appointment_booking'),
     ]
     renderNavbar({ features })
 
@@ -42,19 +49,22 @@ describe('Navbar', () => {
       expect(screen.getAllByText('Home').length).toBeGreaterThanOrEqual(1)
     })
 
-    expect(screen.getAllByText('Services').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('Partners').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('Contact').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('About Us').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('The Ecosystem').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Our Partners').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Our Platforms').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Upcoming Projects').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Contact Us').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Get Started').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows Book a Service button when appointment_booking enabled', async () => {
     const features = [
-      { key: 'appointment_booking', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'services', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'partners_section', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'blog', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'contact_form', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
+      enabledFeature('appointment_booking'),
+      enabledFeature('partners_section'),
+      enabledFeature('platforms_section'),
+      enabledFeature('upcoming_projects'),
+      enabledFeature('contact_form'),
     ]
     renderNavbar({ features })
 
@@ -65,11 +75,11 @@ describe('Navbar', () => {
 
   it('hides Book a Service button when appointment_booking disabled', async () => {
     const features = [
-      { key: 'appointment_booking', enabled: false, navigation_visible: false, public_visible: false, admin_visible: false },
-      { key: 'services', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'partners_section', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'blog', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'contact_form', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
+      disabledFeature('appointment_booking'),
+      enabledFeature('partners_section'),
+      enabledFeature('platforms_section'),
+      enabledFeature('upcoming_projects'),
+      enabledFeature('contact_form'),
     ]
     renderNavbar({ features })
 
@@ -80,12 +90,12 @@ describe('Navbar', () => {
     expect(screen.queryByText('Book a Service')).not.toBeInTheDocument()
   })
 
-  it('hides Services link when services feature is disabled', async () => {
+  it('hides Our Partners link when partners_section feature is disabled', async () => {
     const features = [
-      { key: 'services', enabled: false, navigation_visible: false, public_visible: false, admin_visible: false },
-      { key: 'partners_section', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'blog', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
-      { key: 'contact_form', enabled: true, navigation_visible: true, public_visible: true, admin_visible: true },
+      disabledFeature('partners_section'),
+      enabledFeature('platforms_section'),
+      enabledFeature('upcoming_projects'),
+      enabledFeature('contact_form'),
     ]
     renderNavbar({ features })
 
@@ -93,8 +103,8 @@ describe('Navbar', () => {
       expect(screen.getAllByText('Home').length).toBeGreaterThanOrEqual(1)
     })
 
-    // "Services" link should be hidden but "Partners" and others remain
-    expect(screen.queryAllByText('Services')).toHaveLength(0)
-    expect(screen.getAllByText('Partners').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryAllByText('Our Partners')).toHaveLength(0)
+    expect(screen.getAllByText('About Us').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Contact Us').length).toBeGreaterThanOrEqual(1)
   })
 })

@@ -15,9 +15,9 @@ import { cachedFetch } from '../utils/api'
 import { ServicesSkeleton, EventsSkeleton, BlogSkeletons, TestimonialsSkeleton } from '../components/SkeletonLoader'
 
 const coreValues = [
-  { icon: FiHeart, title: 'Accessible', desc: 'Quality care should never be out of reach.' },
-  { icon: FiLink2, title: 'Connected', desc: 'Clinics, specialists, diagnostics, and digital tools \u2014 all working together.' },
-  { icon: FiClock, title: 'Continuous', desc: 'Healthcare doesn\'t stop at a single visit. We support ongoing wellness.' },
+  { icon: FiHeart, title: 'Accessible', desc: 'Quality care reachable for every family.' },
+  { icon: FiLink2, title: 'Connected', desc: 'Specialists, diagnostics, and services linked under one system.' },
+  { icon: FiClock, title: 'Continuous', desc: 'Support at every stage of life, from newborns to elders.' },
 ]
 
 const ecosystemCards = [
@@ -72,8 +72,8 @@ export default function Home() {
     hero_cta1_link: '/ecosystem',
     hero_cta2_text: 'Meet Our Partners',
     hero_cta2_link: '/partners',
-    about_headline: 'A Healthcare Ecosystem, Not Just a Clinic',
-    about_description: 'Bodija Health Hub is an integrated healthcare network designed to ensure patients receive coordinated, comprehensive care at every stage of their health journey.',
+    about_headline: 'More Than a Service. A Connected Health Ecosystem.',
+    about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.',
     ecosystem_headline: 'One Hub. Many Hands. Whole-Person Care.',
     ecosystem_description: 'Health doesn\'t exist in isolation \u2014 and neither should care. Our ecosystem brings together trusted partners across multiple disciplines to support every aspect of your well-being.',
     contact_whatsapp: '',
@@ -194,13 +194,10 @@ export default function Home() {
               <ScrollReveal>
                 <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Our Approach</span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 leading-tight">
-                  {content.about_headline || 'A Healthcare Ecosystem, Not Just a Clinic'}
+                  {content.about_headline || 'More Than a Service. A Connected Health Ecosystem.'}
                 </h2>
                 <p className="text-gray-500 leading-relaxed mb-4 text-lg">
-                  {content.about_description || 'Bodija Health Hub is an integrated healthcare network designed to ensure patients receive coordinated, comprehensive care at every stage of their health journey.'}
-                </p>
-                <p className="text-gray-500 leading-relaxed mb-8">
-                  By connecting primary care, specialist consultations, diagnostics, therapy, and digital health solutions under one umbrella, we eliminate the gaps that often leave families navigating the healthcare system alone.
+                  {content.about_description || 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.'}
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link to="/ecosystem" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">

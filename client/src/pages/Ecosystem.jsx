@@ -15,18 +15,18 @@ const defaultServices = [
 
 const included = [
   'Primary Care',
-  'Specialist Care',
-  'Diagnostics',
+  'Specialist care and referrals',
+  'Diagnostics and laboratory services',
   'Audiology',
   'Physiotherapy, Speech & Behavioral Therapy',
   'Chronic Condition Management',
-  'Elder Care',
+  'Long-term wellness and elder care support',
 ]
 
 export default function Ecosystem() {
   const [content, setContent] = useState({
     ecosystem_headline: 'One Hub. Many Hands. Whole-Person Care.',
-    ecosystem_description: 'Care doesn\'t exist in isolation — and neither should the systems that support it. At Bodija Health Hub, we\'ve built an ecosystem where every service connects, every specialist coordinates, and every patient benefits from truly integrated healthcare.',
+    ecosystem_description: 'Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.',
   })
 
   useEffect(() => {
@@ -151,7 +151,7 @@ export default function Ecosystem() {
       <section className="py-16 bg-white border-y border-gray-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-xl sm:text-2xl font-medium text-gray-900 leading-relaxed">
-            Our ecosystem is not about doing everything ourselves — it's about bringing the right partners together so that every patient receives coordinated, comprehensive care without having to navigate the system alone.
+            Rather than functioning as separate healthcare silos, the goal is integration - creating a system where care becomes easier to access, monitor, and coordinate.
           </p>
         </div>
       </section>

@@ -8,6 +8,9 @@ const defaultQuickLinks = [
   { label: 'About Us', url: '/about' },
   { label: 'The Ecosystem', url: '/ecosystem' },
   { label: 'Our Partners', url: '/partners' },
+  { label: 'LiveCare', url: '/livecare' },
+  { label: 'hEar Menders', url: '/hear-menders' },
+  { label: 'Upcoming Projects', url: '/upcoming' },
   { label: 'Contact', url: '/contact' },
 ]
 
@@ -151,10 +154,7 @@ export default function Footer() {
           <div className="flex gap-6">
             <Link to="/privacy" className="text-gray-500 hover:text-gray-400 text-sm">Privacy Policy</Link>
             <Link to="/terms" className="text-gray-500 hover:text-gray-400 text-sm">Terms of Use</Link>
-            {!isPathHidden('/faq', isEnabled) && (
-              <Link to="/faq" className="text-gray-500 hover:text-gray-400 text-sm">FAQ</Link>
-            )}
-            <Link to="/sitemap" className="text-gray-500 hover:text-gray-400 text-sm">Sitemap</Link>
+            <Link to="/cookie-policy" className="text-gray-500 hover:text-gray-400 text-sm">Cookie Policy</Link>
           </div>
         </div>
 

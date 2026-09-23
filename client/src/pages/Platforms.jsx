@@ -7,7 +7,7 @@ const defaultPlatforms = [
     tagline: 'Smarter Care. Trusted Support.',
     icon: FiMonitor,
     color: 'primary',
-    description: 'LiveCare is a dedicated elder care platform designed to bring peace of mind to families and trusted support to aging adults. From daily wellness check-ins to emergency alerts and caregiver coordination, LiveCare ensures that your loved ones are never far from the care they need.',
+    description: 'A structured elder care and assisted living platform connecting families to trained, verified caregivers - with real-time session updates and coordinated home care support.',
     features: [
       'Daily wellness monitoring',
       'Emergency alert system',
@@ -22,7 +22,7 @@ const defaultPlatforms = [
     tagline: 'Your Digital Hearing Solution.',
     icon: FiMic,
     color: 'emerald',
-    description: 'hEar Menders is a digital hearing platform built to make hearing care accessible, continuous, and convenient. Backed by the expertise of hEar Max Centre, it connects patients to audiology support, hearing assessments, and ongoing care — all from the comfort of home.',
+    description: 'A digital platform giving you instant access to licensed audiologists and ENT specialists - powered by hEar Max Centre and built for smarter, stress-free hearing care.',
     features: [
       'Virtual hearing assessments',
       'Audiology consultations',

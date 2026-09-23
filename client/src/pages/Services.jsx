@@ -152,7 +152,7 @@ export default function Services() {
             <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Our Services</span>
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">Care for Every Stage of Your Health Journey</h1>
             <p className="text-lg text-gray-300 leading-relaxed">
-              From everyday consultations to specialized care, our services are delivered by trusted providers across the Bodija Health Hub ecosystem.
+              Our network covers the full spectrum of healthcare needs - from prevention to recovery, from newborn to elder, from routine monitoring to specialist support.
             </p>
           </div>
           </ScrollReveal>

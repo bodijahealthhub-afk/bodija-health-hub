@@ -36,6 +36,7 @@ const allColumns = [
     links: [
       { name: 'Privacy Policy', path: '/privacy' },
       { name: 'Terms of Use', path: '/terms' },
+      { name: 'Cookie Policy', path: '/cookie-policy' },
     ],
   },
   {

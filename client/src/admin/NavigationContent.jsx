@@ -11,12 +11,14 @@ const NavigationContent = () => {
     logoText: 'Bodija Health Hub',
     links: [
       { label: 'Home', url: '/' },
-      { label: 'About', url: '/about' },
-      { label: 'Services', url: '/services' },
-      { label: 'Newsroom', url: '/newsroom' },
-      { label: 'Contact', url: '/contact' },
+      { label: 'About Us', url: '/about' },
+      { label: 'The Ecosystem', url: '/ecosystem' },
+      { label: 'Our Partners', url: '/partners' },
+      { label: 'Our Platforms', url: '/platforms' },
+      { label: 'Upcoming Projects', url: '/upcoming' },
+      { label: 'Contact Us', url: '/contact' },
     ],
-    ctaButton: { text: 'Book Appointment', url: '/appointments' },
+    ctaButton: { text: 'Book a Service', url: '/appointments' },
     phone: '+234 801 234 5678',
   });
 

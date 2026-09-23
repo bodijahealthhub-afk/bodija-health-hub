@@ -47,7 +47,7 @@ export default function Contact() {
   const { isEnabled } = useFeatures()
   const [contactDetails, setContactDetails] = useState(defaultContactDetails)
   const [headline, setHeadline] = useState('Ready to Be Part of Something Bigger?')
-  const [subtext, setSubtext] = useState('Whether you\'re a patient, a family member, a healthcare provider, or a caregiver — we\'re here to connect you with the care, the partners, and the community you need.')
+  const [subtext, setSubtext] = useState('Whether you are a patient, a family, a healthcare provider, or a caregiver - BHH has a place for you.')
   const [social, setSocial] = useState({})
 
   const [formData, setFormData] = useState({

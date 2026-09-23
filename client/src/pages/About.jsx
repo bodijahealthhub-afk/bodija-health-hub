@@ -7,24 +7,24 @@ const defaultCoreValues = [
   {
     icon: FiHeart,
     title: 'Accessible',
-    description: 'Quality care should never be out of reach. We bring healthcare closer to the people who need it most — through physical locations, community outreach, and digital solutions.',
+    description: 'Quality care reachable for every family.',
   },
   {
     icon: FiLink,
     title: 'Connected',
-    description: 'Clinics, specialists, diagnostics, and digital tools — all working together. We bridge the gaps between different aspects of care so patients never feel lost in the system.',
+    description: 'Specialists, diagnostics, and services linked under one system.',
   },
   {
     icon: FiClock,
     title: 'Continuous',
-    description: 'Healthcare doesn\'t stop at a single visit. We support ongoing, whole-person wellness — from preventive care to chronic disease management and rehabilitation.',
+    description: 'Support at every stage of life, from newborns to elders.',
   },
 ]
 
 export default function About() {
   const [content, setContent] = useState({
-    about_headline: 'A Healthcare Ecosystem, Not Just a Clinic',
-    about_description: 'Bodija Health Hub is an integrated healthcare network designed to ensure that patients receive coordinated, comprehensive care at every stage of their health journey.\n\nBy connecting primary care, specialist consultations, diagnostics, therapy, and digital health solutions under one umbrella, we eliminate the gaps that often leave families navigating the healthcare system alone.\n\nOur model is built on the belief that when healthcare providers, specialists, and digital platforms work in harmony, patients don\'t just get treated — they get cared for, consistently and completely.',
+    about_headline: 'More Than a Service. A Connected Health Ecosystem.',
+    about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.',
     about_mission: 'To build and sustain an integrated healthcare network that brings together clinics, specialists, diagnostics, therapy, and digital health solutions — making quality, coordinated care accessible to every individual and family in our community.',
     about_vision: 'To be the most trusted integrated healthcare ecosystem in Ibadan and beyond — where every family has access to connected, continuous, and compassionate care.',
   })
@@ -162,7 +162,7 @@ export default function About() {
             Ready to Be Part of Something Bigger?
           </h2>
           <p className="text-teal-100 text-lg mb-10 max-w-2xl mx-auto">
-            Join us in building a healthcare ecosystem that truly serves the community.
+            Whether you are a patient, a family, a healthcare provider, or a caregiver — BHH has a place for you.
           </p>
           <Link
             to="/contact"

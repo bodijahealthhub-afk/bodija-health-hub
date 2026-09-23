@@ -22,6 +22,7 @@ const Platforms = lazy(() => import('./pages/Platforms'))
 const Upcoming = lazy(() => import('./pages/Upcoming'))
 const Privacy = lazy(() => import('./pages/Privacy'))
 const Terms = lazy(() => import('./pages/Terms'))
+const CookiePolicy = lazy(() => import('./pages/CookiePolicy'))
 const FAQ = lazy(() => import('./pages/FAQ'))
 const Careers = lazy(() => import('./pages/Careers'))
 const Resources = lazy(() => import('./pages/Resources'))
@@ -195,6 +196,7 @@ function PublicLayout() {
             <Route path="/appointments" element={<FeatureGate {...FEATURE_ROUTES['/appointments']}><Appointments /></FeatureGate>} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/faq" element={<FeatureGate {...FEATURE_ROUTES['/faq']}><FAQ /></FeatureGate>} />
             <Route path="/careers" element={<FeatureGate {...FEATURE_ROUTES['/careers']}><Careers /></FeatureGate>} />
             <Route path="/resources" element={<Resources />} />
