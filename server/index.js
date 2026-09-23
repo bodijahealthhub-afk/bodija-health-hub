@@ -234,6 +234,7 @@ app.use('/api/admin/service-categories', ...adminAuth, require('./routes/service
 app.use('/api/admin/appointments', ...adminAuth, require('./routes/appointments'));
 app.use('/api/admin/patients', ...adminAuth, requireFeature('patient_portal'), require('./routes/patients'));
 app.use('/api/admin/notifications', ...adminAuth, require('./routes/adminNotifications'));
+app.use('/api/admin/push', ...adminAuth, require('./routes/push'));
 app.use('/api/admin/revisions', ...adminAuth, require('./routes/revisions'));
 app.use('/api/admin/contacts', ...adminAuth, require('./routes/contacts'));
 app.use('/api/admin/ecosystem', ...adminAuth, require('./routes/ecosystem'));

@@ -4,6 +4,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
 const { requireFeature } = require('../middleware/features');
 const { sendMail } = require('../utils/email');
+const { createNotification } = require('./adminNotifications');
 
 const router = express.Router();
 
@@ -24,11 +25,19 @@ router.post('/subscribe', requireFeature('newsletter'), async (req, res) => {
       return res.json({ success: true, message: 'Already subscribed' });
     }
 
-    await db.prepare('INSERT INTO newsletter_subscribers (email) VALUES (?)').run(email);
+    const result = await db.prepare('INSERT INTO newsletter_subscribers (email) VALUES (?)').run(email);
     sendMail({
       to: email,
       subject: 'Welcome to Bodija Health Hub',
       text: `Welcome to the Bodija Health Hub community!\n\nYou have been subscribed to our newsletter. You'll receive health tips, service updates, and news from our ecosystem in Ibadan.\n\nIf you did not request this subscription, you can unsubscribe at any time.\n\nWarm regards,\nBodija Health Hub`,
+    });
+    await createNotification({
+      type: 'newsletter_subscribed',
+      title: 'New newsletter subscriber',
+      message: `${email} subscribed to the newsletter`,
+      link: '/admin/newsletter',
+      entityType: 'newsletter_subscriber',
+      entityId: result.lastInsertRowid,
     });
     res.status(201).json({ success: true, message: 'Subscribed successfully' });
   } catch (err) {

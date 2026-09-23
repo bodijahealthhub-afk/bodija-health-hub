@@ -1288,6 +1288,23 @@ async function createNotificationsTable() {
   }
 }
 
+// Web push: browser subscriptions for admin push notifications.
+async function createPushSubscriptionsTable() {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      user_agent TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_used_at DATETIME
+    )
+  `).run();
+  await db.prepare('CREATE INDEX IF NOT EXISTS idx_push_sub_user ON push_subscriptions(user_id)').run();
+}
+
 // Wave 2: Content workflow + scheduled publishing columns on blog_posts, events, programmes.
 async function migrateContentWorkflow() {
   const blogCols = [
@@ -1576,6 +1593,7 @@ async function init() {
   await migrateLifecycleStatus();
   await createRevisionsTable();
   await createNotificationsTable();
+  await createPushSubscriptionsTable();
   await migrateContentWorkflow();
   await migrateEcosystemCategories();
   await migrateCrmContacts();

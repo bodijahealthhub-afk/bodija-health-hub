@@ -1,6 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminToken, clearAdminSession } from '../utils/api';
+import { isPushSupported, getPushStatus, enablePush, disablePush } from '../utils/push';
+
+function formatNotifTime(value) {
+  if (!value) return '';
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString();
+  } catch {
+    return String(value);
+  }
+}
 
 const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -26,19 +38,106 @@ const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
   const [notifications, setNotifications] = useState([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const [pushState, setPushState] = useState({
+    supported: false,
+    configured: false,
+    subscribed: false,
+    permission: 'default',
+    busy: false,
+  });
+
+  const refreshPushStatus = async () => {
+    const status = await getPushStatus();
+    setPushState((prev) => ({
+      ...prev,
+      supported: status.supported,
+      configured: status.configured,
+      subscribed: status.subscribed,
+      permission: status.permission,
+    }));
+  };
+
+  const refreshNotifications = async () => {
+    try {
+      const token = getAdminToken();
+      if (!token) return;
+      const res = await fetch('/api/admin/notifications', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data.notifications || [];
+      setNotifications(
+        list.map((n) => ({
+          id: n.id,
+          text: n.message || n.title || 'Notification',
+          time: formatNotifTime(n.created_at),
+          read: Boolean(n.read_at),
+          link: n.link || null,
+        }))
+      );
+    } catch {
+      /* keep previous list */
+    }
+  };
+
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const token = getAdminToken();
-        if (!token) return;
-        const res = await fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) setNotifications(await res.json());
-      } catch {}
-    };
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    if (!getAdminToken()) return undefined;
+    refreshNotifications();
+    refreshPushStatus();
+    const interval = setInterval(refreshNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const markRead = async (notif) => {
+    if (!notif.id || notif.read) return;
+    try {
+      const token = getAdminToken();
+      await fetch(`/api/admin/notifications/${notif.id}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
+      );
+    } catch {
+      /* non-blocking */
+    }
+  };
+
+  const handleNotifClick = (notif) => {
+    markRead(notif);
+    if (notif.link) {
+      navigate(notif.link);
+      setShowNotifications(false);
+    }
+  };
+
+  const handleTogglePush = async () => {
+    if (pushState.busy) return;
+    setPushState((prev) => ({ ...prev, busy: true }));
+    try {
+      if (pushState.subscribed) {
+        await disablePush();
+      } else {
+        const result = await enablePush();
+        if (!result.ok && result.reason === 'blocked') {
+          setPushState((prev) => ({ ...prev, permission: 'denied' }));
+        }
+      }
+      await refreshPushStatus();
+    } finally {
+      setPushState((prev) => ({ ...prev, busy: false }));
+    }
+  };
+
+  const pushLabel = !pushState.supported
+    ? 'Push not supported'
+    : pushState.permission === 'denied'
+      ? 'Push blocked in browser'
+      : pushState.subscribed
+        ? 'Push notifications on'
+        : 'Enable push notifications';
 
   return (
     <header className="h-14 bg-white/80 backdrop-blur-md border-b border-gray-200/60 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
@@ -54,12 +153,12 @@ const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
           className="hidden md:flex items-center gap-3 w-72 px-3 py-1.5 text-sm text-gray-400 bg-gray-100/80 hover:bg-gray-100 rounded-xl border border-gray-200/60 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m0 0a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <span className="flex-1 text-left">Search...</span>
           <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 bg-white rounded border border-gray-200">
             <span className="text-xs">Ctrl</span>
-            <span>K</span>
+            K
           </kbd>
         </button>
       </div>
@@ -69,6 +168,7 @@ const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+            aria-label="Notifications"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -95,17 +195,28 @@ const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
                     className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
                       notif.link ? 'cursor-pointer' : ''
                     } ${!notif.read ? 'bg-teal-50/50' : ''}`}
-                    onClick={() => {
-                      if (notif.link) {
-                        navigate(notif.link);
-                        setShowNotifications(false);
-                      }
-                    }}
+                    onClick={() => handleNotifClick(notif)}
                   >
                     <p className="text-sm text-gray-900">{notif.text}</p>
                     <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
                   </div>
                 ))}
+              </div>
+              <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+                <button
+                  type="button"
+                  onClick={handleTogglePush}
+                  disabled={pushState.busy || !pushState.supported}
+                  className={`w-full text-left text-xs font-medium rounded-lg px-3 py-2 transition-colors ${
+                    pushState.permission === 'denied'
+                      ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                      : pushState.subscribed
+                        ? 'text-teal-700 bg-teal-50 hover:bg-teal-100'
+                        : 'text-gray-700 bg-white hover:bg-gray-100 border border-gray-200'
+                  } ${pushState.busy ? 'opacity-60 pointer-events-none' : ''}`}
+                >
+                  {pushState.busy ? 'Updating…' : pushLabel}
+                </button>
               </div>
             </div>
           )}
@@ -138,17 +249,17 @@ const TopBar = ({ onMenuToggle, user, onOpenSearch }) => {
                 onClick={() => { navigate('/admin/settings'); setShowUserMenu(false); }}
                 className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 My Profile
               </button>
               <button
                 onClick={handleLogout}
-                className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors border-t border-gray-100 mt-1"
+                className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors border-t border-gray-200 mt-1"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 Logout
               </button>

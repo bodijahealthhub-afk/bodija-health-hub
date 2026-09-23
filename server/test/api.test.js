@@ -813,6 +813,49 @@ test('notifications: PATCH marks notification read', async () => {
   assert.ok(patchRes.json.success);
 });
 
+// --- Web Push (admin) ---
+
+test('push: routes require authentication', async () => {
+  assert.strictEqual((await request('GET', '/api/admin/push/status')).status, 401);
+  assert.strictEqual((await request('GET', '/api/admin/push/public-key')).status, 401);
+  assert.strictEqual((await request('POST', '/api/admin/push/subscribe', { body: {} })).status, 401);
+});
+
+test('push: status returns configured flag for admin', async () => {
+  const res = await request('GET', '/api/admin/push/status', { token: adminToken });
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(typeof res.json.configured, 'boolean');
+  assert.strictEqual(typeof res.json.subscribed, 'boolean');
+});
+
+test('push: public-key either configured or 503', async () => {
+  const res = await request('GET', '/api/admin/push/public-key', { token: adminToken });
+  if (res.status === 200) {
+    assert.ok(typeof res.json.publicKey === 'string' && res.json.publicKey.length > 0);
+  } else {
+    assert.strictEqual(res.status, 503);
+  }
+});
+
+test('push: subscribe validates payload (or 503 when unconfigured)', async () => {
+  const res = await request('POST', '/api/admin/push/subscribe', {
+    token: adminToken,
+    body: { endpoint: 'https://push.example/abc' },
+  });
+  assert.ok([400, 503].includes(res.status), `unexpected status ${res.status}`);
+  if (res.status === 400) {
+    assert.ok(res.json.error);
+  }
+});
+
+test('push: unsubscribe requires endpoint', async () => {
+  const res = await request('POST', '/api/admin/push/unsubscribe', {
+    token: adminToken,
+    body: {},
+  });
+  assert.ok([400, 503].includes(res.status));
+});
+
 // --- Phase 6: CRM Contacts ---
 
 test('contacts: GET /api/admin/contacts returns empty list', async () => {

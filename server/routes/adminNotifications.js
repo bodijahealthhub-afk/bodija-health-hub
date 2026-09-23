@@ -2,10 +2,11 @@ const express = require('express');
 const db = require('../models/database');
 const { authenticateToken } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/authorize');
+const { sendPushForNotification } = require('../utils/push');
 
 const router = express.Router();
 
-// Helper: create a notification and insert it
+// Helper: create a notification and insert it, then fire web push (non-blocking).
 async function createNotification({ recipientUserId, type, title, message, link, entityType, entityId }) {
   try {
     await db.prepare(
@@ -20,6 +21,16 @@ async function createNotification({ recipientUserId, type, title, message, link,
       entityType || null,
       entityId == null ? null : String(entityId)
     );
+
+    // Fire-and-forget: never block the contact-form / booking response on push delivery.
+    sendPushForNotification({
+      recipientUserId: recipientUserId || null,
+      title,
+      message,
+      link,
+    }).catch((err) => {
+      console.error('[push] createNotification push failed:', err && err.message);
+    });
   } catch (err) {
     console.error('Failed to create notification:', err.message);
   }

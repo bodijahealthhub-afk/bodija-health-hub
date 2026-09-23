@@ -8,6 +8,6 @@
     { "source": "/sitemap.xml", "destination": "https://bodija-health-hub.onrender.com/sitemap.xml" },
     { "source": "/api/(.*)", "destination": "https://bodija-health-hub.onrender.com/api/$1" },
     { "source": "/uploads/(.*)", "destination": "https://bodija-health-hub.onrender.com/uploads/$1" },
-    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+    { "source": "/((?!assets/|sw\\.js$|manifest\\.webmanifest$).*)", "destination": "/index.html" }
   ]
 }
