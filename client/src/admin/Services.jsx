@@ -3,6 +3,7 @@ import SearchBar from './SearchBar';
 import ServiceForm from './ServiceForm';
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
+import { clearCache } from '../utils/api';
 
 const Services = () => {
   const [services, setServices] = useState([]);
@@ -66,6 +67,7 @@ const Services = () => {
       });
       if (res.ok) {
         const saved = await res.json();
+        clearCache('/api/services');
         setServices((prev) =>
           editingService
             ? prev.map((s) => (s.id === editingService.id ? saved : s))

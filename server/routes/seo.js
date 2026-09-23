@@ -26,6 +26,10 @@ const SEARCH_PAGE_MAP = {
   success_stories: { path: '/success-stories', featureKey: null },
   upcoming: { path: '/upcoming', featureKey: 'upcoming_projects' },
   bacr: { path: '/bacr', featureKey: null },
+  ecosystem: { path: '/ecosystem', featureKey: null },
+  cookie_policy: { path: '/cookie-policy', featureKey: null },
+  privacy: { path: '/privacy', featureKey: null },
+  terms: { path: '/terms', featureKey: null },
 };
 
 const toClient = (row) => ({

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ContentEditor from './ContentEditor';
 import ImageUpload from './ImageUpload';
 import Modal from './Modal';
+import { clearCache } from '../utils/api';
 
 const PAGES = [
   { id: 'home', label: 'Home' },
@@ -81,6 +82,8 @@ const PageContent = () => {
         body: JSON.stringify(pageData),
       });
       if (res.ok) {
+        clearCache('/api/site-content')
+        clearCache('/api/page-content')
         setToast({ type: 'success', message: 'Page content saved successfully' });
       } else {
         setToast({ type: 'error', message: 'Failed to save page content' });

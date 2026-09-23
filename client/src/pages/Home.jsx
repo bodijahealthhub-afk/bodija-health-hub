@@ -90,7 +90,7 @@ export default function Home() {
   const [testimonialsLoading, setTestimonialsLoading] = useState(true)
 
   useEffect(() => {
-    cachedFetch('/api/site-content')
+    cachedFetch('/api/site-content', { useCache: false })
       .then(d => { if (d) setContent(prev => ({ ...prev, ...d })) })
       .catch(() => {})
   }, [])

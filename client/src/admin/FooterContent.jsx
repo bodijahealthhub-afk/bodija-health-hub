@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { clearCache } from '../utils/api';
 
 const FooterContent = () => {
   const [loading, setLoading] = useState(true);
@@ -6,12 +7,15 @@ const FooterContent = () => {
   const [toast, setToast] = useState(null);
 
   const [footer, setFooter] = useState({
-    tagline: 'Your Trusted Healthcare Partner in Ibadan. Providing compassionate, comprehensive medical services for individuals and families.',
+    tagline: 'Care. Connected. Community.',
     quickLinks: [
       { label: 'Home', url: '/' },
       { label: 'About Us', url: '/about' },
-      { label: 'Services', url: '/services' },
-      { label: 'Newsroom', url: '/newsroom' },
+      { label: 'The Ecosystem', url: '/ecosystem' },
+      { label: 'Our Partners', url: '/partners' },
+      { label: 'LiveCare', url: '/livecare' },
+      { label: 'hEar Menders', url: '/hear-menders' },
+      { label: 'Upcoming Projects', url: '/upcoming' },
       { label: 'Contact', url: '/contact' },
     ],
     platformLinks: [
@@ -58,6 +62,7 @@ const FooterContent = () => {
         body: JSON.stringify(footer),
       });
       if (res.ok) {
+        clearCache('/api/site-content');
         setToast({ type: 'success', message: 'Footer content saved successfully' });
       } else {
         setToast({ type: 'error', message: 'Failed to save footer content' });

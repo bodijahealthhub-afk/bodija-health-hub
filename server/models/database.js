@@ -523,8 +523,6 @@ async function insertContentDefaults() {
       { label: 'The Ecosystem', url: '/ecosystem' },
       { label: 'Our Partners', url: '/partners' },
       { label: 'Our Platforms', url: '/platforms' },
-      { label: 'Events', url: '/events' },
-      { label: 'Programmes', url: '/programmes' },
       { label: 'Upcoming Projects', url: '/upcoming' },
       { label: 'Contact Us', url: '/contact' },
     ])],
@@ -550,6 +548,9 @@ async function insertContentDefaults() {
     ['partners', 'Our Partners - Bodija Health Hub', 'Meet our healthcare partner network.', 'https://bodijahealthhub.com/partners'],
     ['careers', 'Careers - Bodija Health Hub', 'Join our team at Bodija Health Hub.', 'https://bodijahealthhub.com/careers'],
     ['faq', 'FAQ - Bodija Health Hub', 'Frequently asked questions.', 'https://bodijahealthhub.com/faq'],
+    ['cookie_policy', 'Cookie Policy - Bodija Health Hub', 'How Bodija Health Hub uses cookies.', 'https://bodijahealthhub.com/cookie-policy'],
+    ['privacy', 'Privacy Policy - Bodija Health Hub', 'How we protect your privacy.', 'https://bodijahealthhub.com/privacy'],
+    ['terms', 'Terms of Use - Bodija Health Hub', 'Terms of using the BHH website.', 'https://bodijahealthhub.com/terms'],
   ];
   for (const [pageId, title, desc, canonical] of seoPages) {
     await insertSeo.run(pageId, title, desc, canonical);
@@ -731,6 +732,9 @@ async function migrateSeoSettings() {
   const seoPages = [
     ['events', 'Events - Bodija Health Hub', 'Health talks, screenings and events at Bodija Health Hub.', 'https://bodijahealthhub.com/events'],
     ['programmes', 'Programmes - Bodija Health Hub', 'Community programmes and initiatives at Bodija Health Hub.', 'https://bodijahealthhub.com/programmes'],
+    ['cookie_policy', 'Cookie Policy - Bodija Health Hub', 'How Bodija Health Hub uses cookies.', 'https://bodijahealthhub.com/cookie-policy'],
+    ['privacy', 'Privacy Policy - Bodija Health Hub', 'How we protect your privacy.', 'https://bodijahealthhub.com/privacy'],
+    ['terms', 'Terms of Use - Bodija Health Hub', 'Terms of using the BHH website.', 'https://bodijahealthhub.com/terms'],
   ];
   for (const [pageId, title, desc, canonical] of seoPages) {
     await insertSeo.run(pageId, title, desc, canonical);
@@ -1516,6 +1520,27 @@ async function migrateContentSync() {
         { label: 'hEar Menders', url: '/hear-menders' },
         { label: 'Upcoming Projects', url: '/upcoming' },
         { label: 'Contact', url: '/contact' },
+      ])],
+    ['nav_links',
+      JSON.stringify([
+        { label: 'Home', url: '/' },
+        { label: 'About Us', url: '/about' },
+        { label: 'The Ecosystem', url: '/ecosystem' },
+        { label: 'Our Partners', url: '/partners' },
+        { label: 'Our Platforms', url: '/platforms' },
+        { label: 'Events', url: '/events' },
+        { label: 'Programmes', url: '/programmes' },
+        { label: 'Upcoming Projects', url: '/upcoming' },
+        { label: 'Contact Us', url: '/contact' },
+      ]),
+      JSON.stringify([
+        { label: 'Home', url: '/' },
+        { label: 'About Us', url: '/about' },
+        { label: 'The Ecosystem', url: '/ecosystem' },
+        { label: 'Our Partners', url: '/partners' },
+        { label: 'Our Platforms', url: '/platforms' },
+        { label: 'Upcoming Projects', url: '/upcoming' },
+        { label: 'Contact Us', url: '/contact' },
       ])],
   ];
 

@@ -116,34 +116,34 @@ app.use('/api/upcoming-registrations', publicWriteLimiter);
 
 app.use('/uploads', express.static(process.env.UPLOADS_DIR || path.join(__dirname, 'uploads')));
 
-// Cache headers for public read-only data (10 minutes)
+// Cache headers for public read-only data (short TTL so admin edits show quickly)
 app.use('/api/services', (req, res, next) => {
   if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
-    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
   }
   next();
 });
 app.use('/api/partners', (req, res, next) => {
   if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
-    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
   }
   next();
 });
 app.use('/api/programmes', (req, res, next) => {
   if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
-    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
   }
   next();
 });
 app.use('/api/events', (req, res, next) => {
   if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
-    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
   }
   next();
 });
 app.use('/api/blog', (req, res, next) => {
   if (req.method === 'GET' && !req.baseUrl.includes('/admin')) {
-    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=120');
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
   }
   next();
 });
@@ -156,8 +156,11 @@ app.get('/robots.txt', async (req, res) => {
 
 app.get('/sitemap.xml', async (req, res) => {
   try {
-    const host = req.get('host');
-    const content = await generateSitemapXml(host);
+    // Prefer SITE_URL (public domain). Only use request host for local dev —
+    // behind Vercel rewrites the host is the Render origin, not the site URL.
+    const host = req.get('host') || '';
+    const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+    const content = await generateSitemapXml(isLocal ? host : undefined);
     res.type('application/xml').send(content);
   } catch (err) {
     console.error('Error generating sitemap:', err);
@@ -168,6 +171,14 @@ app.get('/sitemap.xml', async (req, res) => {
 // Public routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/doctors', requireFeature('doctors'), require('./routes/doctors'));
+// Never cache site-content — admin edits must appear on the public site immediately.
+app.use('/api/site-content', (req, res, next) => {
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store');
+  }
+  next();
+});
+
 app.use('/api/services', require('./routes/services'));
 app.use('/api/providers', require('./routes/providers'));
 app.use('/api/partners', require('./routes/partners'));

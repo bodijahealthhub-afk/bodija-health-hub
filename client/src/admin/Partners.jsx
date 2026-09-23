@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
+import { clearCache } from '../utils/api';
 
 const PARTNER_TYPES = ['healthcare', 'community', 'education', 'corporate', 'nonprofit', 'technology', 'other'];
 
@@ -116,6 +117,7 @@ const Partners = () => {
       });
       if (res.ok) {
         const saved = await res.json();
+        clearCache('/api/partners');
         setPartners((prev) =>
           editing
             ? prev.map((p) => (p.id === editing.id ? saved : p))

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ImageUpload from './ImageUpload';
+import { clearCache } from '../utils/api';
 
 const NavigationContent = () => {
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,7 @@ const NavigationContent = () => {
         body: JSON.stringify(nav),
       });
       if (res.ok) {
+        clearCache('/api/site-content');
         setToast({ type: 'success', message: 'Navigation saved successfully' });
       } else {
         setToast({ type: 'error', message: 'Failed to save navigation' });

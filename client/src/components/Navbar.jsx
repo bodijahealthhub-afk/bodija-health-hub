@@ -18,6 +18,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
   const [navLinks, setNavLinks] = useState(defaultLinks)
+  const [cta, setCta] = useState({ text: 'Get Started', url: '/contact' })
   const { isEnabled } = useFeatures()
   const showBooking = isEnabled('appointment_booking')
 
@@ -33,6 +34,29 @@ export default function Navbar() {
   useEffect(() => {
     setIsOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/site-content')
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data) => {
+        if (!active || !data) return
+        if (data.nav_links) {
+          try {
+            const parsed = typeof data.nav_links === 'string' ? JSON.parse(data.nav_links) : data.nav_links
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setNavLinks(parsed.map((l) => ({ name: l.label, path: l.url })))
+            }
+          } catch {}
+        }
+        setCta((prev) => ({
+          text: data.nav_cta_text || prev.text,
+          url: data.nav_cta_url || prev.url,
+        }))
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
 
   return (
     <nav
@@ -91,14 +115,14 @@ export default function Navbar() {
               </Link>
             )}
             <Link
-              to="/contact"
+              to={cta.url || '/contact'}
               className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 scrolled
                   ? 'bg-primary text-white hover:bg-primary-dark shadow-sm'
                   : 'bg-white text-primary hover:bg-white/90 shadow-sm'
               }`}
             >
-              Get Started
+              {cta.text || 'Get Started'}
             </Link>
           </div>
 
@@ -154,11 +178,11 @@ export default function Navbar() {
               </Link>
             )}
             <Link
-              to="/contact"
+              to={cta.url || '/contact'}
               onClick={() => setIsOpen(false)}
               className="block text-center bg-primary text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors"
             >
-              Get Started
+              {cta.text || 'Get Started'}
             </Link>
           </div>
         </div>

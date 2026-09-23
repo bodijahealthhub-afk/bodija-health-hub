@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ImageUpload from './ImageUpload';
+import { clearCache } from '../utils/api';
 
 const HeroContent = () => {
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,7 @@ const HeroContent = () => {
         body: JSON.stringify(hero),
       });
       if (res.ok) {
+        clearCache('/api/site-content');
         setToast({ type: 'success', message: 'Hero content saved successfully' });
       } else {
         setToast({ type: 'error', message: 'Failed to save hero content' });

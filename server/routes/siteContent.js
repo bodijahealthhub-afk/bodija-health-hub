@@ -67,6 +67,7 @@ router.get('/:section', async (req, res) => {
       footer: 'footer_',
       seo: 'seo_',
       nav: 'nav_',
+      navigation: 'nav_',
     };
     const prefix = prefixes[section];
     if (!prefix) return res.status(404).json({ error: 'Unknown section' });

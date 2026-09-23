@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
+import { clearCache } from '../utils/api'
 
 const tabs = [
   { id: 'hero', label: 'Hero Section' },
@@ -61,6 +62,7 @@ export default function SiteContent() {
       })
       const responseText = await res.text()
       if (res.ok) {
+        clearCache('/api/site-content')
         toast.success('Content saved successfully!')
       } else {
         toast.error('Failed to save: ' + responseText)

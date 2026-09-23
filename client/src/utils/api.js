@@ -40,7 +40,7 @@ export async function apiFetch(path, options = {}) {
 }
 
 const CACHE_PREFIX = 'bhh_cache_'
-const CACHE_TTL = 5 * 60 * 1000
+const CACHE_TTL = 60 * 1000
 
 function cacheKey(url) {
   return CACHE_PREFIX + url

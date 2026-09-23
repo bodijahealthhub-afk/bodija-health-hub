@@ -4,6 +4,7 @@ import SearchBar from './SearchBar';
 import BlogForm from './BlogForm';
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
+import { clearCache } from '../utils/api';
 
 const Blog = () => {
   const [posts, setPosts] = useState([]);
@@ -64,6 +65,7 @@ const Blog = () => {
         },
         body: JSON.stringify(postData),
       });
+      clearCache('/api/blog');
     } catch {
       // Update locally
     }
