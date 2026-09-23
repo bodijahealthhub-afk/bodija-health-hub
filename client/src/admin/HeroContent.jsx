@@ -7,10 +7,10 @@ const HeroContent = () => {
   const [toast, setToast] = useState(null);
 
   const [hero, setHero] = useState({
-    headline: 'Quality Healthcare for Every Family',
-    subtext: 'Bodija Health Hub provides comprehensive, compassionate healthcare services in the heart of Ibadan. Your well-being is our priority.',
-    cta1: { text: 'Book Appointment', link: '/appointments' },
-    cta2: { text: 'Our Services', link: '/services' },
+    headline: 'Wellness Starts Here.',
+    subtext: 'Bodija Health Hub is a community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together — making accessible, connected, and continuous care a reality for every family in Ibadan.',
+    cta1: { text: 'Explore the Ecosystem', link: '/ecosystem' },
+    cta2: { text: 'Meet Our Partners', link: '/partners' },
     image: '',
   });
 

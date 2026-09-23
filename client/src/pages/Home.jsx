@@ -75,7 +75,7 @@ export default function Home() {
     about_headline: 'More Than a Service. A Connected Health Ecosystem.',
     about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.',
     ecosystem_headline: 'One Hub. Many Hands. Whole-Person Care.',
-    ecosystem_description: 'Health doesn\'t exist in isolation \u2014 and neither should care. Our ecosystem brings together trusted partners across multiple disciplines to support every aspect of your well-being.',
+    ecosystem_description: 'Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.',
     contact_whatsapp: '',
     contact_phone: '',
   })

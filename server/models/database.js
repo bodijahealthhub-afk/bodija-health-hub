@@ -461,12 +461,12 @@ async function insertContentDefaults() {
 
   const insertSiteContent = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?, ?)');
   const siteContentDefaults = [
-    ['hero_headline', 'Quality Healthcare for Every Family'],
-    ['hero_subtext', 'Bodija Health Hub provides comprehensive, compassionate healthcare services in the heart of Ibadan. Your well-being is our priority.'],
-    ['hero_cta1_text', 'Book Appointment'],
-    ['hero_cta1_link', '/appointments'],
-    ['hero_cta2_text', 'Our Services'],
-    ['hero_cta2_link', '/services'],
+    ['hero_headline', 'Wellness Starts Here.'],
+    ['hero_subtext', 'Bodija Health Hub is a community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together — making accessible, connected, and continuous care a reality for every family in Ibadan.'],
+    ['hero_cta1_text', 'Explore the Ecosystem'],
+    ['hero_cta1_link', '/ecosystem'],
+    ['hero_cta2_text', 'Meet Our Partners'],
+    ['hero_cta2_link', '/partners'],
     ['hero_image', ''],
     ['about_headline', 'More Than a Service. A Connected Health Ecosystem.'],
     ['about_description', 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.'],
@@ -1463,6 +1463,24 @@ async function seedPermissions() {
 // known pre-sync default, so admin customizations are never overwritten.
 async function migrateContentSync() {
   const updates = [
+    ['hero_headline',
+      'Quality Healthcare for Every Family',
+      'Wellness Starts Here.'],
+    ['hero_subtext',
+      'Bodija Health Hub provides comprehensive, compassionate healthcare services in the heart of Ibadan. Your well-being is our priority.',
+      'Bodija Health Hub is a community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together — making accessible, connected, and continuous care a reality for every family in Ibadan.'],
+    ['hero_cta1_text',
+      'Book Appointment',
+      'Explore the Ecosystem'],
+    ['hero_cta1_link',
+      '/appointments',
+      '/ecosystem'],
+    ['hero_cta2_text',
+      'Our Services',
+      'Meet Our Partners'],
+    ['hero_cta2_link',
+      '/services',
+      '/partners'],
     ['about_headline',
       'A Healthcare Ecosystem, Not Just a Clinic',
       'More Than a Service. A Connected Health Ecosystem.'],
@@ -1505,9 +1523,9 @@ async function migrateContentSync() {
   const set = db.prepare('UPDATE site_content SET value = ? WHERE key = ?');
   let changed = 0;
   for (const [key, oldVal, newVal] of updates) {
-    const row = get.get(key);
+    const row = await get.get(key);
     if (row && row.value === oldVal) {
-      set.run(newVal, key);
+      await set.run(newVal, key);
       changed += 1;
     }
   }
