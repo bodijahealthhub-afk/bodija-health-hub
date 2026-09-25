@@ -254,7 +254,7 @@ export default function App() {
               <Route path="hero-content" element={<PermissionRoute permission="content.view"><AdminHeroContent /></PermissionRoute>} />
               <Route path="footer-content" element={<PermissionRoute permission="content.view"><AdminFooterContent /></PermissionRoute>} />
               <Route path="navigation-content" element={<PermissionRoute permission="content.view"><AdminNavigationContent /></PermissionRoute>} />
-              <Route path="page-content" element={<PermissionRoute permission="content.view"><AdminPageContent /></PermissionRoute>} />
+              <Route path="page-content" element={<PermissionRoute permission="page_content.view"><AdminPageContent /></PermissionRoute>} />
               <Route path="site-settings" element={<PermissionRoute permission="site_settings.view"><AdminSiteSettings /></PermissionRoute>} />
               <Route path="media" element={<PermissionRoute permission="media.view"><AdminMediaLibrary /></PermissionRoute>} />
               <Route path="seo" element={<PermissionRoute permission="seo.view"><AdminSeoSettings /></PermissionRoute>} />

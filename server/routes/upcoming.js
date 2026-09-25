@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { createNotification } = require('./adminNotifications');
 
 const router = express.Router();
 
@@ -15,6 +16,15 @@ router.post('/', async (req, res) => {
     const result = await db.prepare(
       'INSERT INTO upcoming_registrations (full_name, email, phone, area_of_interest, status) VALUES (?, ?, ?, ?, ?)'
     ).run(fullName, email, phone || null, areaOfInterest, 'new');
+
+    await createNotification({
+      type: 'upcoming_registration',
+      title: 'New upcoming-projects registration',
+      message: `${fullName} registered interest in ${areaOfInterest}`,
+      link: '/admin/upcoming',
+      entityType: 'upcoming_registration',
+      entityId: result.lastInsertRowid,
+    });
 
     res.status(201).json({ success: true, id: result.lastInsertRowid });
   } catch (err) {

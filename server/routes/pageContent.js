@@ -9,7 +9,7 @@ const router = express.Router();
 router.get('/:pageId', async (req, res) => {
   try {
     const isAdmin = req.baseUrl.includes('/admin');
-    if (isAdmin && req.user && !['admin', 'super_admin'].includes(req.user.role)) {
+    if (isAdmin && req.user && !['admin', 'super_admin', 'content_manager'].includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     const { pageId } = req.params;
@@ -59,6 +59,25 @@ router.put('/:pageId', authenticateToken, requirePermission('page_content.update
       await upsert.run(`page_${pageId}_title`, title || '');
       await upsert.run(`page_${pageId}_meta_title`, metaTitle || '');
       await upsert.run(`page_${pageId}_meta_description`, metaDescription || '');
+
+      // Keep SEO settings in sync so public useSeo() picks up editor changes.
+      if (metaTitle !== undefined || metaDescription !== undefined) {
+        const existingSeo = await db.prepare('SELECT id FROM seo_settings WHERE page_id = ?').get(pageId);
+        if (existingSeo) {
+          await db.prepare(
+            `UPDATE seo_settings SET
+               meta_title = COALESCE(?, meta_title),
+               meta_description = COALESCE(?, meta_description),
+               updated_at = CURRENT_TIMESTAMP
+             WHERE page_id = ?`
+          ).run(metaTitle || null, metaDescription || null, pageId);
+        } else if (metaTitle || metaDescription) {
+          await db.prepare(
+            `INSERT INTO seo_settings (page_id, meta_title, meta_description, updated_at)
+             VALUES (?, ?, ?, CURRENT_TIMESTAMP)`
+          ).run(pageId, metaTitle || '', metaDescription || '');
+        }
+      }
 
       // Replace sections
       const deleteSections = db.prepare('DELETE FROM page_sections WHERE page_id = ?');

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FiMonitor, FiMic, FiArrowRight, FiHeart, FiUsers, FiShield } from 'react-icons/fi'
+import PageSections from '../components/PageSections'
 
 const defaultPlatforms = [
   {
@@ -175,6 +176,8 @@ export default function Platforms() {
           </div>
         </div>
       </section>
+
+      <PageSections pageId="platforms" />
     </div>
   )
 }

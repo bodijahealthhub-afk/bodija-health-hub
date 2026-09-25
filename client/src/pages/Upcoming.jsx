@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'react-toastify'
 import { FiActivity, FiMic, FiTool, FiMonitor, FiArrowRight } from 'react-icons/fi'
+import PageSections from '../components/PageSections'
 
 const services = [
   { icon: FiActivity, name: 'Physiotherapy', description: 'Physical rehabilitation and mobility recovery for injuries, surgeries, and chronic conditions.' },
@@ -179,6 +180,8 @@ export default function Upcoming() {
           </div>
         </div>
       </section>
+
+      <PageSections pageId="upcoming" />
     </div>
   )
 }

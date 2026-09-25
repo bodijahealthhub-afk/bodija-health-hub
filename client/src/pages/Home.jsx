@@ -11,6 +11,7 @@ import WelcomeModal from '../components/WelcomeModal'
 import ScrollReveal from '../components/ScrollReveal'
 import AnimatedCounter from '../components/AnimatedCounter'
 import BackendStatusBanner from '../components/BackendStatusBanner'
+import PageSections from '../components/PageSections'
 import { cachedFetch } from '../utils/api'
 import { ServicesSkeleton, EventsSkeleton, BlogSkeletons, TestimonialsSkeleton } from '../components/SkeletonLoader'
 
@@ -557,6 +558,8 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      <PageSections pageId="home" />
 
       <WelcomeModal />
     </div>

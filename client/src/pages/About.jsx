@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { FiHeart, FiLink, FiClock, FiEye, FiTarget } from 'react-icons/fi'
 import ScrollReveal from '../components/ScrollReveal'
+import PageSections from '../components/PageSections'
 
 const defaultCoreValues = [
   {
@@ -172,6 +173,8 @@ export default function About() {
           </Link>
         </div>
       </section>
+
+      <PageSections pageId="about" />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { FiArrowRight, FiSearch, FiArrowLeft } from 'react-icons/fi'
 import { ServicesSkeleton } from '../components/SkeletonLoader'
 import ScrollReveal from '../components/ScrollReveal'
+import PageSections from '../components/PageSections'
 
 const CONCERNS = [
   { label: 'General health check', category: 'Primary Care' },
@@ -269,6 +270,8 @@ export default function Services() {
           )}
         </div>
       </section>
+
+      <PageSections pageId="services" />
     </div>
   )
 }

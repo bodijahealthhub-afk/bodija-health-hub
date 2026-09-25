@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FiChevronDown, FiChevronUp, FiSearch, FiArrowRight } from 'react-icons/fi'
+import PageSections from '../components/PageSections'
 
 const faqData = [
   {
@@ -146,6 +147,8 @@ export default function FAQ() {
           </Link>
         </div>
       </section>
+
+      <PageSections pageId="faq" />
     </div>
   )
 }

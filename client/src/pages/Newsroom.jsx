@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { FiSearch, FiArrowRight } from 'react-icons/fi'
 import { BlogSkeletons } from '../components/SkeletonLoader'
 import ScrollReveal from '../components/ScrollReveal'
+import PageSections from '../components/PageSections'
 
 export default function Newsroom() {
   const [posts, setPosts] = useState([])
@@ -94,6 +95,8 @@ export default function Newsroom() {
           )}
         </div>
       </section>
+
+      <PageSections pageId="blog" />
     </div>
   )
 }

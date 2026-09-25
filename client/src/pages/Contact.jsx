@@ -4,6 +4,7 @@ import { toast } from 'react-toastify'
 import { FiMapPin, FiPhone, FiMail, FiClock, FiArrowRight, FiDownload, FiUsers, FiActivity, FiBell, FiInstagram, FiFacebook, FiTwitter, FiLinkedin, FiClock as FiSoon } from 'react-icons/fi'
 import { useFeatures } from '../context/FeatureContext'
 import ScrollReveal from '../components/ScrollReveal'
+import PageSections from '../components/PageSections'
 
 const actionCards = [
   {
@@ -389,6 +390,8 @@ export default function Contact() {
           </div>
         </div>
       </section>
+
+      <PageSections pageId="contact" />
     </div>
   )
 }

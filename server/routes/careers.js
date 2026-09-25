@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { createNotification } = require('./adminNotifications');
 
 const router = express.Router();
 
@@ -15,6 +16,15 @@ router.post('/', async (req, res) => {
     const result = await db.prepare(
       'INSERT INTO career_applications (name, email, phone, position, cover_letter, status) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(name, email, phone || null, position, coverLetter || null, 'new');
+
+    await createNotification({
+      type: 'career_application',
+      title: 'New career application',
+      message: `${name} applied for ${position}`,
+      link: '/admin/careers',
+      entityType: 'career_application',
+      entityId: result.lastInsertRowid,
+    });
 
     res.status(201).json({ success: true, id: result.lastInsertRowid });
   } catch (err) {

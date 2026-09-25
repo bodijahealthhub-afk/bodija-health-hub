@@ -84,7 +84,8 @@ const PageContent = () => {
       if (res.ok) {
         clearCache('/api/site-content')
         clearCache('/api/page-content')
-        setToast({ type: 'success', message: 'Page content saved successfully' });
+        clearCache('/api/seo')
+        setToast({ type: 'success', message: 'Page content saved — live on public site' });
       } else {
         setToast({ type: 'error', message: 'Failed to save page content' });
       }

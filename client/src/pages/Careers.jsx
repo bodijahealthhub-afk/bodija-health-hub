@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { FiArrowRight, FiHeart, FiAward, FiTrendingUp, FiUsers, FiMapPin, FiBriefcase } from 'react-icons/fi'
+import PageSections from '../components/PageSections'
 
 const openings = [
   {
@@ -294,6 +295,8 @@ export default function Careers() {
           </div>
         </div>
       </section>
+
+      <PageSections pageId="careers" />
     </div>
   )
 }

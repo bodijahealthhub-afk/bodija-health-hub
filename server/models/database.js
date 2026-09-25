@@ -512,7 +512,7 @@ async function insertContentDefaults() {
       linkedin: 'https://linkedin.com/company/bodijahealthhub',
       youtube: '',
     })],
-    ['seo_title', 'Bodija Health Hub - Quality Healthcare in Ibadan'],
+    ['seo_title', 'Bodija Health Hub — Wellness Starts Here'],
     ['seo_description', 'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.'],
     ['seo_keywords', 'healthcare, hospital, Ibadan, Nigeria, doctor, consultation, audiology, laboratory'],
     ['nav_logo', ''],
@@ -536,7 +536,7 @@ async function insertContentDefaults() {
 
   const insertSeo = db.prepare('INSERT OR IGNORE INTO seo_settings (page_id, meta_title, meta_description, canonical) VALUES (?, ?, ?, ?)');
   const seoPages = [
-    ['home', 'Bodija Health Hub - Quality Healthcare in Ibadan', 'Bodija Health Hub provides comprehensive healthcare services in Ibadan, Nigeria.', 'https://bodijahealthhub.com/'],
+    ['home', 'Bodija Health Hub — Wellness Starts Here', 'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.', 'https://bodijahealthhub.com/'],
     ['about', 'About Us - Bodija Health Hub', 'Learn about Bodija Health Hub, an integrated healthcare network in Ibadan.', 'https://bodijahealthhub.com/about'],
     ['services', 'Our Services - Bodija Health Hub', 'Explore our comprehensive healthcare services.', 'https://bodijahealthhub.com/services'],
     ['events', 'Events - Bodija Health Hub', 'Health talks, screenings and events at Bodija Health Hub.', 'https://bodijahealthhub.com/events'],
@@ -567,8 +567,8 @@ async function insertContentDefaults() {
     ['accent_color', '#14B8A6'],
     ['background_color', '#FFFFFF'],
     ['text_color', '#1F2937'],
-    ['seo_meta_title', 'Bodija Health Hub - Quality Healthcare in Ibadan'],
-    ['seo_meta_description', 'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.'],
+    ['seo_meta_title', 'Bodija Health Hub — Wellness Starts Here'],
+    ['seo_meta_description', 'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.'],
     ['seo_keywords', 'healthcare, hospital, Ibadan, Nigeria, doctor, consultation, audiology, laboratory'],
     ['social_image', ''],
     ['analytics_id', ''],
@@ -1559,6 +1559,15 @@ async function migrateContentSync() {
         { label: 'Upcoming Projects', url: '/upcoming' },
         { label: 'Contact Us', url: '/contact' },
       ])],
+    ['seo_title',
+      'Bodija Health Hub - Quality Healthcare in Ibadan',
+      'Bodija Health Hub — Wellness Starts Here'],
+    ['seo_meta_title',
+      'Bodija Health Hub - Quality Healthcare in Ibadan',
+      'Bodija Health Hub — Wellness Starts Here'],
+    ['seo_meta_description',
+      'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.',
+      'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.'],
   ];
 
   const get = db.prepare('SELECT value FROM site_content WHERE key = ?');
@@ -1571,6 +1580,54 @@ async function migrateContentSync() {
       changed += 1;
     }
   }
+
+  // SEO home title/description (seo_settings + site_settings) — only when still default.
+  try {
+    const homeSeo = await db.prepare(
+      "SELECT meta_title, meta_description FROM seo_settings WHERE page_id = 'home'"
+    ).get();
+    if (
+      homeSeo &&
+      homeSeo.meta_title === 'Bodija Health Hub - Quality Healthcare in Ibadan'
+    ) {
+      await db.prepare(
+        `UPDATE seo_settings SET
+           meta_title = 'Bodija Health Hub — Wellness Starts Here',
+           meta_description = 'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.',
+           updated_at = CURRENT_TIMESTAMP
+         WHERE page_id = 'home'`
+      ).run();
+      changed += 1;
+    }
+    const titleSetting = await db.prepare(
+      "SELECT value FROM site_settings WHERE key = 'seo_meta_title'"
+    ).get();
+    if (titleSetting && titleSetting.value === 'Bodija Health Hub - Quality Healthcare in Ibadan') {
+      await db.prepare(
+        "UPDATE site_settings SET value = 'Bodija Health Hub — Wellness Starts Here', updated_at = CURRENT_TIMESTAMP WHERE key = 'seo_meta_title'"
+      ).run();
+      changed += 1;
+    }
+    const descSetting = await db.prepare(
+      "SELECT value FROM site_settings WHERE key = 'seo_meta_description'"
+    ).get();
+    if (
+      descSetting &&
+      descSetting.value ===
+        'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.'
+    ) {
+      await db.prepare(
+        `UPDATE site_settings SET
+           value = 'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.',
+           updated_at = CURRENT_TIMESTAMP
+         WHERE key = 'seo_meta_description'`
+      ).run();
+      changed += 1;
+    }
+  } catch (err) {
+    console.error('[migrate] SEO title sync failed:', err.message);
+  }
+
   if (changed > 0) {
     console.log(`[migrate] Content sync v2: ${changed} default(s) updated.`);
   }
