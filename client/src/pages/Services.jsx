@@ -6,14 +6,14 @@ import ScrollReveal from '../components/ScrollReveal'
 import PageSections from '../components/PageSections'
 
 const CONCERNS = [
-  { label: 'General health check', category: 'Primary Care' },
-  { label: 'Pain or discomfort', category: 'Specialist' },
-  { label: 'Mental health', category: 'Therapy & Counseling' },
-  { label: 'Child health', category: 'Pediatrics' },
-  { label: 'Women\'s health', category: 'Gynecology' },
-  { label: 'Lab test or scan', category: 'Diagnostics & Lab' },
-  { label: 'Physiotherapy or rehab', category: 'Therapy & Rehab' },
-  { label: 'Vaccination', category: 'Primary Care' },
+  { label: 'Routine check-up or screening', category: 'Preventive' },
+  { label: 'Lab test or scan', category: 'Diagnostics' },
+  { label: 'See a specialist', category: 'Specialist Care' },
+  { label: 'Elderly care support', category: 'Primary Care' },
+  { label: 'Long-term condition (BP, kidney)', category: 'Chronic Care' },
+  { label: 'Therapy or rehabilitation', category: 'Therapy' },
+  { label: 'Hearing or audiology', category: 'Specialist Care' },
+  { label: 'Community screening or outreach', category: 'Community' },
 ]
 
 const AGE_GROUPS = [

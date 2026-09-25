@@ -1011,32 +1011,52 @@ async function archiveFakeSeedData() {
 
 // Ensures the baseline service catalog exists and is active. On fresh databases
 // the INSERT adds the rows; on existing databases the UPDATE reactivates any that
-// were archived. Admin edits to name/description/price are preserved on re-deploys.
+// Public service catalog — source of truth: BHH_Website_Content_v2.docx "Our Services"
+// (exact 8 services, descriptions, and order). Admin edits to name/description/price
+// are preserved on re-deploys.
 const SERVICE_CATALOG = [
-  { name: 'General Consultation', category: 'Primary Care', short_description: 'Comprehensive health assessment and diagnosis by our experienced physicians.', icon: '🩺', price: 5000 },
-  { name: 'Audiology', category: 'Specialist Care', short_description: 'Professional hearing assessment and treatment by certified audiologists.', icon: '👂', price: 10000 },
-  { name: 'Hearing Tests', category: 'Diagnostics', short_description: 'Advanced audiometric testing to evaluate hearing sensitivity and identify hearing loss.', icon: '🔬', price: 7500 },
-  { name: 'Hearing Aids', category: 'Specialist Care', short_description: 'Fitting and dispensing of modern hearing aids tailored to your needs.', icon: '🎧', price: 50000 },
-  { name: 'Speech Therapy', category: 'Therapy', short_description: 'Speech and language therapy for children and adults with communication disorders.', icon: '🗣️', price: 8000 },
-  { name: 'Laboratory Services', category: 'Diagnostics', short_description: 'Full range of clinical laboratory tests including blood work, urinalysis, and more.', icon: '🧪', price: 3000 },
-  { name: 'Hypertension Clinic', category: 'Chronic Care', short_description: 'Specialized management and monitoring for patients with high blood pressure.', icon: '❤️', price: 5000 },
-  { name: 'Diabetes Care', category: 'Chronic Care', short_description: 'Comprehensive diabetes management including monitoring, education, and lifestyle support.', icon: '💉', price: 5000 },
-  { name: 'Kidney Care', category: 'Specialist Care', short_description: 'Expert nephrology services for kidney health assessment and management.', icon: '🫘', price: 15000 },
-  { name: 'Elderly Care', category: 'Primary Care', short_description: 'Compassionate healthcare services designed for the unique needs of senior citizens.', icon: '🧓', price: 8000 },
-  { name: 'Child Health', category: 'Primary Care', short_description: 'Pediatric care including immunizations, growth monitoring, and childhood illness treatment.', icon: '👶', price: 5000 },
-  { name: 'Wellness Screening', category: 'Preventive', short_description: 'Comprehensive health check-ups and preventive screenings for early detection.', icon: '📋', price: 10000 },
-  { name: 'Home Care LiveCare', category: 'Digital Health', short_description: 'Remote patient monitoring and virtual care through our LiveCare digital platform.', icon: '📱', price: 15000 },
-  { name: 'Preventive Health', category: 'Preventive', short_description: 'Proactive health programmes focused on disease prevention and wellness promotion.', icon: '🛡️', price: 7000 },
-  { name: 'Vaccination', category: 'Preventive', short_description: 'Full range of immunizations for children and adults following national guidelines.', icon: '💊', price: 3000 },
-  { name: 'Health Outreach Programs', category: 'Community', short_description: 'Community health initiatives including free screenings, health talks, and wellness events.', icon: '🏥', price: 0 },
-  { name: 'Preventive Care & Wellness', category: 'Preventive', short_description: 'Proactive health programmes focused on disease prevention, screening, and wellness promotion for every stage of life.', icon: '🛡️', price: 7000 },
-  { name: 'Diagnostics & Laboratory', category: 'Diagnostics', short_description: 'Comprehensive diagnostic testing, imaging, and laboratory services for fast, accurate, and informed medical decisions.', icon: '🧪', price: 3000 },
-  { name: 'Specialist Consultations', category: 'Specialist Care', short_description: 'Access to experienced specialists across multiple disciplines for focused, expert medical guidance and referrals.', icon: '🩺', price: 10000 },
-  { name: 'Elder Care & Assisted Living', category: 'Primary Care', short_description: 'Compassionate healthcare and assisted living support designed for the unique needs of senior citizens and their families.', icon: '🧓', price: 8000 },
-  { name: 'Chronic Disease Management', category: 'Chronic Care', short_description: 'Ongoing monitoring, education, and lifestyle support for diabetes, hypertension, kidney health, and other chronic conditions.', icon: '❤️', price: 5000 },
-  { name: 'Rehabilitation Services', category: 'Therapy', short_description: 'Physiotherapy, speech therapy, occupational therapy, and behavioral therapy — Coming Soon with BACR.', icon: '🔧', price: 8000 },
-  { name: 'Audiology & Hearing Health', category: 'Specialist Care', short_description: 'Comprehensive hearing assessments, diagnostics, hearing aid fitting, and rehabilitation through our audiology partners.', icon: '👂', price: 10000 },
-  { name: 'Community Health Outreach', category: 'Community', short_description: 'Community health initiatives including free screenings, health talks, vaccination campaigns, and wellness events.', icon: '🏥', price: 0 },
+  { name: 'Preventive Care & Wellness', category: 'Preventive', short_description: 'Routine check-ups, screenings, and wellness programs designed to catch problems early.', icon: '🛡️', price: 7000 },
+  { name: 'Diagnostics & Laboratory', category: 'Diagnostics', short_description: 'Accurate, timely diagnostic services supporting clinical decisions across the hub.', icon: '🧪', price: 3000 },
+  { name: 'Specialist Consultations', category: 'Specialist Care', short_description: 'Access to a growing network of specialists within one trusted ecosystem.', icon: '🩺', price: 10000 },
+  { name: 'Elder Care & Assisted Living', category: 'Primary Care', short_description: 'Structured, dignified home care for elderly individuals and their families. (Powered by LiveCare)', icon: '🧓', price: 8000 },
+  { name: 'Chronic Disease Management', category: 'Chronic Care', short_description: 'Long-term monitoring and support for kidney disease and hypertension.', icon: '❤️', price: 5000 },
+  { name: 'Rehabilitation Services', category: 'Therapy', short_description: 'Physical, occupational, speech, and behavioral therapy. (Coming Soon — BACR)', icon: '🔧', price: 8000 },
+  { name: 'Audiology & Hearing Health', category: 'Specialist Care', short_description: 'Audiology assessments, hearing aids, and ENT specialist access.', icon: '👂', price: 10000 },
+  { name: 'Community Health Outreach', category: 'Community', short_description: 'Health education, screenings, and outreach programs beyond clinic walls.', icon: '🏥', price: 0 },
+];
+
+// Pre-document services that predate BHH_Website_Content_v2.docx. Rows are kept in
+// the DB (historical admin data) but archived so the public page matches the doc.
+const LEGACY_SERVICE_NAMES = [
+  'General Consultation', 'Audiology', 'Hearing Tests', 'Hearing Aids',
+  'Speech Therapy', 'Laboratory Services', 'Hypertension Clinic', 'Diabetes Care',
+  'Kidney Care', 'Elderly Care', 'Child Health', 'Wellness Screening',
+  'Home Care LiveCare', 'Preventive Health', 'Vaccination', 'Health Outreach Programs',
+];
+
+// [name, old seeded description, document description, document order].
+// Description is only overwritten while it still equals the old seed (admin edits win);
+// order is only touched while still at the legacy seed position (>= 16).
+const DOC_SERVICE_COPY = [
+  ['Preventive Care & Wellness', 'Proactive health programmes focused on disease prevention, screening, and wellness promotion for every stage of life.', 'Routine check-ups, screenings, and wellness programs designed to catch problems early.', 0],
+  ['Diagnostics & Laboratory', 'Comprehensive diagnostic testing, imaging, and laboratory services for fast, accurate, and informed medical decisions.', 'Accurate, timely diagnostic services supporting clinical decisions across the hub.', 1],
+  ['Specialist Consultations', 'Access to experienced specialists across multiple disciplines for focused, expert medical guidance and referrals.', 'Access to a growing network of specialists within one trusted ecosystem.', 2],
+  ['Elder Care & Assisted Living', 'Compassionate healthcare and assisted living support designed for the unique needs of senior citizens and their families.', 'Structured, dignified home care for elderly individuals and their families. (Powered by LiveCare)', 3],
+  ['Chronic Disease Management', 'Ongoing monitoring, education, and lifestyle support for diabetes, hypertension, kidney health, and other chronic conditions.', 'Long-term monitoring and support for kidney disease and hypertension.', 4],
+  ['Rehabilitation Services', 'Physiotherapy, speech therapy, occupational therapy, and behavioral therapy — Coming Soon with BACR.', 'Physical, occupational, speech, and behavioral therapy. (Coming Soon — BACR)', 5],
+  ['Audiology & Hearing Health', 'Comprehensive hearing assessments, diagnostics, hearing aid fitting, and rehabilitation through our audiology partners.', 'Audiology assessments, hearing aids, and ENT specialist access.', 6],
+  ['Community Health Outreach', 'Community health initiatives including free screenings, health talks, vaccination campaigns, and wellness events.', 'Health education, screenings, and outreach programs beyond clinic walls.', 7],
+];
+
+// Partner services_offered strings that still name legacy services.
+// [partner name, old value, doc-service value] — applied only while still the old value.
+const PARTNER_SERVICE_FIXES = [
+  ['Bodija Health Hub (BHH)', 'General Consultation,Wellness Screening,Health Outreach Programs', 'Preventive Care & Wellness,Specialist Consultations,Community Health Outreach'],
+  ['Ibadan Community Health Initiative', 'Health Outreach Programs,Preventive Health,Vaccination', 'Community Health Outreach,Preventive Care & Wellness'],
+  ['Sunrise Hearing Centre', 'Audiology,Hearing Tests,Hearing Aids', 'Audiology & Hearing Health'],
+  ['Beacon Health Diagnostics', 'Diagnostics & Laboratory,Wellness Screening', 'Diagnostics & Laboratory,Preventive Care & Wellness'],
+  ['hEar Max Centre', 'Audiology & Hearing Health,Hearing Tests,Hearing Aids', 'Audiology & Hearing Health'],
+  ['Bodija Kidney & Hypertension Clinic', 'Chronic Disease Management,Kidney Care,Hypertension Clinic', 'Chronic Disease Management,Specialist Consultations'],
 ];
 
 async function reactivateServiceCatalog() {
@@ -1051,7 +1071,39 @@ async function reactivateServiceCatalog() {
     insert.run(svc.name, db.slugify(svc.name), svc.short_description, svc.category, svc.icon, svc.price, i);
     activate.run(svc.name);
   });
-  console.log(`[seed] Service catalog: ${SERVICE_CATALOG.length} baseline services ensured.`);
+
+  const archiveParams = LEGACY_SERVICE_NAMES.map(() => '?').join(',');
+  await db.prepare(
+    `UPDATE services SET is_active = 0 WHERE is_active = 1 AND name IN (${archiveParams})`
+  ).run(...LEGACY_SERVICE_NAMES);
+
+  // Some environments have no UNIQUE constraint on services.slug, so INSERT OR IGNORE
+  // can accumulate seed duplicates over re-deploys. Keep only the first active row per name.
+  await db.prepare(
+    `UPDATE services SET is_active = 0
+     WHERE is_active = 1 AND id NOT IN (
+       SELECT MIN(id) FROM services WHERE is_active = 1 GROUP BY name
+     )`
+  ).run();
+
+  for (const [name, oldDesc, docDesc, order] of DOC_SERVICE_COPY) {
+    await db.prepare(
+      'UPDATE services SET short_description = ? WHERE name = ? AND (short_description IS NULL OR short_description = ?)'
+    ).run(docDesc, name, oldDesc);
+    await db.prepare(
+      'UPDATE services SET display_order = ? WHERE name = ? AND display_order >= 16'
+    ).run(order, name);
+  }
+
+  for (const [partnerName, oldValue, newValue] of PARTNER_SERVICE_FIXES) {
+    await db.prepare(
+      'UPDATE partners SET services_offered = ? WHERE name = ? AND services_offered = ?'
+    ).run(newValue, partnerName, oldValue);
+  }
+
+  console.log(
+    `[seed] Service catalog: ${SERVICE_CATALOG.length} doc services ensured; ${LEGACY_SERVICE_NAMES.length} legacy archived.`
+  );
 }
 
 // Baseline partners — only inserted when the partners table is empty so admin-created
@@ -1062,7 +1114,7 @@ const PARTNER_CATALOG = [
     partner_type: 'healthcare',
     description: 'The central hub connecting patients with quality healthcare services, programmes, and partner providers across Ibadan.',
     location: 'Favos Junction, Bodija, Ibadan',
-    services_offered: 'General Consultation,Wellness Screening,Health Outreach Programs',
+    services_offered: 'Preventive Care & Wellness,Specialist Consultations,Community Health Outreach',
     featured: 1,
   },
   {
@@ -1070,7 +1122,7 @@ const PARTNER_CATALOG = [
     partner_type: 'community',
     description: 'A community-based organisation focused on preventive health education and outreach in underserved neighbourhoods across Ibadan.',
     location: 'Ibadan, Oyo State',
-    services_offered: 'Health Outreach Programs,Preventive Health,Vaccination',
+    services_offered: 'Community Health Outreach,Preventive Care & Wellness',
     featured: 1,
   },
   {
@@ -1078,7 +1130,7 @@ const PARTNER_CATALOG = [
     partner_type: 'specialist',
     description: 'Specialist audiology and hearing care provider offering advanced diagnostics, hearing aid fitting, and rehabilitation services.',
     location: 'Bodija, Ibadan',
-    services_offered: 'Audiology,Hearing Tests,Hearing Aids',
+    services_offered: 'Audiology & Hearing Health',
     featured: 0,
   },
   {
@@ -1086,7 +1138,7 @@ const PARTNER_CATALOG = [
     partner_type: 'diagnostics',
     description: 'A trusted diagnostics partner providing advanced laboratory testing, imaging, and health screening services to the BHH ecosystem.',
     location: 'Ibadan, Oyo State',
-    services_offered: 'Diagnostics & Laboratory,Wellness Screening',
+    services_offered: 'Diagnostics & Laboratory,Preventive Care & Wellness',
     featured: 1,
   },
   {
@@ -1102,15 +1154,15 @@ const PARTNER_CATALOG = [
     partner_type: 'specialist',
     description: 'A specialist audiology and ENT centre powering the hEar Menders digital platform with expert hearing care and diagnostics.',
     location: 'Bodija, Ibadan',
-    services_offered: 'Audiology & Hearing Health,Hearing Tests,Hearing Aids',
+    services_offered: 'Audiology & Hearing Health',
     featured: 1,
   },
   {
     name: 'Bodija Kidney & Hypertension Clinic',
     partner_type: 'specialist',
     description: 'A specialist clinic focused on kidney health and hypertension management, providing expert chronic disease care to the community.',
-    location: 'Bodija, Ibadan',
-    services_offered: 'Chronic Disease Management,Kidney Care,Hypertension Clinic',
+    location: 'Ibadan, Oyo State',
+    services_offered: 'Chronic Disease Management,Specialist Consultations',
     featured: 1,
   },
 ];
