@@ -15,8 +15,8 @@ const colorMap = {
 
 export default function Partners() {
   const [content, setContent] = useState({
-    partners_headline: 'Our Partner Network',
-    partners_description: 'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care - each an integral part of the BHH ecosystem.',
+    partners_headline: 'Our Existing Partner Network',
+    partners_description: 'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care — each an integral part of the BHH ecosystem.',
   })
   const [partners, setPartners] = useState([])
   const [loading, setLoading] = useState(true)

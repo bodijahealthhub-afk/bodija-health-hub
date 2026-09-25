@@ -168,24 +168,6 @@ export default function SiteContent() {
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Mission</label>
-        <textarea
-          value={content.about_mission || ''}
-          onChange={(e) => updateField('about_mission', e.target.value)}
-          rows={3}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Vision</label>
-        <textarea
-          value={content.about_vision || ''}
-          onChange={(e) => updateField('about_vision', e.target.value)}
-          rows={3}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-        />
-      </div>
     </div>
   )
 

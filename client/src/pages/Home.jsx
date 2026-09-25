@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   FiHeart, FiLink2, FiClock, FiArrowRight, FiActivity, FiZap,
   FiCheckCircle, FiUsers, FiCalendar, FiChevronRight, FiStar,
-  FiShield, FiDatabase, FiTool, FiGlobe, FiSmile, FiArrowUpRight,
+  FiShield, FiDatabase, FiTool, FiGlobe, FiArrowUpRight,
   FiBookOpen, FiTrendingUp, FiInbox, FiRefreshCw, FiSearch,
 } from 'react-icons/fi'
 import { useFeatures } from '../context/FeatureContext'
@@ -22,19 +22,21 @@ const coreValues = [
 ]
 
 const ecosystemCards = [
-  { icon: FiHeart, title: 'Primary Care', desc: 'Foundation of your health journey with trusted general practitioners.', color: 'bg-rose-50 text-rose-600', border: 'border-rose-100' },
-  { icon: FiZap, title: 'Specialist Consultations', desc: 'Expert referrals across cardiology, dermatology, and more.', color: 'bg-amber-50 text-amber-600', border: 'border-amber-100' },
-  { icon: FiDatabase, title: 'Diagnostics & Lab', desc: 'On-site laboratory and imaging for fast, accurate results.', color: 'bg-blue-50 text-blue-600', border: 'border-blue-100' },
-  { icon: FiTool, title: 'Therapy & Rehab', desc: 'Physiotherapy, audiology, and rehabilitation services.', color: 'bg-purple-50 text-purple-600', border: 'border-purple-100' },
-  { icon: FiGlobe, title: 'Digital Health', desc: 'Telemedicine, health records, and wellness tracking tools.', color: 'bg-teal-50 text-teal-600', border: 'border-teal-100' },
-  { icon: FiUsers, title: 'Community Programmes', desc: 'Screenings, education, and wellness initiatives for all ages.', color: 'bg-emerald-50 text-emerald-600', border: 'border-emerald-100' },
+  { icon: FiHeart, title: 'Primary Care', color: 'bg-rose-50 text-rose-600', border: 'border-rose-100' },
+  { icon: FiZap, title: 'Specialist care and referrals', color: 'bg-amber-50 text-amber-600', border: 'border-amber-100' },
+  { icon: FiDatabase, title: 'Diagnostics and laboratory services', color: 'bg-blue-50 text-blue-600', border: 'border-blue-100' },
+  { icon: FiTool, title: 'Audiology', color: 'bg-purple-50 text-purple-600', border: 'border-purple-100' },
+  { icon: FiActivity, title: 'Physiotherapy, speech therapy, and behavioral therapy', color: 'bg-teal-50 text-teal-600', border: 'border-teal-100' },
+  { icon: FiShield, title: 'Chronic condition management', color: 'bg-emerald-50 text-emerald-600', border: 'border-emerald-100' },
+  { icon: FiClock, title: 'Long-term wellness and elder care support', color: 'bg-rose-50 text-rose-600', border: 'border-rose-100' },
+  { icon: FiGlobe, title: 'Digital Solutions', color: 'bg-teal-50 text-teal-600', border: 'border-teal-100' },
 ]
 
 const impactStats = [
-  { value: 5000, suffix: '+', label: 'Patients Served', icon: FiSmile },
-  { value: 15, suffix: '+', label: 'Partner Organisations', icon: FiLink2 },
-  { value: 20, suffix: '+', label: 'Health Services', icon: FiTool },
-  { value: 3, suffix: '+', label: 'Years of Care', icon: FiCalendar },
+  { value: 8, suffix: '', label: 'Our Services', icon: FiTool },
+  { value: 4, suffix: '', label: 'Our Partners', icon: FiLink2 },
+  { value: 3, suffix: '', label: 'Our Platforms', icon: FiGlobe },
+  { value: 3, suffix: '', label: 'Core Values', icon: FiHeart },
 ]
 
 const serviceIcons = {
@@ -74,7 +76,7 @@ export default function Home() {
     hero_cta2_text: 'Meet Our Partners',
     hero_cta2_link: '/partners',
     about_headline: 'More Than a Service. A Connected Health Ecosystem.',
-    about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.',
+    about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.',
     ecosystem_headline: 'One Hub. Many Hands. Whole-Person Care.',
     ecosystem_description: 'Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.',
     contact_whatsapp: '',
@@ -177,7 +179,7 @@ export default function Home() {
       <ScrollReveal>
         <section className="py-6 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Trusted by leading healthcare partners</p>
+            <p className="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Our Existing Partner Network</p>
             <div className="flex items-center justify-center gap-8 sm:gap-12 flex-wrap opacity-50">
               {[FiHeart, FiShield, FiActivity, FiStar, FiCheckCircle, FiUsers].map((Icon, i) => (
                 <Icon key={i} className="w-7 h-7 text-gray-400" />
@@ -198,7 +200,7 @@ export default function Home() {
                   {content.about_headline || 'More Than a Service. A Connected Health Ecosystem.'}
                 </h2>
                 <p className="text-gray-500 leading-relaxed mb-4 text-lg">
-                  {content.about_description || 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.'}
+                  {content.about_description || 'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.'}
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link to="/ecosystem" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
@@ -326,8 +328,8 @@ export default function Home() {
             <ScrollReveal>
               <div className="text-center mb-14">
                 <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">The Ecosystem</span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">How We Work Together</h2>
-                <p className="text-gray-500 max-w-3xl mx-auto">Every part of our ecosystem is designed to connect seamlessly with the others.</p>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">The Ecosystem Behind the Care</h2>
+                <p className="text-gray-500 max-w-3xl mx-auto">Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.</p>
               </div>
             </ScrollReveal>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -338,7 +340,7 @@ export default function Home() {
                       <Icon className="w-6 h-6" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2 text-lg">{title}</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+                    {desc && <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>}
                   </div>
                 </ScrollReveal>
               ))}
@@ -353,7 +355,6 @@ export default function Home() {
           <ScrollReveal>
             <div className="text-center mb-14">
               <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">What People Say</span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Trusted by Our Community</h2>
             </div>
           </ScrollReveal>
           {testimonialsLoading ? (
@@ -542,14 +543,14 @@ export default function Home() {
                 <div className="relative">
                   <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Be Part of Something Bigger?</h2>
                   <p className="text-teal-100 text-lg mb-10 max-w-2xl mx-auto">
-                    Whether you are a patient, a healthcare provider, or a community partner \u2014 there is a place for you in the Bodija Health Hub ecosystem.
+                    Whether you are a patient, a family, a healthcare provider, or a caregiver — BHH has a place for you.
                   </p>
                   <div className="flex flex-wrap justify-center gap-4">
                     <Link to="/contact" className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-colors shadow-lg">
                       Get Started <FiArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                     </Link>
-                    <Link to="/ecosystem" className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-colors">
-                      Learn More
+                    <Link to="/partners" className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-colors">
+                      Join the Ecosystem
                     </Link>
                   </div>
                 </div>

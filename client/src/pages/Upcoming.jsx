@@ -4,10 +4,10 @@ import { FiActivity, FiMic, FiTool, FiMonitor, FiArrowRight } from 'react-icons/
 import PageSections from '../components/PageSections'
 
 const services = [
-  { icon: FiActivity, name: 'Physiotherapy', description: 'Physical rehabilitation and mobility recovery for injuries, surgeries, and chronic conditions.' },
-  { icon: FiMic, name: 'Speech Therapy', description: 'Communication and swallowing disorder support for children and adults.' },
-  { icon: FiTool, name: 'Occupational Therapy', description: 'Helping individuals regain independence in daily activities and routines.' },
-  { icon: FiMonitor, name: 'Behavioral Therapy', description: 'Support for behavioral and developmental challenges through evidence-based approaches.' },
+  { icon: FiActivity, name: 'Physiotherapy' },
+  { icon: FiMic, name: 'Speech Therapy' },
+  { icon: FiTool, name: 'Occupational Therapy' },
+  { icon: FiMonitor, name: 'Behavioral Therapy' },
 ]
 
 export default function Upcoming() {
@@ -58,9 +58,6 @@ export default function Upcoming() {
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">
               Upcoming Projects
             </h1>
-            <p className="text-lg text-teal-100 leading-relaxed">
-              Expanding our ecosystem with dedicated facilities and services to meet the growing needs of our community.
-            </p>
           </div>
         </div>
       </section>
@@ -74,22 +71,21 @@ export default function Upcoming() {
                 Coming Soon
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-                Bodija Advanced Care & Rehabilitation Centre
+                Bodija Advanced Care &amp; Rehabilitation Centre (BACR)
               </h2>
               <p className="text-gray-500 leading-relaxed mb-8">
-                BHH is developing a dedicated rehabilitation centre offering physiotherapy, speech therapy, occupational therapy, and behavioral therapy - expanding the ecosystem to serve individuals on the path to recovery and functional independence.
+                BHH is developing a dedicated rehabilitation centre offering physiotherapy, speech therapy, occupational therapy, and behavioral therapy — expanding the ecosystem to serve individuals on the path to recovery and functional independence.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-4">
-                {services.map(({ icon: Icon, name, description }) => (
+                {services.map(({ icon: Icon, name }) => (
                   <div key={name} className="bg-warm-white rounded-xl p-5 border border-gray-100">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                         <Icon className="w-5 h-5 text-primary" />
                       </div>
                       <h3 className="font-semibold text-gray-900">{name}</h3>
                     </div>
-                    <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
                   </div>
                 ))}
               </div>
@@ -97,10 +93,7 @@ export default function Upcoming() {
 
             {/* Registration Form */}
             <div className="bg-warm-white rounded-3xl p-8 md:p-10 border border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Register Your Interest</h3>
-              <p className="text-gray-500 mb-8">
-                Be the first to know when BACR launches. Register your interest and we'll keep you updated.
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-8">Register Your Interest</h3>
 
               {submitted ? (
                 <div className="text-center py-12">

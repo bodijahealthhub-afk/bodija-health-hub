@@ -12,14 +12,14 @@ const router = express.Router();
 // POST /api/messages (public contact form) — gated behind the contact_form feature
 router.post('/', requireFeature('contact_form'), async (req, res) => {
   try {
-    const { name, email, phone, subject, message } = req.body;
+    const { name, email, phone, subject, role, message } = req.body;
     if (!name || !email || !message) {
       return res.status(400).json({ error: 'Name, email, and message are required' });
     }
 
     const result = await db.prepare(
-      'INSERT INTO messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)'
-    ).run(name, email, phone || null, subject || null, message);
+      'INSERT INTO messages (name, email, phone, subject, role, message) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(name, email, phone || null, subject || null, role || null, message);
 
     const msg = await db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid);
 
@@ -28,7 +28,7 @@ router.post('/', requireFeature('contact_form'), async (req, res) => {
       sendMail({
         to: adminEmail,
         subject: `New contact form message from ${name}`,
-        text: `You received a new message via the Bodija Health Hub contact form.\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nSubject: ${subject || 'N/A'}\n\nMessage:\n${message}`,
+        text: `You received a new message via the Bodija Health Hub contact form.\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nRole: ${role || 'N/A'}\nSubject: ${subject || 'N/A'}\n\nMessage:\n${message}`,
       });
     }
 
@@ -36,7 +36,7 @@ router.post('/', requireFeature('contact_form'), async (req, res) => {
     await createNotification({
       type: 'message_received',
       title: 'New message received',
-      message: `${name} sent a message: "${(subject || message || '').slice(0, 80)}"`,
+      message: `${name} sent a message: "${(role || subject || message || '').slice(0, 80)}"`,
       link: '/admin/messages',
       entityType: 'message',
       entityId: result.lastInsertRowid,

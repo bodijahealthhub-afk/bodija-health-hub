@@ -8,13 +8,11 @@ const defaultPlatforms = [
     tagline: 'Smarter Care. Trusted Support.',
     icon: FiMonitor,
     color: 'primary',
-    description: 'A structured elder care and assisted living platform connecting families to trained, verified caregivers - with real-time session updates and coordinated home care support.',
+    description: 'A structured elder care and assisted living platform connecting families to trained, verified caregivers — with real-time session updates and coordinated home care support.',
     features: [
-      'Daily wellness monitoring',
-      'Emergency alert system',
-      'Caregiver coordination',
-      'Family access & updates',
-      'Remote health tracking',
+      'Trained, verified caregivers',
+      'Real-time session updates',
+      'Coordinated home care support',
     ],
     link: '/livecare',
   },
@@ -23,13 +21,11 @@ const defaultPlatforms = [
     tagline: 'Your Digital Hearing Solution.',
     icon: FiMic,
     color: 'emerald',
-    description: 'A digital platform giving you instant access to licensed audiologists and ENT specialists - powered by hEar Max Centre and built for smarter, stress-free hearing care.',
+    description: 'A digital platform giving you instant access to licensed audiologists and ENT specialists — powered by hEar Max Centre and built for smarter, stress-free hearing care.',
     features: [
-      'Virtual hearing assessments',
-      'Audiology consultations',
-      'Hearing aid support',
-      'Ongoing care management',
-      'Educational resources',
+      'Licensed audiologists and ENT specialists',
+      'Powered by hEar Max Centre',
+      'Smarter, stress-free hearing care',
     ],
     link: '/hear-menders',
   },
@@ -54,7 +50,7 @@ const colorStyles = {
 
 export default function Platforms() {
   const [headline, setHeadline] = useState('Our Platforms')
-  const [description, setDescription] = useState('BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls — connecting patients to providers, families to peace of mind, and communities to wellness.')
+  const [description, setDescription] = useState('BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls.')
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -145,33 +141,30 @@ export default function Platforms() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
-              Why Digital
+              Three Core Values
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Extending Care Beyond Clinic Walls
-            </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
               <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-5">
                 <FiHeart className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Continuous Support</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">Care doesn't end when you leave the clinic. Our platforms keep you connected to support around the clock.</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Accessible</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">Quality care reachable for every family.</p>
             </div>
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
               <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-5">
                 <FiUsers className="w-7 h-7 text-emerald-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Family Access</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">Families stay informed and involved — with real-time updates and coordinated care visibility.</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Connected</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">Specialists, diagnostics, and services linked under one system.</p>
             </div>
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
               <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-5">
                 <FiShield className="w-7 h-7 text-blue-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Trusted Quality</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">Every digital solution is backed by our partner network's clinical expertise and commitment to excellence.</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Continuous</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">Support at every stage of life, from newborns to elders.</p>
             </div>
           </div>
         </div>

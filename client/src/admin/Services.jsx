@@ -170,7 +170,7 @@ const Services = () => {
               </div>
               <p className="text-sm text-gray-600 mb-4 line-clamp-2">{service.description}</p>
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <span className="text-lg font-bold text-teal-600">₦{service.price?.toLocaleString()}</span>
+                <span className="text-lg font-bold text-teal-600">{service.price != null ? `₦${Number(service.price).toLocaleString()}` : '—'}</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => { setEditingService(service); setShowForm(true); }}
@@ -214,7 +214,7 @@ const Services = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{service.category}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-teal-600">₦{service.price?.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-teal-600">{service.price != null ? `₦${Number(service.price).toLocaleString()}` : '—'}</td>
                   <td className="px-6 py-4"><StatusBadge status={service.status} /></td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">

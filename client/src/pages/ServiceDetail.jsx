@@ -43,11 +43,6 @@ export default function ServiceDetail() {
       description: service.short_description || service.description,
       url: window.location.href,
       procedureType: service.category || 'Healthcare Service',
-      offers: service.price ? {
-        '@type': 'Offer',
-        price: service.price,
-        priceCurrency: 'NGN',
-      } : undefined,
       provider: provider ? {
         '@type': 'MedicalBusiness',
         name: provider.name,
@@ -57,7 +52,7 @@ export default function ServiceDetail() {
       } : {
         '@type': 'MedicalBusiness',
         name: 'Bodija Health Hub',
-        address: '12 Bodija Road, Ibadan, Oyo State, Nigeria',
+        address: 'Bodija, Ibadan, Oyo State, Nigeria',
       },
     }
     const tag = 'application/ld+json'
@@ -119,9 +114,6 @@ export default function ServiceDetail() {
                 )}
               </div>
               <h1 className="text-4xl sm:text-5xl font-bold mb-4">{service.name}</h1>
-              <p className="text-xl text-teal-300 font-medium mb-4">
-                {service.price ? `₦${Number(service.price).toLocaleString()}` : 'Pricing on request'}
-              </p>
               {service.short_description && (
                 <p className="text-lg text-gray-300 leading-relaxed">{service.short_description}</p>
               )}
@@ -255,9 +247,6 @@ export default function ServiceDetail() {
                   <h3 className="font-bold text-gray-900 group-hover:text-primary transition-colors mb-2">{rs.name}</h3>
                   {rs.short_description && (
                     <p className="text-sm text-gray-500 line-clamp-2">{rs.short_description}</p>
-                  )}
-                  {rs.price > 0 && (
-                    <p className="text-sm font-medium text-primary mt-3">₦{Number(rs.price).toLocaleString()}</p>
                   )}
                 </Link>
               ))}

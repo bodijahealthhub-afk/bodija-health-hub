@@ -225,6 +225,7 @@ const SCHEMA = `
     email TEXT NOT NULL,
     phone TEXT,
     subject TEXT,
+    role TEXT,
     message TEXT NOT NULL,
     is_read INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -452,7 +453,7 @@ async function insertContentDefaults() {
   const insertContact = db.prepare('INSERT INTO contact_info (key, value) VALUES (?, ?)');
   await insertContact.run('phone', '+234 801 234 5678');
   await insertContact.run('email', 'info@bodijahealthhub.com');
-  await insertContact.run('address', '12 Bodija Road, Ibadan, Oyo State, Nigeria');
+  await insertContact.run('address', 'Bodija, Ibadan, Oyo State, Nigeria');
   await insertContact.run('facebook', 'https://facebook.com/bodijahealthhub');
   await insertContact.run('twitter', 'https://twitter.com/bodijahealthhub');
   await insertContact.run('instagram', 'https://instagram.com/bodijahealthhub');
@@ -469,20 +470,18 @@ async function insertContentDefaults() {
     ['hero_cta2_link', '/partners'],
     ['hero_image', ''],
     ['about_headline', 'More Than a Service. A Connected Health Ecosystem.'],
-    ['about_description', 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.'],
-    ['about_mission', 'To build and sustain an integrated healthcare network that brings together clinics, specialists, diagnostics, therapy, and digital health solutions — making quality, coordinated care accessible to every individual and family in our community.'],
-    ['about_vision', 'To be the most trusted integrated healthcare ecosystem in Ibadan and beyond — where every family has access to connected, continuous, and compassionate care.'],
+    ['about_description', 'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.'],
     ['ecosystem_headline', 'One Hub. Many Hands. Whole-Person Care.'],
     ['ecosystem_description', 'Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.'],
-    ['partners_headline', 'Our Partner Network'],
-    ['partners_description', 'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care - each an integral part of the BHH ecosystem.'],
+    ['partners_headline', 'Our Existing Partner Network'],
+    ['partners_description', 'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care — each an integral part of the BHH ecosystem.'],
     ['platforms_headline', 'Our Platforms'],
-    ['platforms_description', 'BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls — connecting patients to providers, families to peace of mind, and communities to wellness.'],
+    ['platforms_description', 'BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls.'],
     ['contact_headline', 'Ready to Be Part of Something Bigger?'],
-    ['contact_description', 'Whether you are a patient, a family, a healthcare provider, or a caregiver - BHH has a place for you.'],
+    ['contact_description', 'Whether you are a patient, a family, a healthcare provider, or a caregiver — BHH has a place for you.'],
     ['contact_phone', '+234 801 234 5678'],
     ['contact_email', 'info@bodijahealthhub.com'],
-    ['contact_address', '12 Bodija Road, Ibadan, Oyo State, Nigeria'],
+    ['contact_address', 'Bodija, Ibadan, Oyo State, Nigeria'],
     ['contact_whatsapp', '+234 801 234 5678'],
     ['contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'],
     ['footer_tagline', 'Care. Connected. Community.'],
@@ -502,15 +501,16 @@ async function insertContentDefaults() {
       { label: 'Contact', url: '/contact' },
     ])],
     ['footer_platform_links', JSON.stringify([
-      { label: 'LiveCare', url: '/livecare' },
-      { label: 'hEar Menders', url: '/hear-menders' },
+      { label: 'LiveCare — Elder Care App', url: '/livecare' },
+      { label: 'hEar Menders — Digital Hearing Health', url: '/hear-menders' },
+      { label: 'BACR — Rehabilitation Centre (Coming Soon)', url: '/bacr' },
     ])],
     ['footer_social_links', JSON.stringify({
       facebook: 'https://facebook.com/bodijahealthhub',
       instagram: 'https://instagram.com/bodijahealthhub',
       twitter: 'https://twitter.com/bodijahealthhub',
       linkedin: 'https://linkedin.com/company/bodijahealthhub',
-      youtube: '',
+      whatsapp: 'https://wa.me/2348012345678',
     })],
     ['seo_title', 'Bodija Health Hub — Wellness Starts Here'],
     ['seo_description', 'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.'],
@@ -1012,17 +1012,18 @@ async function archiveFakeSeedData() {
 // Ensures the baseline service catalog exists and is active. On fresh databases
 // the INSERT adds the rows; on existing databases the UPDATE reactivates any that
 // Public service catalog — source of truth: BHH_Website_Content_v2.docx "Our Services"
-// (exact 8 services, descriptions, and order). Admin edits to name/description/price
-// are preserved on re-deploys.
+// (exact 8 services, descriptions, and order). The doc lists no prices, so price is
+// null; seed prices are still cleared on existing rows only while they match the old
+// seed values (admin-set prices are preserved on re-deploys).
 const SERVICE_CATALOG = [
-  { name: 'Preventive Care & Wellness', category: 'Preventive', short_description: 'Routine check-ups, screenings, and wellness programs designed to catch problems early.', icon: '🛡️', price: 7000 },
-  { name: 'Diagnostics & Laboratory', category: 'Diagnostics', short_description: 'Accurate, timely diagnostic services supporting clinical decisions across the hub.', icon: '🧪', price: 3000 },
-  { name: 'Specialist Consultations', category: 'Specialist Care', short_description: 'Access to a growing network of specialists within one trusted ecosystem.', icon: '🩺', price: 10000 },
-  { name: 'Elder Care & Assisted Living', category: 'Primary Care', short_description: 'Structured, dignified home care for elderly individuals and their families. (Powered by LiveCare)', icon: '🧓', price: 8000 },
-  { name: 'Chronic Disease Management', category: 'Chronic Care', short_description: 'Long-term monitoring and support for kidney disease and hypertension.', icon: '❤️', price: 5000 },
-  { name: 'Rehabilitation Services', category: 'Therapy', short_description: 'Physical, occupational, speech, and behavioral therapy. (Coming Soon — BACR)', icon: '🔧', price: 8000 },
-  { name: 'Audiology & Hearing Health', category: 'Specialist Care', short_description: 'Audiology assessments, hearing aids, and ENT specialist access.', icon: '👂', price: 10000 },
-  { name: 'Community Health Outreach', category: 'Community', short_description: 'Health education, screenings, and outreach programs beyond clinic walls.', icon: '🏥', price: 0 },
+  { name: 'Preventive Care & Wellness', category: 'Preventive', short_description: 'Routine check-ups, screenings, and wellness programs designed to catch problems early.', icon: '🛡️', price: null, seedPrice: 7000 },
+  { name: 'Diagnostics & Laboratory', category: 'Diagnostics', short_description: 'Accurate, timely diagnostic services supporting clinical decisions across the hub.', icon: '🧪', price: null, seedPrice: 3000 },
+  { name: 'Specialist Consultations', category: 'Specialist Care', short_description: 'Access to a growing network of specialists within one trusted ecosystem.', icon: '🩺', price: null, seedPrice: 10000 },
+  { name: 'Elder Care & Assisted Living', category: 'Primary Care', short_description: 'Structured, dignified home care for elderly individuals and their families. (Powered by LiveCare)', icon: '🧓', price: null, seedPrice: 8000 },
+  { name: 'Chronic Disease Management', category: 'Chronic Care', short_description: 'Long-term monitoring and support for kidney disease and hypertension.', icon: '❤️', price: null, seedPrice: 5000 },
+  { name: 'Rehabilitation Services', category: 'Therapy', short_description: 'Physical, occupational, speech, and behavioral therapy. (Coming Soon — BACR)', icon: '🔧', price: null, seedPrice: 8000 },
+  { name: 'Audiology & Hearing Health', category: 'Specialist Care', short_description: 'Audiology assessments, hearing aids, and ENT specialist access.', icon: '👂', price: null, seedPrice: 10000 },
+  { name: 'Community Health Outreach', category: 'Community', short_description: 'Health education, screenings, and outreach programs beyond clinic walls.', icon: '🏥', price: null, seedPrice: 0 },
 ];
 
 // Pre-document services that predate BHH_Website_Content_v2.docx. Rows are kept in
@@ -1051,9 +1052,6 @@ const DOC_SERVICE_COPY = [
 // Partner services_offered strings that still name legacy services.
 // [partner name, old value, doc-service value] — applied only while still the old value.
 const PARTNER_SERVICE_FIXES = [
-  ['Bodija Health Hub (BHH)', 'General Consultation,Wellness Screening,Health Outreach Programs', 'Preventive Care & Wellness,Specialist Consultations,Community Health Outreach'],
-  ['Ibadan Community Health Initiative', 'Health Outreach Programs,Preventive Health,Vaccination', 'Community Health Outreach,Preventive Care & Wellness'],
-  ['Sunrise Hearing Centre', 'Audiology,Hearing Tests,Hearing Aids', 'Audiology & Hearing Health'],
   ['Beacon Health Diagnostics', 'Diagnostics & Laboratory,Wellness Screening', 'Diagnostics & Laboratory,Preventive Care & Wellness'],
   ['hEar Max Centre', 'Audiology & Hearing Health,Hearing Tests,Hearing Aids', 'Audiology & Hearing Health'],
   ['Bodija Kidney & Hypertension Clinic', 'Chronic Disease Management,Kidney Care,Hypertension Clinic', 'Chronic Disease Management,Specialist Consultations'],
@@ -1095,6 +1093,13 @@ async function reactivateServiceCatalog() {
     ).run(order, name);
   }
 
+  // The doc lists no prices — clear seeded prices (admin-set prices survive).
+  for (const svc of SERVICE_CATALOG) {
+    await db.prepare(
+      'UPDATE services SET price = NULL WHERE name = ? AND price = ?'
+    ).run(svc.name, svc.seedPrice);
+  }
+
   for (const [partnerName, oldValue, newValue] of PARTNER_SERVICE_FIXES) {
     await db.prepare(
       'UPDATE partners SET services_offered = ? WHERE name = ? AND services_offered = ?'
@@ -1106,37 +1111,15 @@ async function reactivateServiceCatalog() {
   );
 }
 
-// Baseline partners — only inserted when the partners table is empty so admin-created
-// partners are never overwritten. Gives the Partners page real content on fresh DBs.
+// Baseline partners — source of truth: BHH_Website_Content_v2.docx "Our Partners"
+// (exactly 4 partners). Only inserted when the partners table is empty so
+// admin-created partners are never overwritten. Pre-doc partners that are not in
+// the doc are archived (kept as rows, is_active = 0) by syncDocPartners().
 const PARTNER_CATALOG = [
-  {
-    name: 'Bodija Health Hub (BHH)',
-    partner_type: 'healthcare',
-    description: 'The central hub connecting patients with quality healthcare services, programmes, and partner providers across Ibadan.',
-    location: 'Favos Junction, Bodija, Ibadan',
-    services_offered: 'Preventive Care & Wellness,Specialist Consultations,Community Health Outreach',
-    featured: 1,
-  },
-  {
-    name: 'Ibadan Community Health Initiative',
-    partner_type: 'community',
-    description: 'A community-based organisation focused on preventive health education and outreach in underserved neighbourhoods across Ibadan.',
-    location: 'Ibadan, Oyo State',
-    services_offered: 'Community Health Outreach,Preventive Care & Wellness',
-    featured: 1,
-  },
-  {
-    name: 'Sunrise Hearing Centre',
-    partner_type: 'specialist',
-    description: 'Specialist audiology and hearing care provider offering advanced diagnostics, hearing aid fitting, and rehabilitation services.',
-    location: 'Bodija, Ibadan',
-    services_offered: 'Audiology & Hearing Health',
-    featured: 0,
-  },
   {
     name: 'Beacon Health Diagnostics',
     partner_type: 'diagnostics',
-    description: 'A trusted diagnostics partner providing advanced laboratory testing, imaging, and health screening services to the BHH ecosystem.',
+    description: 'Providing diagnostic and laboratory support services essential for routine monitoring and preventive healthcare within the BHH network.',
     location: 'Ibadan, Oyo State',
     services_offered: 'Diagnostics & Laboratory,Preventive Care & Wellness',
     featured: 1,
@@ -1144,7 +1127,7 @@ const PARTNER_CATALOG = [
   {
     name: 'Live Longa',
     partner_type: 'healthcare',
-    description: 'A healthcare partner supporting long-term wellness and preventive care programmes across the BHH network.',
+    description: 'A primary care initiative focused on preventive care, routine wellness checks, and accessible healthcare support for individuals and families.',
     location: 'Ibadan, Oyo State',
     services_offered: 'Preventive Care & Wellness,Chronic Disease Management',
     featured: 1,
@@ -1152,7 +1135,7 @@ const PARTNER_CATALOG = [
   {
     name: 'hEar Max Centre',
     partner_type: 'specialist',
-    description: 'A specialist audiology and ENT centre powering the hEar Menders digital platform with expert hearing care and diagnostics.',
+    description: 'Providing hearing and audiology support services that improve communication, independence, and quality of life — also the clinical foundation behind hEar Menders.',
     location: 'Bodija, Ibadan',
     services_offered: 'Audiology & Hearing Health',
     featured: 1,
@@ -1160,11 +1143,27 @@ const PARTNER_CATALOG = [
   {
     name: 'Bodija Kidney & Hypertension Clinic',
     partner_type: 'specialist',
-    description: 'A specialist clinic focused on kidney health and hypertension management, providing expert chronic disease care to the community.',
+    description: 'Specialist care focused on kidney health, hypertension monitoring, and long-term wellness support for patients managing chronic conditions.',
     location: 'Ibadan, Oyo State',
     services_offered: 'Chronic Disease Management,Specialist Consultations',
     featured: 1,
   },
+];
+
+// [partner name, old seeded description, document description].
+// Description is only overwritten while it still equals the old seed (admin edits win).
+const DOC_PARTNER_COPY = [
+  ['Beacon Health Diagnostics', 'A trusted diagnostics partner providing advanced laboratory testing, imaging, and health screening services to the BHH ecosystem.', 'Providing diagnostic and laboratory support services essential for routine monitoring and preventive healthcare within the BHH network.'],
+  ['Live Longa', 'A healthcare partner supporting long-term wellness and preventive care programmes across the BHH network.', 'A primary care initiative focused on preventive care, routine wellness checks, and accessible healthcare support for individuals and families.'],
+  ['hEar Max Centre', 'A specialist audiology and ENT centre powering the hEar Menders digital platform with expert hearing care and diagnostics.', 'Providing hearing and audiology support services that improve communication, independence, and quality of life — also the clinical foundation behind hEar Menders.'],
+  ['Bodija Kidney & Hypertension Clinic', 'A specialist clinic focused on kidney health and hypertension management, providing expert chronic disease care to the community.', 'Specialist care focused on kidney health, hypertension monitoring, and long-term wellness support for patients managing chronic conditions.'],
+];
+
+// Pre-document partners that are not in BHH_Website_Content_v2.docx "Our Partners".
+const NON_DOC_PARTNER_NAMES = [
+  'Bodija Health Hub (BHH)',
+  'Ibadan Community Health Initiative',
+  'Sunrise Hearing Centre',
 ];
 
 async function seedPartners() {
@@ -1177,7 +1176,23 @@ async function seedPartners() {
   for (const p of PARTNER_CATALOG) {
     insert.run(p.name, db.slugify(p.name), p.partner_type, p.description, p.location, p.services_offered, p.featured);
   }
-  console.log(`[seed] Partners: ${PARTNER_CATALOG.length} baseline partners ensured (INSERT OR IGNORE by slug).`);
+  await syncDocPartners();
+  console.log(`[seed] Partners: ${PARTNER_CATALOG.length} doc partners ensured (INSERT OR IGNORE by slug).`);
+}
+
+// Align partners with BHH_Website_Content_v2.docx "Our Partners": exactly 4 active
+// partners with the doc descriptions. Descriptions are only overwritten while they
+// still equal the old seed (admin edits win); non-doc rows are archived unconditionally.
+async function syncDocPartners() {
+  for (const [name, oldDesc, docDesc] of DOC_PARTNER_COPY) {
+    await db.prepare(
+      'UPDATE partners SET description = ? WHERE name = ? AND (description IS NULL OR description = ?)'
+    ).run(docDesc, name, oldDesc);
+  }
+  const archiveParams = NON_DOC_PARTNER_NAMES.map(() => '?').join(',');
+  await db.prepare(
+    `UPDATE partners SET is_active = 0 WHERE name IN (${archiveParams})`
+  ).run(...NON_DOC_PARTNER_NAMES);
 }
 
 // Wave 1: Extend appointments table with service request fields.
@@ -1630,6 +1645,56 @@ async function migrateContentSync() {
     ['seo_meta_description',
       'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.',
       'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.'],
+    // BHH_Website_Content_v2.docx alignment (only while still at the old seed value).
+    ['about_description',
+      'We are an integrated healthcare network redefining how families in Ibadan access and experience care.',
+      'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.'],
+    ['partners_headline',
+      'Our Partner Network',
+      'Our Existing Partner Network'],
+    ['partners_description',
+      'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care - each an integral part of the BHH ecosystem.',
+      'A network of specialized organizations sharing our commitment to accessible, quality, and patient-centered care — each an integral part of the BHH ecosystem.'],
+    ['platforms_description',
+      'BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls — connecting patients to providers, families to peace of mind, and communities to wellness.',
+      'BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls.'],
+    ['contact_description',
+      'Whether you are a patient, a family, a healthcare provider, or a caregiver - BHH has a place for you.',
+      'Whether you are a patient, a family, a healthcare provider, or a caregiver — BHH has a place for you.'],
+    ['contact_address',
+      '12 Bodija Road, Ibadan, Oyo State, Nigeria',
+      'Bodija, Ibadan, Oyo State, Nigeria'],
+    ['footer_platform_links',
+      JSON.stringify([
+        { label: 'LiveCare', url: '/livecare' },
+        { label: 'hEar Menders', url: '/hear-menders' },
+      ]),
+      JSON.stringify([
+        { label: 'LiveCare — Elder Care App', url: '/livecare' },
+        { label: 'hEar Menders — Digital Hearing Health', url: '/hear-menders' },
+        { label: 'BACR — Rehabilitation Centre (Coming Soon)', url: '/bacr' },
+      ])],
+    ['footer_social_links',
+      JSON.stringify({
+        facebook: 'https://facebook.com/bodijahealthhub',
+        instagram: 'https://instagram.com/bodijahealthhub',
+        twitter: 'https://twitter.com/bodijahealthhub',
+        linkedin: 'https://linkedin.com/company/bodijahealthhub',
+        youtube: '',
+      }),
+      JSON.stringify({
+        facebook: 'https://facebook.com/bodijahealthhub',
+        instagram: 'https://instagram.com/bodijahealthhub',
+        twitter: 'https://twitter.com/bodijahealthhub',
+        linkedin: 'https://linkedin.com/company/bodijahealthhub',
+        whatsapp: 'https://wa.me/2348012345678',
+      })],
+    ['seo_title',
+      'Bodija Health Hub - Wellness Starts Here',
+      'Bodija Health Hub — Wellness Starts Here'],
+    ['seo_description',
+      'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.',
+      'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.'],
   ];
 
   const get = db.prepare('SELECT value FROM site_content WHERE key = ?');
@@ -1641,6 +1706,17 @@ async function migrateContentSync() {
       await set.run(newVal, key);
       changed += 1;
     }
+  }
+
+  // contact_info.address — doc location (only while still at the old seed).
+  try {
+    const addr = await db.prepare("SELECT value FROM contact_info WHERE key = 'address'").get();
+    if (addr && addr.value === '12 Bodija Road, Ibadan, Oyo State, Nigeria') {
+      await db.prepare("UPDATE contact_info SET value = 'Bodija, Ibadan, Oyo State, Nigeria' WHERE key = 'address'").run();
+      changed += 1;
+    }
+  } catch (err) {
+    console.error('[migrate] Contact address sync failed:', err.message);
   }
 
   // SEO home title/description (seo_settings + site_settings) — only when still default.
@@ -1697,6 +1773,19 @@ async function migrateContentSync() {
   }
 }
 
+// Contact form "I am a" field (BHH_Website_Content_v2.docx).
+async function migrateMessagesRole() {
+  if (db.backend === 'sqlite') {
+    const existing = new Set((await db.prepare('PRAGMA table_info(messages)').all()).map((c) => c.name));
+    if (!existing.has('role')) {
+      await db.prepare('ALTER TABLE messages ADD COLUMN role TEXT').run();
+      console.log('[migrate] Added messages.role column.');
+    }
+  } else {
+    await db.prepare('ALTER TABLE messages ADD COLUMN IF NOT EXISTS role TEXT').run();
+  }
+}
+
 async function init() {
   await impl.ready;
   if (impl.backend === 'sqlite') {
@@ -1718,6 +1807,7 @@ async function init() {
   await migrateContentWorkflow();
   await migrateEcosystemCategories();
   await migrateCrmContacts();
+  await migrateMessagesRole();
   await seedIfEmpty();
   await migrateContentSync();
   await syncAdminPassword();

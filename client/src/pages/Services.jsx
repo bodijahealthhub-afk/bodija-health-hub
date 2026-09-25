@@ -150,10 +150,9 @@ export default function Services() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal>
           <div className="max-w-3xl">
-            <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Our Services</span>
-            <h1 className="text-4xl sm:text-5xl font-bold mb-6">Care for Every Stage of Your Health Journey</h1>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-6">Our Services</h1>
             <p className="text-lg text-gray-300 leading-relaxed">
-              Our network covers the full spectrum of healthcare needs - from prevention to recovery, from newborn to elder, from routine monitoring to specialist support.
+              Our network covers the full spectrum of healthcare needs — from prevention to recovery, from newborn to elder, from routine monitoring to specialist support.
             </p>
           </div>
           </ScrollReveal>
@@ -256,11 +255,6 @@ export default function Services() {
                     {service.short_description || service.description || 'Comprehensive healthcare service provided by our trusted partners.'}
                   </p>
                   <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    {service.price ? (
-                      <span className="text-lg font-bold text-primary">₦{Number(service.price).toLocaleString()}</span>
-                    ) : (
-                      <span className="text-sm font-medium text-primary">Pricing on request</span>
-                    )}
                     <span className="text-sm font-medium text-primary group-hover:underline">Learn more →</span>
                   </div>
                 </Link>

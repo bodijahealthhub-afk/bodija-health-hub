@@ -39,7 +39,8 @@ const Messages = () => {
           (msg) =>
             msg.name.toLowerCase().includes(q) ||
             msg.email.toLowerCase().includes(q) ||
-            msg.subject.toLowerCase().includes(q)
+            (msg.subject || '').toLowerCase().includes(q) ||
+            (msg.role || '').toLowerCase().includes(q)
         )
       );
     } else {
@@ -158,7 +159,7 @@ const Messages = () => {
                       </div>
                       <p className="text-sm text-gray-500 truncate">{msg.email}</p>
                       <p className={`text-sm mt-1 ${!msg.is_read ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
-                        {msg.subject}
+                        {msg.subject || (msg.role ? `I am a: ${msg.role}` : 'Contact form message')}
                       </p>
                       <p className="text-sm text-gray-500 truncate mt-1">{msg.message}</p>
                     </div>
@@ -191,7 +192,7 @@ const Messages = () => {
           setShowDetail(false);
           setSelectedMessage(null);
         }}
-        title={selectedMessage?.subject || 'Message'}
+        title={selectedMessage?.subject || (selectedMessage?.role ? `I am a: ${selectedMessage.role}` : 'Message')}
         size="lg"
       >
         {selectedMessage && (
@@ -206,6 +207,8 @@ const Messages = () => {
                 <div>
                   <h3 className="font-semibold text-gray-900">{selectedMessage.name}</h3>
                   <p className="text-sm text-gray-500">{selectedMessage.email}</p>
+                  {selectedMessage.phone && <p className="text-sm text-gray-500">{selectedMessage.phone}</p>}
+                  {selectedMessage.role && <p className="text-sm text-gray-500">I am a: {selectedMessage.role}</p>}
                 </div>
               </div>
               <span className="text-sm text-gray-500">{selectedMessage?.created_at ? new Date(selectedMessage.created_at).toLocaleDateString() : "N/A"}</span>

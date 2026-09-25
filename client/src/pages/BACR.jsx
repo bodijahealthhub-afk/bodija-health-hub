@@ -8,10 +8,10 @@ export default function BACR() {
   const [submitted, setSubmitted] = useState(false)
 
   const therapies = [
-    { icon: FiActivity, name: 'Physiotherapy', desc: 'Physical rehabilitation and mobility recovery for injuries, surgeries, and chronic conditions.' },
-    { icon: FiMic, name: 'Speech Therapy', desc: 'Communication and swallowing disorder support for children and adults.' },
-    { icon: FiTool, name: 'Occupational Therapy', desc: 'Helping individuals regain independence in daily activities and routines.' },
-    { icon: FiMonitor, name: 'Behavioral Therapy', desc: 'Support for behavioral and developmental challenges through evidence-based approaches.' },
+    { icon: FiActivity, name: 'Physiotherapy' },
+    { icon: FiMic, name: 'Speech Therapy' },
+    { icon: FiTool, name: 'Occupational Therapy' },
+    { icon: FiMonitor, name: 'Behavioral Therapy' },
   ]
 
   const handleSubmit = async (e) => {
@@ -36,8 +36,8 @@ export default function BACR() {
       <section className="relative bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-sm font-medium mb-6">Coming Soon</span>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-6">Bodija Advanced Care & Rehabilitation Centre</h1>
-          <p className="text-lg text-emerald-100 max-w-2xl mx-auto">A dedicated rehabilitation centre offering comprehensive therapy services for recovery and functional independence.</p>
+          <h1 className="text-4xl sm:text-5xl font-bold mb-6">Bodija Advanced Care &amp; Rehabilitation Centre (BACR)</h1>
+          <p className="text-lg text-emerald-100 max-w-2xl mx-auto">BHH is developing a dedicated rehabilitation centre offering physiotherapy, speech therapy, occupational therapy, and behavioral therapy — expanding the ecosystem to serve individuals on the path to recovery and functional independence.</p>
         </div>
       </section>
 
@@ -46,16 +46,14 @@ export default function BACR() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold text-gray-900">Our Therapy Services</h2>
-            <p className="text-gray-500 mt-2">Comprehensive rehabilitation under one roof</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-8">
-            {therapies.map(({ icon: Icon, name, desc }) => (
+            {therapies.map(({ icon: Icon, name }) => (
               <div key={name} className="bg-warm-white rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow">
                 <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4">
                   <Icon className="w-7 h-7 text-emerald-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
-                <p className="text-gray-500 leading-relaxed">{desc}</p>
+                <h3 className="text-xl font-bold text-gray-900">{name}</h3>
               </div>
             ))}
           </div>
@@ -102,7 +100,7 @@ export default function BACR() {
                     </select>
                   </div>
                   <button type="submit" disabled={submitting} className="w-full py-3 bg-emerald-600 text-white font-semibold rounded-full hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                    {submitting ? 'Submitting...' : 'Register Interest'}
+                    {submitting ? 'Submitting...' : 'Register Your Interest'}
                   </button>
                 </form>
               </>

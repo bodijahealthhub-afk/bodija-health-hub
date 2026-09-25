@@ -10,32 +10,26 @@ const actionCards = [
   {
     icon: FiActivity,
     title: 'Get Care Now',
-    description: 'Book an appointment or visit one of our partner clinics.',
     link: '/contact',
-    linkText: 'Contact Us',
   },
   {
     icon: FiUsers,
     title: 'Join the Ecosystem',
-    description: 'Are you a healthcare provider? Partner with BHH.',
     link: '/partners',
-    linkText: 'Partner With Us',
   },
   {
     icon: FiDownload,
     title: 'Download LiveCare',
-    description: 'Smarter elder care support for your family.',
     link: '/platforms',
-    linkText: 'Learn More',
   },
   {
     icon: FiBell,
     title: 'Register for BACR Updates',
-    description: 'Be first to know about our upcoming rehabilitation centre.',
     link: '/upcoming',
-    linkText: 'Register Interest',
   },
 ]
+
+const roleOptions = ['Patient', 'Family', 'Healthcare Provider', 'Caregiver', 'Other']
 
 const defaultContactDetails = [
   { icon: FiMapPin, label: 'Location', value: 'Bodija, Ibadan', sub: 'Oyo State, Nigeria' },
@@ -48,14 +42,14 @@ export default function Contact() {
   const { isEnabled } = useFeatures()
   const [contactDetails, setContactDetails] = useState(defaultContactDetails)
   const [headline, setHeadline] = useState('Ready to Be Part of Something Bigger?')
-  const [subtext, setSubtext] = useState('Whether you are a patient, a family, a healthcare provider, or a caregiver - BHH has a place for you.')
+  const [subtext, setSubtext] = useState('Whether you are a patient, a family, a healthcare provider, or a caregiver — BHH has a place for you.')
   const [social, setSocial] = useState({})
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    subject: '',
+    role: '',
     message: '',
   })
   const [submitting, setSubmitting] = useState(false)
@@ -75,11 +69,11 @@ export default function Contact() {
           // Build contact details from API
           const phone = data.contact_phone || data.phone || '+234 801 234 5678'
           const email = data.contact_email || data.email || 'info@bodijahealthhub.com'
-          const address = data.contact_address || data.address || '12 Bodija Road, Ibadan, Oyo State, Nigeria'
+          const address = data.contact_address || data.address || 'Bodija, Ibadan, Oyo State, Nigeria'
           const hours = data.contact_hours || data.opening_hours || 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'
 
           setContactDetails([
-            { icon: FiMapPin, label: 'Location', value: address.split(',')[0] || 'Bodija, Ibadan', sub: address.split(',').slice(1).join(',').trim() || 'Oyo State, Nigeria' },
+            { icon: FiMapPin, label: 'Location', value: address.split(',').slice(0, 2).join(',').trim() || 'Bodija, Ibadan', sub: address.split(',').slice(2).join(',').trim() || 'Oyo State, Nigeria' },
             { icon: FiPhone, label: 'Phone', value: phone, sub: '' },
             { icon: FiMail, label: 'Email', value: email, sub: '' },
             { icon: FiClock, label: 'Working Hours', value: hours.split(',')[0] || 'Mon - Fri: 8:00 AM - 6:00 PM', sub: hours.split(',').slice(1).join(',').trim() || '' },
@@ -182,7 +176,7 @@ export default function Contact() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {actionCards.map(({ icon: Icon, title, description, link, linkText }, i) => (
+            {actionCards.map(({ icon: Icon, title, link }, i) => (
               <ScrollReveal key={title} delay={i * 80}>
                 <Link
                   to={link}
@@ -192,10 +186,6 @@ export default function Contact() {
                   <Icon className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors">{title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed mb-4">{description}</p>
-                <span className="inline-flex items-center gap-1 text-primary font-medium text-sm group-hover:gap-2 transition-all">
-                  {linkText} <FiArrowRight className="w-4 h-4" />
-                </span>
                 </Link>
               </ScrollReveal>
             ))}
@@ -211,7 +201,7 @@ export default function Contact() {
             <ScrollReveal direction="left">
               <div className="space-y-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Contact Details</h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {contactDetails.map(({ icon: Icon, label, value, sub }) => (
                     <div key={label} className="bg-white rounded-xl p-5 border border-gray-100">
@@ -243,7 +233,7 @@ export default function Contact() {
 
               {/* Social Media */}
               <div className="bg-white rounded-xl p-5 border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-3">Follow Us</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Social Media</h3>
                 <div className="flex gap-3">
                   {social.instagram && (
                     <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center text-pink-600 hover:bg-pink-200 transition-colors">
@@ -274,7 +264,6 @@ export default function Contact() {
             <ScrollReveal direction="right">
             <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Send Us a Message</h2>
-              <p className="text-gray-500 mb-8">We'll get back to you within 24 hours.</p>
 
               {!isEnabled('contact_form') ? (
                 <div className="text-center py-12">
@@ -293,7 +282,7 @@ export default function Contact() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h3>
                   <p className="text-gray-500 mb-6">Thank you for reaching out. We'll get back to you soon.</p>
                   <button
-                    onClick={() => { setSubmitted(false); setFormData({ name: '', email: '', phone: '', subject: '', message: '' }) }}
+                    onClick={() => { setSubmitted(false); setFormData({ name: '', email: '', phone: '', role: '', message: '' }) }}
                     className="text-primary font-medium hover:underline"
                   >
                     Send another message
@@ -318,7 +307,7 @@ export default function Contact() {
                       {touched.name && errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
                       <input
                         type="email"
                         name="email"
@@ -335,7 +324,7 @@ export default function Contact() {
                   </div>
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                       <input
                         type="tel"
                         name="phone"
@@ -346,15 +335,18 @@ export default function Contact() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                      <input
-                        type="text"
-                        name="subject"
-                        value={formData.subject}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">I am a</label>
+                      <select
+                        name="role"
+                        value={formData.role}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                        placeholder="What is this about?"
-                      />
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-white"
+                      >
+                        <option value="">Select an option</option>
+                        {roleOptions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div>

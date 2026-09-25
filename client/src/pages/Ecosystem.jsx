@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FiActivity, FiZap, FiCheckCircle, FiUsers, FiHeart, FiLink, FiArrowRight, FiMonitor, FiHeadphones, FiMic, FiTool } from 'react-icons/fi'
+import { FiActivity, FiZap, FiCheckCircle, FiUsers, FiHeart, FiLink, FiArrowRight, FiMonitor, FiHeadphones, FiMic, FiTool, FiShield } from 'react-icons/fi'
 
 const defaultServices = [
-  { icon: FiActivity, name: 'Primary Care', description: 'Routine check-ups, family medicine, preventive health, and wellness visits to keep you and your family healthy.' },
-  { icon: FiZap, name: 'Specialist Consultations', description: 'Access to experienced specialists across multiple disciplines for focused, expert medical guidance.' },
-  { icon: FiCheckCircle, name: 'Diagnostics & Laboratory', description: 'Fast, accurate diagnostic testing, imaging, and laboratory services for informed medical decisions.' },
-  { icon: FiHeadphones, name: 'Hearing & Audiology', description: 'Comprehensive hearing assessments, diagnostics, and support through our audiology partners.' },
-  { icon: FiTool, name: 'Physiotherapy & Speech Therapy', description: 'Physical rehabilitation, speech therapy, occupational therapy, and behavioral therapy services.' },
-  { icon: FiHeart, name: 'Chronic Disease Management', description: 'Ongoing monitoring and care for diabetes, hypertension, kidney health, and other chronic conditions.' },
-  { icon: FiUsers, name: 'Elder Care', description: 'Specialized support and care services designed for aging adults and their families.' },
-  { icon: FiMonitor, name: 'Digital Health Solutions', description: 'Telehealth platforms and digital tools that extend the reach of quality care beyond clinic walls.' },
+  { icon: FiShield, name: 'Preventive Care & Wellness', description: 'Routine check-ups, screenings, and wellness programs designed to catch problems early.' },
+  { icon: FiZap, name: 'Diagnostics & Laboratory', description: 'Accurate, timely diagnostic services supporting clinical decisions across the hub.' },
+  { icon: FiUsers, name: 'Specialist Consultations', description: 'Access to a growing network of specialists within one trusted ecosystem.' },
+  { icon: FiHeart, name: 'Elder Care & Assisted Living', description: 'Structured, dignified home care for elderly individuals and their families. (Powered by LiveCare)' },
+  { icon: FiActivity, name: 'Chronic Disease Management', description: 'Long-term monitoring and support for kidney disease and hypertension.' },
+  { icon: FiTool, name: 'Rehabilitation Services', description: 'Physical, occupational, speech, and behavioral therapy. (Coming Soon — BACR)' },
+  { icon: FiHeadphones, name: 'Audiology & Hearing Health', description: 'Audiology assessments, hearing aids, and ENT specialist access.' },
+  { icon: FiLink, name: 'Community Health Outreach', description: 'Health education, screenings, and outreach programs beyond clinic walls.' },
 ]
 
 const included = [
@@ -18,9 +18,10 @@ const included = [
   'Specialist care and referrals',
   'Diagnostics and laboratory services',
   'Audiology',
-  'Physiotherapy, Speech & Behavioral Therapy',
-  'Chronic Condition Management',
+  'Physiotherapy, speech therapy, and behavioral therapy',
+  'Chronic condition management',
   'Long-term wellness and elder care support',
+  'Digital Solutions',
 ]
 
 export default function Ecosystem() {
@@ -69,15 +70,9 @@ export default function Ecosystem() {
           <div className="grid lg:grid-cols-2 gap-16 items-start">
             <div>
               <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
-                What's Included
+                What the Ecosystem Includes
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-                A Complete Healthcare Network
-              </h2>
-              <p className="text-gray-500 leading-relaxed mb-8">
-                Our ecosystem is designed to cover every stage of your health journey — from routine wellness checks to specialized treatment, rehabilitation, and ongoing chronic care management.
-              </p>
-              <div className="space-y-4">
+              <div className="space-y-4 mt-6">
                 {included.map((item) => (
                   <div key={item} className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -94,9 +89,6 @@ export default function Ecosystem() {
                 "Because care works best when people and systems work together."
               </blockquote>
               <div className="mt-6 w-12 h-1 bg-primary rounded-full" />
-              <p className="mt-6 text-gray-500 leading-relaxed">
-                When your care provider, specialist, lab, therapist, and digital health platform all communicate seamlessly — you get care that's not just available, but truly connected.
-              </p>
             </div>
           </div>
         </div>
@@ -113,7 +105,7 @@ export default function Ecosystem() {
               Care Beyond Clinic Walls
             </h2>
             <p className="text-gray-500 max-w-2xl mx-auto">
-              BHH is building and supporting digital solutions that extend the reach of quality care — connecting patients to providers, families to updates, and communities to wellness resources.
+              BHH is building and supporting digital solutions that extend the reach of quality care beyond clinic walls.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -125,7 +117,7 @@ export default function Ecosystem() {
                 <FiMonitor className="w-7 h-7 text-primary" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors">LiveCare</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">Smarter care and trusted support for elder wellness — bringing peace of mind to families.</p>
+              <p className="text-gray-500 text-sm leading-relaxed">A structured elder care and assisted living platform connecting families to trained, verified caregivers — with real-time session updates and coordinated home care support.</p>
               <span className="inline-flex items-center gap-1 text-primary font-medium text-sm mt-4 group-hover:gap-2 transition-all">
                 Learn More <FiArrowRight className="w-4 h-4" />
               </span>
@@ -138,7 +130,7 @@ export default function Ecosystem() {
                 <FiMic className="w-7 h-7 text-emerald-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors">hEar Menders</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">Your digital hearing solution — accessible hearing care and audiology support.</p>
+              <p className="text-gray-500 text-sm leading-relaxed">A digital platform giving you instant access to licensed audiologists and ENT specialists — powered by hEar Max Centre and built for smarter, stress-free hearing care.</p>
               <span className="inline-flex items-center gap-1 text-primary font-medium text-sm mt-4 group-hover:gap-2 transition-all">
                 Learn More <FiArrowRight className="w-4 h-4" />
               </span>
@@ -151,7 +143,7 @@ export default function Ecosystem() {
       <section className="py-16 bg-white border-y border-gray-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-xl sm:text-2xl font-medium text-gray-900 leading-relaxed">
-            Rather than functioning as separate healthcare silos, the goal is integration - creating a system where care becomes easier to access, monitor, and coordinate.
+            Rather than functioning as separate healthcare silos, the goal is integration — creating a system where care becomes easier to access, monitor, and coordinate.
           </p>
         </div>
       </section>
@@ -163,9 +155,9 @@ export default function Ecosystem() {
             <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
               Our Services
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              What We Offer
-            </h2>
+            <p className="text-lg text-gray-500 max-w-3xl mx-auto mt-4">
+              Our network covers the full spectrum of healthcare needs — from prevention to recovery, from newborn to elder, from routine monitoring to specialist support.
+            </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {defaultServices.map(({ icon: Icon, name, description }) => (

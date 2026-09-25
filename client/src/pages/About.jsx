@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { FiHeart, FiLink, FiClock, FiEye, FiTarget } from 'react-icons/fi'
+import { FiHeart, FiLink, FiClock } from 'react-icons/fi'
 import ScrollReveal from '../components/ScrollReveal'
 import PageSections from '../components/PageSections'
 
@@ -25,9 +25,7 @@ const defaultCoreValues = [
 export default function About() {
   const [content, setContent] = useState({
     about_headline: 'More Than a Service. A Connected Health Ecosystem.',
-    about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care.',
-    about_mission: 'To build and sustain an integrated healthcare network that brings together clinics, specialists, diagnostics, therapy, and digital health solutions — making quality, coordinated care accessible to every individual and family in our community.',
-    about_vision: 'To be the most trusted integrated healthcare ecosystem in Ibadan and beyond — where every family has access to connected, continuous, and compassionate care.',
+    about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.',
   })
 
   useEffect(() => {
@@ -122,36 +120,6 @@ export default function About() {
               </div>
               </ScrollReveal>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Mission & Vision */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-8">
-            <ScrollReveal direction="left">
-            <div className="bg-warm-white rounded-3xl p-10 border border-gray-100">
-              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
-                <FiEye className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Our Vision</h3>
-              <p className="text-gray-500 leading-relaxed">
-                {content.about_vision}
-              </p>
-            </div>
-            </ScrollReveal>
-            <ScrollReveal direction="right">
-            <div className="bg-warm-white rounded-3xl p-10 border border-gray-100">
-              <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-6">
-                <FiTarget className="w-7 h-7 text-emerald-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h3>
-              <p className="text-gray-500 leading-relaxed">
-                {content.about_mission}
-              </p>
-            </div>
-            </ScrollReveal>
           </div>
         </div>
       </section>

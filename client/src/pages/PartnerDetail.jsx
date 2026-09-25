@@ -144,9 +144,6 @@ export default function PartnerDetail() {
                       {typeof service !== 'string' && (service.short_description || service.category) && (
                         <p className="text-sm text-gray-500 mt-1">{service.short_description || service.category}</p>
                       )}
-                      {typeof service !== 'string' && service.price ? (
-                        <p className="text-sm font-medium text-primary mt-1">₦{Number(service.price).toLocaleString()}</p>
-                      ) : null}
                     </div>
                   </div>
                 </div>
