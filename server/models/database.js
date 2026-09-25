@@ -730,8 +730,18 @@ async function migratePhase3() {
 async function migrateSeoSettings() {
   const insertSeo = db.prepare('INSERT OR IGNORE INTO seo_settings (page_id, meta_title, meta_description, canonical) VALUES (?, ?, ?, ?)');
   const seoPages = [
+    ['home', 'Bodija Health Hub — Wellness Starts Here', 'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.', 'https://bodijahealthhub.com/'],
+    ['about', 'About Us - Bodija Health Hub', 'Learn about Bodija Health Hub, an integrated healthcare network in Ibadan.', 'https://bodijahealthhub.com/about'],
+    ['services', 'Our Services - Bodija Health Hub', 'Explore our comprehensive healthcare services.', 'https://bodijahealthhub.com/services'],
     ['events', 'Events - Bodija Health Hub', 'Health talks, screenings and events at Bodija Health Hub.', 'https://bodijahealthhub.com/events'],
     ['programmes', 'Programmes - Bodija Health Hub', 'Community programmes and initiatives at Bodija Health Hub.', 'https://bodijahealthhub.com/programmes'],
+    ['platforms', 'Our Platforms - Bodija Health Hub', 'Discover our digital health platforms.', 'https://bodijahealthhub.com/platforms'],
+    ['blog', 'Newsroom - Bodija Health Hub', 'Health tips and news from our experts.', 'https://bodijahealthhub.com/newsroom'],
+    ['contact', 'Contact Us - Bodija Health Hub', 'Get in touch with Bodija Health Hub.', 'https://bodijahealthhub.com/contact'],
+    ['ecosystem', 'The Ecosystem - Bodija Health Hub', 'Our connected healthcare ecosystem.', 'https://bodijahealthhub.com/ecosystem'],
+    ['partners', 'Our Partners - Bodija Health Hub', 'Meet our healthcare partner network.', 'https://bodijahealthhub.com/partners'],
+    ['careers', 'Careers - Bodija Health Hub', 'Join our team at Bodija Health Hub.', 'https://bodijahealthhub.com/careers'],
+    ['faq', 'FAQ - Bodija Health Hub', 'Frequently asked questions.', 'https://bodijahealthhub.com/faq'],
     ['cookie_policy', 'Cookie Policy - Bodija Health Hub', 'How Bodija Health Hub uses cookies.', 'https://bodijahealthhub.com/cookie-policy'],
     ['privacy', 'Privacy Policy - Bodija Health Hub', 'How we protect your privacy.', 'https://bodijahealthhub.com/privacy'],
     ['terms', 'Terms of Use - Bodija Health Hub', 'Terms of using the BHH website.', 'https://bodijahealthhub.com/terms'],
@@ -1588,7 +1598,9 @@ async function migrateContentSync() {
     ).get();
     if (
       homeSeo &&
-      homeSeo.meta_title === 'Bodija Health Hub - Quality Healthcare in Ibadan'
+      (!homeSeo.meta_title ||
+        homeSeo.meta_title === 'Bodija Health Hub - Quality Healthcare in Ibadan' ||
+        homeSeo.meta_title === 'Bodija Health Hub - Wellness Starts Here')
     ) {
       await db.prepare(
         `UPDATE seo_settings SET
