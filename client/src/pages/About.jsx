@@ -137,7 +137,7 @@ export default function About() {
             to="/contact"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-colors"
           >
-            Get in Touch
+            Get Started
           </Link>
         </div>
       </section>
