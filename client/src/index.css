@@ -48,3 +48,22 @@ body {
   opacity: 0;
   animation: heroWord 0.5s ease-out forwards;
 }
+
+@keyframes heroSlideIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hero-slide {
+  animation: heroSlideIn 0.45s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-word {
+    opacity: 1;
+    animation: none;
+  }
+  .hero-slide {
+    animation: none;
+  }
+}

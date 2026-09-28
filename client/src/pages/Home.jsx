@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   FiHeart, FiLink2, FiClock, FiArrowRight, FiActivity, FiZap,
-  FiCheckCircle, FiUsers, FiCalendar, FiChevronRight, FiStar,
+  FiCheckCircle, FiUsers, FiCalendar, FiChevronRight, FiChevronLeft, FiStar,
   FiShield, FiDatabase, FiTool, FiGlobe, FiArrowUpRight,
   FiBookOpen, FiTrendingUp, FiInbox, FiRefreshCw, FiSearch,
 } from 'react-icons/fi'
@@ -69,12 +69,27 @@ function EmptyState({ icon: Icon, title, description, action }) {
 export default function Home() {
   const { isEnabled } = useFeatures()
   const [content, setContent] = useState({
-    hero_headline: 'Wellness Starts Here.',
-    hero_subtext: 'Bodija Health Hub is a community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together \u2014 making accessible, connected, and continuous care a reality for every family in Ibadan.',
-    hero_cta1_text: 'Explore the Ecosystem',
-    hero_cta1_link: '/ecosystem',
-    hero_cta2_text: 'Meet Our Partners',
-    hero_cta2_link: '/partners',
+    hero_slide1_eyebrow: "Ibadan's Integrated Healthcare Ecosystem",
+    hero_slide1_title: 'Wellness Starts Here.',
+    hero_slide1_subtext: 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.',
+    hero_slide1_cta1_text: 'Book Appointment',
+    hero_slide1_cta1_link: '/appointments',
+    hero_slide1_cta2_text: 'Visit Website',
+    hero_slide1_cta2_link: '',
+    hero_slide2_eyebrow: 'Bodija Advanced Care & Rehabilitation Centre',
+    hero_slide2_title: 'Restoring Function. Rebuilding Lives.',
+    hero_slide2_subtext: "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life.",
+    hero_slide2_cta1_text: 'Book Appointment',
+    hero_slide2_cta1_link: '/appointments',
+    hero_slide2_cta2_text: 'Visit Website',
+    hero_slide2_cta2_link: '',
+    hero_slide3_eyebrow: 'Bodija Advanced Care & Rehabilitation Centre',
+    hero_slide3_title: 'Every Step Forward Matters.',
+    hero_slide3_subtext: 'From physiotherapy and speech therapy to occupational and behavioral support — our specialist-led programmes are built to restore what matters most: your movement, your voice, your independence.',
+    hero_slide3_cta1_text: 'Book Appointment',
+    hero_slide3_cta1_link: '/appointments',
+    hero_slide3_cta2_text: 'Visit Website',
+    hero_slide3_cta2_link: '',
     about_headline: 'More Than a Service. A Connected Health Ecosystem.',
     about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.',
     ecosystem_headline: 'One Hub. Many Hands. Whole-Person Care.',
@@ -91,6 +106,26 @@ export default function Home() {
   const [programmes, setProgrammes] = useState([])
   const [testimonials, setTestimonials] = useState([])
   const [testimonialsLoading, setTestimonialsLoading] = useState(true)
+  const [heroSlide, setHeroSlide] = useState(0)
+  const [heroPaused, setHeroPaused] = useState(false)
+
+  useEffect(() => {
+    if (heroPaused) return undefined
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+    const id = setInterval(() => setHeroSlide(s => (s + 1) % 3), 7000)
+    return () => clearInterval(id)
+  }, [heroPaused])
+
+  const heroSlides = [1, 2, 3].map(n => ({
+    eyebrow: content[`hero_slide${n}_eyebrow`] || '',
+    title: content[`hero_slide${n}_title`] || '',
+    subtext: content[`hero_slide${n}_subtext`] || '',
+    cta1Text: content[`hero_slide${n}_cta1_text`] || 'Book Appointment',
+    cta1Link: content[`hero_slide${n}_cta1_link`] || '/appointments',
+    cta2Text: content[`hero_slide${n}_cta2_text`] || 'Visit Website',
+    cta2Link: content[`hero_slide${n}_cta2_link`] || '',
+  }))
+  const activeHeroSlide = heroSlides[heroSlide] || heroSlides[0]
 
   useEffect(() => {
     cachedFetch('/api/site-content', { useCache: false })
@@ -139,37 +174,85 @@ export default function Home() {
     <div className="overflow-hidden">
       <BackendStatusBanner />
 
-      {/* Hero */}
+      {/* Hero Carousel */}
       {isEnabled('home_hero') && (
-        <section className="relative min-h-[92vh] flex items-center bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white overflow-hidden">
+        <section
+          className="relative min-h-[92vh] flex items-center bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white overflow-hidden"
+          onMouseEnter={() => setHeroPaused(true)}
+          onMouseLeave={() => setHeroPaused(false)}
+          aria-label="Hero carousel"
+          aria-roledescription="carousel"
+        >
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.06]" />
           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-white/[0.03] rounded-full blur-3xl" />
           <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-emerald-500/[0.08] rounded-full blur-3xl" />
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 md:py-40 w-full">
-            <div className="max-w-3xl">
+            <div key={heroSlide} className="max-w-3xl hero-slide">
               <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium mb-8 border border-white/10">
                 <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
-                Bodija Health Hub
+                {activeHeroSlide.eyebrow}
               </span>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-[1.1] tracking-tight">
-                {(content.hero_headline || '').split(' ').map((word, i) => (
+                {(activeHeroSlide.title || '').split(' ').map((word, i) => (
                   <span key={i} className="inline-block hero-word" style={{ animationDelay: `${0.3 + i * 0.12}s` }}>
                     {word}{' '}
                   </span>
                 ))}
               </h1>
               <p className="text-lg sm:text-xl text-white/90 leading-relaxed mb-10 max-w-2xl">
-                {content.hero_subtext}
+                {activeHeroSlide.subtext}
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link to={content.hero_cta1_link || '/ecosystem'} className="group inline-flex items-center gap-2.5 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-all duration-200 shadow-lg shadow-black/10">
-                  {content.hero_cta1_text}
+                <Link to={activeHeroSlide.cta1Link} className="group inline-flex items-center gap-2.5 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-all duration-200 shadow-lg shadow-black/10">
+                  {activeHeroSlide.cta1Text}
                   <FiArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </Link>
-                <Link to={content.hero_cta2_link || '/partners'} className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-200">
-                  {content.hero_cta2_text}
-                </Link>
+                {activeHeroSlide.cta2Link ? (
+                  <Link to={activeHeroSlide.cta2Link} className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-200">
+                    {activeHeroSlide.cta2Text}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    title="Website coming soon"
+                    aria-disabled="true"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 opacity-60 cursor-not-allowed"
+                  >
+                    {activeHeroSlide.cta2Text}
+                  </button>
+                )}
               </div>
+            </div>
+            <div className="mt-12 flex items-center gap-5">
+              <button
+                type="button"
+                onClick={() => setHeroSlide(s => (s + 2) % 3)}
+                aria-label="Previous slide"
+                className="w-10 h-10 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              >
+                <FiChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2.5">
+                {heroSlides.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setHeroSlide(i)}
+                    aria-label={`Go to slide ${i + 1}`}
+                    aria-current={i === heroSlide ? 'true' : undefined}
+                    className={`transition-all rounded-full ${i === heroSlide ? 'w-7 h-2.5 bg-white' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'}`}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setHeroSlide(s => (s + 1) % 3)}
+                aria-label="Next slide"
+                className="w-10 h-10 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              >
+                <FiChevronRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </section>

@@ -81,70 +81,84 @@ export default function SiteContent() {
 
   const renderHeroTab = () => (
     <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Headline</label>
-        <input
-          type="text"
-          value={content.hero_headline || ''}
-          onChange={(e) => updateField('hero_headline', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-          placeholder="Wellness Starts Here."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Subtext</label>
-        <textarea
-          value={content.hero_subtext || ''}
-          onChange={(e) => updateField('hero_subtext', e.target.value)}
-          rows={4}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-          placeholder="Describe your healthcare ecosystem..."
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">CTA Button 1 Text</label>
-          <input
-            type="text"
-            value={content.hero_cta1_text || ''}
-            onChange={(e) => updateField('hero_cta1_text', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="Explore the Ecosystem"
-          />
+      {[1, 2, 3].map((n) => (
+        <div key={n} className="border border-gray-200 rounded-xl p-5 space-y-4">
+          <h3 className="font-semibold text-gray-900">Slide {n}</h3>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Eyebrow</label>
+            <input
+              type="text"
+              value={content[`hero_slide${n}_eyebrow`] || ''}
+              onChange={(e) => updateField(`hero_slide${n}_eyebrow`, e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Ibadan's Integrated Healthcare Ecosystem"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Headline / Tagline</label>
+            <input
+              type="text"
+              value={content[`hero_slide${n}_title`] || ''}
+              onChange={(e) => updateField(`hero_slide${n}_title`, e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Wellness Starts Here."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subtext</label>
+            <textarea
+              value={content[`hero_slide${n}_subtext`] || ''}
+              onChange={(e) => updateField(`hero_slide${n}_subtext`, e.target.value)}
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Describe this slide..."
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Primary Button Text</label>
+              <input
+                type="text"
+                value={content[`hero_slide${n}_cta1_text`] || ''}
+                onChange={(e) => updateField(`hero_slide${n}_cta1_text`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Book Appointment"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Primary Button Link</label>
+              <input
+                type="text"
+                value={content[`hero_slide${n}_cta1_link`] || ''}
+                onChange={(e) => updateField(`hero_slide${n}_cta1_link`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="/appointments"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Button Text</label>
+              <input
+                type="text"
+                value={content[`hero_slide${n}_cta2_text`] || ''}
+                onChange={(e) => updateField(`hero_slide${n}_cta2_text`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Visit Website"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Button Link</label>
+              <input
+                type="text"
+                value={content[`hero_slide${n}_cta2_link`] || ''}
+                onChange={(e) => updateField(`hero_slide${n}_cta2_link`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Leave empty until the website exists"
+              />
+              <p className="text-xs text-gray-400 mt-1">While empty, the button shows as disabled (&quot;coming soon&quot;).</p>
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">CTA Button 1 Link</label>
-          <input
-            type="text"
-            value={content.hero_cta1_link || ''}
-            onChange={(e) => updateField('hero_cta1_link', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="/ecosystem"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">CTA Button 2 Text</label>
-          <input
-            type="text"
-            value={content.hero_cta2_text || ''}
-            onChange={(e) => updateField('hero_cta2_text', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="Meet Our Partners"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">CTA Button 2 Link</label>
-          <input
-            type="text"
-            value={content.hero_cta2_link || ''}
-            onChange={(e) => updateField('hero_cta2_link', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="/partners"
-          />
-        </div>
-      </div>
+      ))}
     </div>
   )
 
