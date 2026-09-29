@@ -84,6 +84,83 @@ export default function SiteContent() {
       {[1, 2, 3].map((n) => (
         <div key={n} className="border border-gray-200 rounded-xl p-5 space-y-4">
           <h3 className="font-semibold text-gray-900">Slide {n}</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
+              <input
+                type="text"
+                value={content[`hero_slide${n}_org`] || ''}
+                onChange={(e) => updateField(`hero_slide${n}_org`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="BODIJA HEALTH HUB"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Logo (URL)</label>
+              <input
+                type="text"
+                value={content[`hero_slide${n}_logo`] || ''}
+                onChange={(e) => updateField(`hero_slide${n}_logo`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="/hero/bhh-mark-white.png"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Background Image (URL)</label>
+            <input
+              type="text"
+              value={content[`hero_slide${n}_image`] || ''}
+              onChange={(e) => updateField(`hero_slide${n}_image`, e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="/hero/slide-1.jpg"
+            />
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Active</label>
+              <select
+                value={content[`hero_slide${n}_active`] !== '0' ? '1' : '0'}
+                onChange={(e) => updateField(`hero_slide${n}_active`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="1">Visible</option>
+                <option value="0">Hidden</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
+              <input
+                type="number"
+                min="1"
+                max="9"
+                value={content[`hero_slide${n}_order`] || n}
+                onChange={(e) => updateField(`hero_slide${n}_order`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Duration (ms)</label>
+              <input
+                type="number"
+                min="1000"
+                step="500"
+                value={content[`hero_slide${n}_duration`] || '4000'}
+                onChange={(e) => updateField(`hero_slide${n}_duration`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image Focus</label>
+              <input
+                type="text"
+                value={content[`hero_slide${n}_position`] || ''}
+                onChange={(e) => updateField(`hero_slide${n}_position`, e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="center"
+              />
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Eyebrow</label>
             <input

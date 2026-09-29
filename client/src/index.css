@@ -58,6 +58,18 @@ body {
   animation: heroSlideIn 0.45s ease-out;
 }
 
+@keyframes heroProgress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.hero-progress {
+  width: 0;
+  animation-name: heroProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-word {
     opacity: 1;
@@ -65,5 +77,9 @@ body {
   }
   .hero-slide {
     animation: none;
+  }
+  .hero-progress {
+    animation: none;
+    width: 100%;
   }
 }

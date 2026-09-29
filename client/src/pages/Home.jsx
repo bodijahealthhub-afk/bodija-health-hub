@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   FiHeart, FiLink2, FiClock, FiArrowRight, FiActivity, FiZap,
@@ -90,6 +90,27 @@ export default function Home() {
     hero_slide3_cta1_link: '/appointments',
     hero_slide3_cta2_text: 'Visit Website',
     hero_slide3_cta2_link: '',
+    hero_slide1_org: 'BODIJA HEALTH HUB',
+    hero_slide1_logo: '/hero/bhh-mark-white.png',
+    hero_slide1_image: '/hero/slide-1.jpg',
+    hero_slide1_active: '1',
+    hero_slide1_order: '1',
+    hero_slide1_duration: '4000',
+    hero_slide1_position: '68% 45%',
+    hero_slide2_org: 'BACR',
+    hero_slide2_logo: '/hero/bacr-mark-white.png',
+    hero_slide2_image: '/hero/slide-2.jpg',
+    hero_slide2_active: '1',
+    hero_slide2_order: '2',
+    hero_slide2_duration: '4000',
+    hero_slide2_position: '65% 50%',
+    hero_slide3_org: 'BACR',
+    hero_slide3_logo: '/hero/bacr-mark-white.png',
+    hero_slide3_image: '/hero/slide-3.jpg',
+    hero_slide3_active: '1',
+    hero_slide3_order: '3',
+    hero_slide3_duration: '4000',
+    hero_slide3_position: '58% 45%',
     about_headline: 'More Than a Service. A Connected Health Ecosystem.',
     about_description: 'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.',
     ecosystem_headline: 'One Hub. Many Hands. Whole-Person Care.',
@@ -108,15 +129,17 @@ export default function Home() {
   const [testimonialsLoading, setTestimonialsLoading] = useState(true)
   const [heroSlide, setHeroSlide] = useState(0)
   const [heroPaused, setHeroPaused] = useState(false)
+  const [heroTimerKey, setHeroTimerKey] = useState(0)
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [failedAssets, setFailedAssets] = useState({})
+  const [imagesReady, setImagesReady] = useState(false)
+  const touchStartX = useRef(null)
 
-  useEffect(() => {
-    if (heroPaused) return undefined
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
-    const id = setInterval(() => setHeroSlide(s => (s + 1) % 3), 7000)
-    return () => clearInterval(id)
-  }, [heroPaused])
-
-  const heroSlides = [1, 2, 3].map(n => ({
+  const allHeroSlides = [1, 2, 3].map(n => ({
+    org: content[`hero_slide${n}_org`] || '',
+    logo: content[`hero_slide${n}_logo`] || '',
+    image: content[`hero_slide${n}_image`] || '',
+    position: content[`hero_slide${n}_position`] || 'center',
     eyebrow: content[`hero_slide${n}_eyebrow`] || '',
     title: content[`hero_slide${n}_title`] || '',
     subtext: content[`hero_slide${n}_subtext`] || '',
@@ -124,8 +147,50 @@ export default function Home() {
     cta1Link: content[`hero_slide${n}_cta1_link`] || '/appointments',
     cta2Text: content[`hero_slide${n}_cta2_text`] || 'Visit Website',
     cta2Link: content[`hero_slide${n}_cta2_link`] || '',
+    duration: parseInt(content[`hero_slide${n}_duration`], 10) || 4000,
+    active: content[`hero_slide${n}_active`] !== '0',
+    order: parseInt(content[`hero_slide${n}_order`], 10) || n,
   }))
-  const activeHeroSlide = heroSlides[heroSlide] || heroSlides[0]
+  const activeSlides = allHeroSlides
+    .filter(s => s.active)
+    .sort((a, b) => a.order - b.order)
+  const heroSlides = activeSlides.length ? activeSlides : allHeroSlides
+  const heroCount = heroSlides.length
+  const heroIndex = heroSlide % heroCount
+  const activeHeroSlide = heroSlides[heroIndex]
+  const slideDuration = activeHeroSlide?.duration || 4000
+
+  useEffect(() => {
+    if (!window.matchMedia) return undefined
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReducedMotion(mq.matches)
+    const onChange = (e) => setReducedMotion(e.matches)
+    if (mq.addEventListener) {
+      mq.addEventListener('change', onChange)
+      return () => mq.removeEventListener('change', onChange)
+    }
+    mq.addListener(onChange)
+    return () => mq.removeListener(onChange)
+  }, [])
+
+  useEffect(() => {
+    const id = setTimeout(() => setImagesReady(true), 0)
+    return () => clearTimeout(id)
+  }, [])
+
+  useEffect(() => {
+    if (heroPaused || reducedMotion) return undefined
+    const id = setInterval(() => setHeroSlide(s => (s + 1) % heroCount), slideDuration)
+    return () => clearInterval(id)
+  }, [heroPaused, reducedMotion, heroTimerKey, heroCount, slideDuration])
+
+  const goToHeroSlide = (i) => {
+    setHeroSlide(i)
+    setHeroTimerKey(k => k + 1)
+  }
+  const heroNext = () => goToHeroSlide((heroIndex + 1) % heroCount)
+  const heroPrev = () => goToHeroSlide((heroIndex - 1 + heroCount) % heroCount)
+  const markAssetFailed = (url) => setFailedAssets(prev => ({ ...prev, [url]: true }))
 
   useEffect(() => {
     cachedFetch('/api/site-content', { useCache: false })
@@ -177,81 +242,156 @@ export default function Home() {
       {/* Hero Carousel */}
       {isEnabled('home_hero') && (
         <section
-          className="relative min-h-[92vh] flex items-center bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white overflow-hidden"
+          className="relative min-h-[70vh] md:min-h-[75vh] md:max-h-[880px] flex items-center bg-gradient-to-br from-primary via-teal-700 to-emerald-800 text-white overflow-hidden"
           onMouseEnter={() => setHeroPaused(true)}
           onMouseLeave={() => setHeroPaused(false)}
+          onFocus={() => setHeroPaused(true)}
+          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setHeroPaused(false) }}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
+          onTouchEnd={(e) => {
+            if (touchStartX.current === null) return
+            const dx = e.changedTouches[0].clientX - touchStartX.current
+            touchStartX.current = null
+            if (Math.abs(dx) > 50) { if (dx < 0) heroNext(); else heroPrev() }
+          }}
           aria-label="Hero carousel"
           aria-roledescription="carousel"
         >
+          {heroSlides[0]?.image && !failedAssets[heroSlides[0].image] && (
+            <link rel="preload" as="image" href={heroSlides[0].image} />
+          )}
+          <div className="absolute inset-0">
+            {imagesReady && heroSlides.map((s, i) => (
+              s.image && !failedAssets[s.image] ? (
+                <img
+                  key={`${i}-${s.image}`}
+                  src={s.image}
+                  alt=""
+                  aria-hidden="true"
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-[800ms] ease-out ${i === heroIndex ? 'opacity-100' : 'opacity-0'} ${reducedMotion ? '' : (i === heroIndex ? 'scale-100' : 'scale-105')}`}
+                  style={{ objectPosition: s.position }}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  onError={() => markAssetFailed(s.image)}
+                />
+              ) : null
+            ))}
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0B7F74]/95 via-emerald-900/70 to-emerald-900/15" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.06]" />
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-white/[0.03] rounded-full blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-emerald-500/[0.08] rounded-full blur-3xl" />
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 md:py-40 w-full">
-            <div key={heroSlide} className="max-w-3xl hero-slide">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium mb-8 border border-white/10">
-                <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
-                {activeHeroSlide.eyebrow}
-              </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-[1.1] tracking-tight">
-                {(activeHeroSlide.title || '').split(' ').map((word, i) => (
-                  <span key={i} className="inline-block hero-word" style={{ animationDelay: `${0.3 + i * 0.12}s` }}>
-                    {word}{' '}
-                  </span>
-                ))}
-              </h1>
-              <p className="text-lg sm:text-xl text-white/90 leading-relaxed mb-10 max-w-2xl">
-                {activeHeroSlide.subtext}
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Link to={activeHeroSlide.cta1Link} className="group inline-flex items-center gap-2.5 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-all duration-200 shadow-lg shadow-black/10">
-                  {activeHeroSlide.cta1Text}
-                  <FiArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-                {activeHeroSlide.cta2Link ? (
-                  <Link to={activeHeroSlide.cta2Link} className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-200">
-                    {activeHeroSlide.cta2Text}
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    title="Website coming soon"
-                    aria-disabled="true"
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 opacity-60 cursor-not-allowed"
-                  >
-                    {activeHeroSlide.cta2Text}
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="mt-12 flex items-center gap-5">
-              <button
-                type="button"
-                onClick={() => setHeroSlide(s => (s + 2) % 3)}
-                aria-label="Previous slide"
-                className="w-10 h-10 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-              >
-                <FiChevronLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2.5">
-                {heroSlides.map((_, i) => (
-                  <button
+          <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 md:pt-36 pb-14 md:pb-20">
+            <div className="relative min-h-[470px] sm:min-h-[490px] md:min-h-[510px] max-w-3xl">
+              {heroSlides.map((s, i) => {
+                const active = i === heroIndex
+                const rise = reducedMotion ? '' : 'translate-y-0'
+                const sink = reducedMotion ? '' : 'translate-y-3'
+                const layerCls = active
+                  ? `opacity-100 ${rise} pointer-events-auto`
+                  : `opacity-0 ${sink} pointer-events-none`
+                const el = (delay) => `transition-all duration-700 ${active ? `opacity-100 ${rise} ${delay}` : `opacity-0 ${sink}`}`
+                return (
+                  <div
                     key={i}
-                    type="button"
-                    onClick={() => setHeroSlide(i)}
-                    aria-label={`Go to slide ${i + 1}`}
-                    aria-current={i === heroSlide ? 'true' : undefined}
-                    className={`transition-all rounded-full ${i === heroSlide ? 'w-7 h-2.5 bg-white' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'}`}
-                  />
-                ))}
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={`Slide ${i + 1} of ${heroCount}`}
+                    aria-hidden={!active}
+                    className={`absolute inset-0 transition-all duration-700 ${layerCls}`}
+                  >
+                    {s.logo && !failedAssets[s.logo] && (
+                      <img
+                        src={s.logo}
+                        alt=""
+                        aria-hidden="true"
+                        className={`block h-9 md:h-11 w-auto mb-4 ${el('')}`}
+                        onError={() => markAssetFailed(s.logo)}
+                      />
+                    )}
+                    <h1 className={`text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-[1.05] mb-4 ${el('')}`}>
+                      {s.org}
+                    </h1>
+                    <span className={`inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium border border-white/10 mb-5 ${el('delay-100')}`}>
+                      <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
+                      {s.eyebrow}
+                    </span>
+                    <h2 key={`${i}-${active}`} className={`block text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.15] mb-5 ${el('delay-200')}`}>
+                      {(s.title || '').split(' ').map((word, w) => (
+                        <span key={w} className="inline-block hero-word" style={{ animationDelay: `${0.3 + w * 0.12}s` }}>{`${word} `}</span>
+                      ))}
+                    </h2>
+                    <p className={`text-base sm:text-lg text-white/85 leading-relaxed mb-8 max-w-2xl ${el('delay-300')}`}>
+                      {s.subtext}
+                    </p>
+                    <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 ${el('delay-400')}`}>
+                      <Link to={s.cta1Link} className="group inline-flex items-center justify-center gap-2.5 px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-all duration-200 shadow-lg shadow-black/10">
+                        {s.cta1Text}
+                        <FiArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                      </Link>
+                      {s.cta2Link ? (
+                        <Link to={s.cta2Link} className="inline-flex items-center justify-center gap-2 px-7 sm:px-8 py-3.5 sm:py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-200">
+                          {s.cta2Text}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          title="Website coming soon"
+                          aria-disabled="true"
+                          className="inline-flex items-center justify-center gap-2 px-7 sm:px-8 py-3.5 sm:py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 opacity-60 cursor-not-allowed"
+                        >
+                          {s.cta2Text}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-8 flex items-center gap-3 sm:gap-4">
+              <button
+                type="button"
+                onClick={heroPrev}
+                aria-label="Previous slide"
+                className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0"
+              >
+                <FiChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+              <div className="flex items-center gap-3 sm:gap-4">
+                {heroSlides.map((s, i) => {
+                  const active = i === heroIndex
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => goToHeroSlide(i)}
+                      aria-label={`Go to slide ${i + 1}`}
+                      aria-current={active ? 'true' : undefined}
+                      className="group flex items-center gap-2"
+                    >
+                      <span className={`text-[11px] font-semibold tabular-nums transition-colors ${active ? 'text-white' : 'text-white/50 group-hover:text-white/80'}`}>
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span className="relative block h-0.5 w-8 sm:w-12 rounded-full bg-white/25 overflow-hidden">
+                        {active && (
+                          <span
+                            key={`${heroIndex}-${heroTimerKey}`}
+                            className="absolute inset-y-0 left-0 bg-white rounded-full hero-progress"
+                            style={{ animationDuration: `${s.duration}ms`, animationPlayState: heroPaused ? 'paused' : 'running' }}
+                          />
+                        )}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
               <button
                 type="button"
-                onClick={() => setHeroSlide(s => (s + 1) % 3)}
+                onClick={heroNext}
                 aria-label="Next slide"
-                className="w-10 h-10 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0"
               >
-                <FiChevronRight className="w-5 h-5" />
+                <FiChevronRight className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             </div>
           </div>
