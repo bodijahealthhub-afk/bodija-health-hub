@@ -549,7 +549,7 @@ async function insertContentDefaults() {
     ['hero_cta2_text', 'Meet Our Partners'],
     ['hero_cta2_link', '/partners'],
     ['hero_image', ''],
-    ['hero_slide1_eyebrow', 'Bodija Health Hub'],
+    ['hero_slide1_eyebrow', ''],
     ['hero_slide1_title', 'Wellness Starts Here.'],
     ['hero_slide1_subtext', 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.'],
     ['hero_slide1_cta1_text', 'Explore Ecosystem'],
@@ -571,8 +571,8 @@ async function insertContentDefaults() {
     ['hero_slide3_cta2_text', 'Visit Website'],
     ['hero_slide3_cta2_link', ''],
     ['hero_slide1_org', 'BHH'],
-    ['hero_slide1_org_style', 'text'],
-    ['hero_slide1_logo', '/hero/bhh-mark-white.png'],
+    ['hero_slide1_org_style', 'logo'],
+    ['hero_slide1_logo', '/hero/bhh-lockup-white.png'],
     ['hero_slide1_image', '/hero/slide-1.jpg'],
     ['hero_slide1_active', '1'],
     ['hero_slide1_order', '3'],
@@ -1837,6 +1837,9 @@ async function migrateContentSync() {
     ['hero_slide1_cta1_link', '/appointments', '/ecosystem'],
     ['hero_slide1_cta2_text', 'Visit Website', 'Our Services'],
     ['hero_slide1_cta2_link', '', '/services'],
+    ['hero_slide1_org_style', 'text', 'logo'],
+    ['hero_slide1_logo', '/hero/bhh-mark-white.png', '/hero/bhh-lockup-white.png'],
+    ['hero_slide1_eyebrow', 'Bodija Health Hub', ''],
   ];
 
   const get = db.prepare('SELECT value FROM site_content WHERE key = ?');
@@ -1856,7 +1859,7 @@ async function migrateContentSync() {
   try {
     const ensure = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?, ?)');
     for (const [key, value] of [
-      ['hero_slide1_org_style', 'text'],
+      ['hero_slide1_org_style', 'logo'],
       ['hero_slide2_org_style', 'logo'],
       ['hero_slide3_org_style', 'logo'],
       ...LATE_CONTENT_DEFAULTS,

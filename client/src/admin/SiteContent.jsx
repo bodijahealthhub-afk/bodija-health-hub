@@ -180,7 +180,7 @@ export default function SiteContent() {
                 value={content[`hero_slide${n}_logo`] || ''}
                 onChange={(e) => updateField(`hero_slide${n}_logo`, e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="/hero/bhh-mark-white.png"
+                placeholder="/hero/bhh-lockup-white.png"
               />
             </div>
           </div>

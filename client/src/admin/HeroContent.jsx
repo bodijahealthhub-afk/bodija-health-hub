@@ -3,14 +3,14 @@ import { clearCache } from '../utils/api';
 
 const SLIDE_DEFAULTS = {
   slide1_org: 'BHH',
-  slide1_org_style: 'text',
-  slide1_logo: '/hero/bhh-mark-white.png',
+  slide1_org_style: 'logo',
+  slide1_logo: '/hero/bhh-lockup-white.png',
   slide1_image: '/hero/slide-1.jpg',
   slide1_active: '1',
   slide1_order: '3',
   slide1_duration: '4000',
   slide1_position: '68% 45%',
-  slide1_eyebrow: 'Bodija Health Hub',
+  slide1_eyebrow: '',
   slide1_title: 'Wellness Starts Here.',
   slide1_subtext: 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.',
   slide1_cta1_text: 'Explore Ecosystem',

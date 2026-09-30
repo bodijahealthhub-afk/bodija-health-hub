@@ -78,7 +78,7 @@ function EmptyState({ icon: Icon, title, description, action }) {
 export default function Home() {
   const { isEnabled } = useFeatures()
   const [content, setContent] = useState({
-    hero_slide1_eyebrow: 'Bodija Health Hub',
+    hero_slide1_eyebrow: '',
     hero_slide1_title: 'Wellness Starts Here.',
     hero_slide1_subtext: 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.',
     hero_slide1_cta1_text: 'Explore Ecosystem',
@@ -100,11 +100,11 @@ export default function Home() {
     hero_slide3_cta2_text: 'Visit Website',
     hero_slide3_cta2_link: '',
     hero_slide1_org: 'BHH',
-    hero_slide1_logo: '/hero/bhh-mark-white.png',
+    hero_slide1_logo: '/hero/bhh-lockup-white.png',
     hero_slide1_image: '/hero/slide-1.jpg',
     hero_slide1_active: '1',
     hero_slide1_order: '3',
-    hero_slide1_org_style: 'text',
+    hero_slide1_org_style: 'logo',
     hero_slide1_duration: '4000',
     hero_slide1_position: '68% 45%',
     hero_slide2_org: 'BACR',

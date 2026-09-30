@@ -77,17 +77,16 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(container.querySelectorAll('img[src="/hero/bacr-mark-white.png"]')).toHaveLength(2)
   })
 
-  it('renders the BHH slide third: mark above big bold BHH, pill reads Bodija Health Hub', () => {
+  it('renders the BHH slide third: full white lockup inside the h1, no pill, CTAs preserved', () => {
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: 'Go to slide 3' }))
     const group = activeSlideGroup()
     const h1 = group.querySelector('h1')
-    expect(h1.textContent).toBe('BHH')
-    expect(h1.getAttribute('class')).toContain('text-8xl')
-    const mark = group.querySelector('img[src="/hero/bhh-mark-white.png"]')
-    expect(mark).toBeTruthy()
-    expect(mark.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.getByText('Bodija Health Hub')).toBeInTheDocument()
+    const lockup = h1.querySelector('img[src="/hero/bhh-lockup-white.png"]')
+    expect(lockup).toBeTruthy()
+    expect(lockup.getAttribute('alt')).toBe('BHH')
+    expect(h1.querySelector('.text-8xl')).toBeNull()
+    expect(within(group).queryByText('Bodija Health Hub')).toBeNull()
     expect(group.querySelector('h2').textContent).toContain('Wellness Starts Here.')
     const explore = within(group).getByRole('link', { name: 'Explore Ecosystem' })
     expect(explore).toHaveAttribute('href', '/ecosystem')
@@ -95,6 +94,15 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(ourServices).toHaveAttribute('href', '/services')
     expect(within(group).queryByRole('button', { name: 'Visit Website' })).toBeNull()
     expect(within(group).queryByText('Book Appointment')).toBeNull()
+  })
+
+  it('falls back to big BHH text when the BHH lockup image fails to load', () => {
+    renderHome()
+    fireEvent.click(screen.getByRole('button', { name: 'Go to slide 3' }))
+    const lockup = activeSlideGroup().querySelector('img[src="/hero/bhh-lockup-white.png"]')
+    fireEvent.error(lockup)
+    expect(activeSlideGroup().querySelector('img[src="/hero/bhh-lockup-white.png"]')).toBeNull()
+    expect(screen.getByRole('heading', { level: 1, name: 'BHH' }).textContent).toBe('BHH')
   })
 
   it('loads background photos with per-slide object-position from CMS', async () => {
