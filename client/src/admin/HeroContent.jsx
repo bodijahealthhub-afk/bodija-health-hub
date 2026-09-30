@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { clearCache } from '../utils/api';
 
 const SLIDE_DEFAULTS = {
-  slide1_org: 'BODIJA HEALTH HUB',
+  slide1_org: 'BHH',
+  slide1_org_style: 'text',
   slide1_logo: '/hero/bhh-mark-white.png',
   slide1_image: '/hero/slide-1.jpg',
   slide1_active: '1',
-  slide1_order: '1',
+  slide1_order: '3',
   slide1_duration: '4000',
   slide1_position: '68% 45%',
-  slide1_eyebrow: "Ibadan's Integrated Healthcare Ecosystem",
+  slide1_eyebrow: 'Bodija Health Hub',
   slide1_title: 'Wellness Starts Here.',
   slide1_subtext: 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.',
   slide1_cta1_text: 'Book Appointment',
@@ -17,13 +18,14 @@ const SLIDE_DEFAULTS = {
   slide1_cta2_text: 'Visit Website',
   slide1_cta2_link: '',
   slide2_org: 'BACR',
+  slide2_org_style: 'logo',
   slide2_logo: '/hero/bacr-mark-white.png',
   slide2_image: '/hero/slide-2.jpg',
   slide2_active: '1',
-  slide2_order: '2',
+  slide2_order: '1',
   slide2_duration: '4000',
   slide2_position: '65% 50%',
-  slide2_eyebrow: 'Bodija Advanced Care & Rehabilitation Centre',
+  slide2_eyebrow: '',
   slide2_title: 'Restoring Function. Rebuilding Lives.',
   slide2_subtext: "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life.",
   slide2_cta1_text: 'Book Appointment',
@@ -31,13 +33,14 @@ const SLIDE_DEFAULTS = {
   slide2_cta2_text: 'Visit Website',
   slide2_cta2_link: '',
   slide3_org: 'BACR',
+  slide3_org_style: 'logo',
   slide3_logo: '/hero/bacr-mark-white.png',
   slide3_image: '/hero/slide-3.jpg',
   slide3_active: '1',
-  slide3_order: '3',
+  slide3_order: '2',
   slide3_duration: '4000',
   slide3_position: '58% 45%',
-  slide3_eyebrow: 'Bodija Advanced Care & Rehabilitation Centre',
+  slide3_eyebrow: '',
   slide3_title: 'Every Step Forward Matters.',
   slide3_subtext: 'From physiotherapy and speech therapy to occupational and behavioral support — our specialist-led programmes are built to restore what matters most: your movement, your voice, your independence.',
   slide3_cta1_text: 'Book Appointment',
@@ -48,6 +51,7 @@ const SLIDE_DEFAULTS = {
 
 const SLIDE_FIELD_LABELS = {
   org: 'Organization Name',
+  org_style: 'Name Display',
   logo: 'Logo (URL)',
   image: 'Background Image (URL)',
   active: 'Visibility',
@@ -64,10 +68,10 @@ const SLIDE_FIELD_LABELS = {
 };
 
 const SLIDE_FIELDS = [
-  'org', 'logo', 'image', 'active', 'order', 'duration', 'position',
+  'org', 'org_style', 'logo', 'image', 'active', 'order', 'duration', 'position',
   'eyebrow', 'title', 'subtext', 'cta1_text', 'cta1_link', 'cta2_text', 'cta2_link',
 ];
-const SLIDE_FIELD_RE = /^hero_slide[123]_(org|logo|image|active|order|duration|position|eyebrow|title|subtext|cta1_text|cta1_link|cta2_text|cta2_link)$/;
+const SLIDE_FIELD_RE = /^hero_slide[123]_(org|org_style|logo|image|active|order|duration|position|eyebrow|title|subtext|cta1_text|cta1_link|cta2_text|cta2_link)$/;
 
 const HeroContent = () => {
   const [loading, setLoading] = useState(true);
@@ -148,6 +152,7 @@ const HeroContent = () => {
   const preview = slides[`slide${previewSlide + 1}_title`]
     ? {
         org: slides[`slide${previewSlide + 1}_org`] || '',
+        orgStyle: slides[`slide${previewSlide + 1}_org_style`] || 'text',
         logo: slides[`slide${previewSlide + 1}_logo`] || '',
         image: slides[`slide${previewSlide + 1}_image`] || '',
         eyebrow: slides[`slide${previewSlide + 1}_eyebrow`] || '',
@@ -210,6 +215,15 @@ const HeroContent = () => {
                       <option value="1">Visible</option>
                       <option value="0">Hidden</option>
                     </select>
+                  ) : field === 'org_style' ? (
+                    <select
+                      value={slides[`slide${n}_${field}`] || 'text'}
+                      onChange={(e) => updateField(`slide${n}_${field}`, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    >
+                      <option value="text">Big text (under logo mark)</option>
+                      <option value="logo">Inside logo lockup (name in logo)</option>
+                    </select>
                   ) : (
                     <input
                       type={field === 'order' || field === 'duration' ? 'number' : 'text'}
@@ -242,13 +256,23 @@ const HeroContent = () => {
             <div className="relative z-10 p-8 text-white max-w-lg">
               {preview && (
                 <>
-                  {preview.logo && (
-                    <img src={preview.logo} alt="" className="h-9 w-auto mb-3" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                  {preview.orgStyle === 'logo' && preview.logo ? (
+                    <h3 className="mb-3">
+                      <img src={preview.logo} alt={preview.org} className="h-24 w-auto" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                    </h3>
+                  ) : (
+                    <>
+                      {preview.logo && (
+                        <img src={preview.logo} alt="" className="h-9 w-auto mb-3" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                      )}
+                      <h3 className="text-2xl font-black tracking-tight mb-2">{preview.org || 'ORGANIZATION NAME'}</h3>
+                    </>
                   )}
-                  <h3 className="text-2xl font-black tracking-tight mb-2">{preview.org || 'ORGANIZATION NAME'}</h3>
-                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-medium mb-4 border border-white/10">
-                    {preview.eyebrow}
-                  </span>
+                  {preview.eyebrow && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-medium mb-4 border border-white/10">
+                      {preview.eyebrow}
+                    </span>
+                  )}
                   <p className="text-xl font-extrabold mb-3 leading-tight">{preview.title || 'Your headline here'}</p>
                   <p className="text-teal-100 mb-6 text-sm leading-relaxed">{preview.subtext || 'Your subtext here'}</p>
                   <div className="flex flex-wrap gap-3">

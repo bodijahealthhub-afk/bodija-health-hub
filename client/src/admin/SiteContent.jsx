@@ -92,7 +92,7 @@ export default function SiteContent() {
                 value={content[`hero_slide${n}_org`] || ''}
                 onChange={(e) => updateField(`hero_slide${n}_org`, e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="BODIJA HEALTH HUB"
+                placeholder="BHH"
               />
             </div>
             <div>
@@ -105,6 +105,17 @@ export default function SiteContent() {
                 placeholder="/hero/bhh-mark-white.png"
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name Display</label>
+            <select
+              value={content[`hero_slide${n}_org_style`] || 'text'}
+              onChange={(e) => updateField(`hero_slide${n}_org_style`, e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="text">Big text (under logo mark)</option>
+              <option value="logo">Inside logo lockup (name in logo)</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Background Image (URL)</label>
@@ -168,7 +179,7 @@ export default function SiteContent() {
               value={content[`hero_slide${n}_eyebrow`] || ''}
               onChange={(e) => updateField(`hero_slide${n}_eyebrow`, e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Ibadan's Integrated Healthcare Ecosystem"
+              placeholder="Bodija Health Hub"
             />
           </div>
           <div>

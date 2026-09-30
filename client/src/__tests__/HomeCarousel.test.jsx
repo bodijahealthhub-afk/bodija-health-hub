@@ -35,7 +35,7 @@ function tick(ms) {
   })
 }
 
-describe('Home hero carousel (BACR_Carousel_v2.docx + hero redesign spec)', () => {
+describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
@@ -50,12 +50,13 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + hero redesign spec)', () =
     vi.useRealTimers()
   })
 
-  it('renders slide 1: BHH org name as h1, pill eyebrow, doc headline, Book Appointment, disabled Visit Website', () => {
+  it('renders slide 1: BACR lockup as the h1, no pill, doc headline, Book Appointment, disabled Visit Website', () => {
     renderHome()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('BODIJA HEALTH HUB')
-    expect(screen.getByText("Ibadan's Integrated Healthcare Ecosystem")).toBeInTheDocument()
-    expect(activeSlideGroup().querySelector('h2').textContent).toContain('Wellness Starts Here.')
-    expect(screen.getByText(/A community-based integrated healthcare ecosystem/)).toBeInTheDocument()
+    const h1 = screen.getByRole('heading', { level: 1, name: 'BACR' })
+    expect(h1.querySelector('img[src="/hero/bacr-mark-white.png"]')).toBeTruthy()
+    expect(screen.queryByText('Bodija Advanced Care & Rehabilitation Centre')).toBeNull()
+    expect(activeSlideGroup().querySelector('h2').textContent).toContain('Restoring Function. Rebuilding Lives.')
+    expect(activeSlideGroup().textContent).toContain("Ibadan's dedicated rehabilitation centre")
     const book = screen.getByRole('link', { name: /Book Appointment/ })
     expect(book).toHaveAttribute('href', '/appointments')
     const visit = screen.getByRole('button', { name: 'Visit Website' })
@@ -63,14 +64,31 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + hero redesign spec)', () =
     expect(visit).toHaveAttribute('title', 'Website coming soon')
   })
 
-  it('places the white logo mark above the organization name on the active slide', () => {
+  it('shows the BACR lockup big (in-your-face) and no separate org text on BACR slides', () => {
     const { container } = renderHome()
     const group = activeSlideGroup()
-    const logo = group.querySelector('img[src="/hero/bhh-mark-white.png"]')
-    expect(logo).toBeTruthy()
+    const lockup = group.querySelector('h1 img[src="/hero/bacr-mark-white.png"]')
+    expect(lockup).toBeTruthy()
+    expect(lockup.getAttribute('class')).toContain('h-40')
+    expect(lockup.getAttribute('class')).toContain('md:h-56')
+    expect(lockup.getAttribute('alt')).toBe('BACR')
+    const textH1 = [...group.querySelectorAll('h1')].find(el => el.textContent.includes('BACR'))
+    expect(textH1).toBeUndefined()
+    expect(container.querySelectorAll('img[src="/hero/bacr-mark-white.png"]')).toHaveLength(2)
+  })
+
+  it('renders the BHH slide third: mark above big bold BHH, pill reads Bodija Health Hub', () => {
+    renderHome()
+    fireEvent.click(screen.getByRole('button', { name: 'Go to slide 3' }))
+    const group = activeSlideGroup()
     const h1 = group.querySelector('h1')
-    expect(logo.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(container.querySelector('img[src="/hero/bacr-mark-white.png"]')).toBeTruthy()
+    expect(h1.textContent).toBe('BHH')
+    expect(h1.getAttribute('class')).toContain('text-8xl')
+    const mark = group.querySelector('img[src="/hero/bhh-mark-white.png"]')
+    expect(mark).toBeTruthy()
+    expect(mark.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByText('Bodija Health Hub')).toBeInTheDocument()
+    expect(group.querySelector('h2').textContent).toContain('Wellness Starts Here.')
   })
 
   it('loads background photos with per-slide object-position from CMS', async () => {
@@ -94,28 +112,32 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + hero redesign spec)', () =
     expect(activeSlideGroup()).toBeTruthy()
   })
 
-  it('falls back cleanly when a logo image fails to load', async () => {
-    const { container } = renderHome()
-    const logo = container.querySelector('img[src="/hero/bhh-mark-white.png"]')
-    fireEvent.error(logo)
-    expect(container.querySelector('img[src="/hero/bhh-mark-white.png"]')).toBeNull()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('BODIJA HEALTH HUB')
+  it('falls back to big BACR text when the lockup image fails to load', () => {
+    renderHome()
+    const lockup = activeSlideGroup().querySelector('img[src="/hero/bacr-mark-white.png"]')
+    fireEvent.error(lockup)
+    expect(activeSlideGroup().querySelector('img[src="/hero/bacr-mark-white.png"]')).toBeNull()
+    expect(screen.getByRole('heading', { level: 1, name: 'BACR' }).textContent).toBe('BACR')
   })
 
-  it('advances to BACR slides via next control and returns via indicator', () => {
+  it('navigates: 1 = Restoring (BACR), 2 = Every Step (BACR), 3 = Wellness (BHH)', () => {
     renderHome()
+    expect(activeSlideGroup().textContent).toContain('Restoring Function. Rebuilding Lives.')
+
     fireEvent.click(screen.getByRole('button', { name: 'Next slide' }))
     expect(currentIndicator()).toBe('2')
-    expect(activeSlideGroup().textContent).toContain('Restoring Function. Rebuilding Lives.')
-    expect(activeSlideGroup().textContent).toContain("Ibadan's dedicated rehabilitation centre")
+    expect(activeSlideGroup().textContent).toContain('Every Step Forward Matters.')
+    expect(activeSlideGroup().textContent).toContain('specialist-led')
+    expect(screen.getByRole('heading', { level: 1, name: 'BACR' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Next slide' }))
     expect(currentIndicator()).toBe('3')
-    expect(activeSlideGroup().textContent).toContain('Every Step Forward Matters.')
+    expect(activeSlideGroup().textContent).toContain('Wellness Starts Here.')
+    expect(screen.getByRole('heading', { level: 1, name: 'BHH' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Go to slide 1' }))
     expect(currentIndicator()).toBe('1')
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('BODIJA HEALTH HUB')
+    expect(activeSlideGroup().textContent).toContain('Restoring Function. Rebuilding Lives.')
   })
 
   it('has three indicators 01/02/03 with aria-current and a 4000ms progress fill on the active one', () => {
@@ -136,7 +158,7 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + hero redesign spec)', () =
 
   it('keeps previous slides content byte-faithful (em dashes render)', () => {
     renderHome()
-    fireEvent.click(screen.getByRole('button', { name: 'Go to slide 3' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Go to slide 2' }))
     const subtext = activeSlideGroup().querySelector('p')
     expect(subtext.textContent).toContain('\u2014')
     expect(subtext.textContent).toContain('specialist-led')

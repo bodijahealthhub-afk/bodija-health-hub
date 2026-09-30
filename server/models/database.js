@@ -469,46 +469,49 @@ async function insertContentDefaults() {
     ['hero_cta2_text', 'Meet Our Partners'],
     ['hero_cta2_link', '/partners'],
     ['hero_image', ''],
-    ['hero_slide1_eyebrow', "Ibadan's Integrated Healthcare Ecosystem"],
+    ['hero_slide1_eyebrow', 'Bodija Health Hub'],
     ['hero_slide1_title', 'Wellness Starts Here.'],
     ['hero_slide1_subtext', 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.'],
     ['hero_slide1_cta1_text', 'Book Appointment'],
     ['hero_slide1_cta1_link', '/appointments'],
     ['hero_slide1_cta2_text', 'Visit Website'],
     ['hero_slide1_cta2_link', ''],
-    ['hero_slide2_eyebrow', 'Bodija Advanced Care & Rehabilitation Centre'],
+    ['hero_slide2_eyebrow', ''],
     ['hero_slide2_title', 'Restoring Function. Rebuilding Lives.'],
     ['hero_slide2_subtext', "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life."],
     ['hero_slide2_cta1_text', 'Book Appointment'],
     ['hero_slide2_cta1_link', '/appointments'],
     ['hero_slide2_cta2_text', 'Visit Website'],
     ['hero_slide2_cta2_link', ''],
-    ['hero_slide3_eyebrow', 'Bodija Advanced Care & Rehabilitation Centre'],
+    ['hero_slide3_eyebrow', ''],
     ['hero_slide3_title', 'Every Step Forward Matters.'],
     ['hero_slide3_subtext', 'From physiotherapy and speech therapy to occupational and behavioral support — our specialist-led programmes are built to restore what matters most: your movement, your voice, your independence.'],
     ['hero_slide3_cta1_text', 'Book Appointment'],
     ['hero_slide3_cta1_link', '/appointments'],
     ['hero_slide3_cta2_text', 'Visit Website'],
     ['hero_slide3_cta2_link', ''],
-    ['hero_slide1_org', 'BODIJA HEALTH HUB'],
+    ['hero_slide1_org', 'BHH'],
+    ['hero_slide1_org_style', 'text'],
     ['hero_slide1_logo', '/hero/bhh-mark-white.png'],
     ['hero_slide1_image', '/hero/slide-1.jpg'],
     ['hero_slide1_active', '1'],
-    ['hero_slide1_order', '1'],
+    ['hero_slide1_order', '3'],
     ['hero_slide1_duration', '4000'],
     ['hero_slide1_position', '68% 45%'],
     ['hero_slide2_org', 'BACR'],
+    ['hero_slide2_org_style', 'logo'],
     ['hero_slide2_logo', '/hero/bacr-mark-white.png'],
     ['hero_slide2_image', '/hero/slide-2.jpg'],
     ['hero_slide2_active', '1'],
-    ['hero_slide2_order', '2'],
+    ['hero_slide2_order', '1'],
     ['hero_slide2_duration', '4000'],
     ['hero_slide2_position', '65% 50%'],
     ['hero_slide3_org', 'BACR'],
+    ['hero_slide3_org_style', 'logo'],
     ['hero_slide3_logo', '/hero/bacr-mark-white.png'],
     ['hero_slide3_image', '/hero/slide-3.jpg'],
     ['hero_slide3_active', '1'],
-    ['hero_slide3_order', '3'],
+    ['hero_slide3_order', '2'],
     ['hero_slide3_duration', '4000'],
     ['hero_slide3_position', '58% 45%'],
     ['about_headline', 'More Than a Service. A Connected Health Ecosystem.'],
@@ -1737,6 +1740,15 @@ async function migrateContentSync() {
     ['seo_description',
       'Bodija Health Hub provides comprehensive healthcare services including general consultation, audiology, laboratory services, and more in Ibadan, Nigeria.',
       'Community-based integrated healthcare ecosystem bringing clinics, specialists, and quality digital solutions together in Ibadan.'],
+    // Hero lockup redesign: BHH big-text slide moves last, BACR lockup slides first,
+    // pill dropped on BACR slides, BHH pill becomes the org name.
+    ['hero_slide1_org', 'BODIJA HEALTH HUB', 'BHH'],
+    ['hero_slide1_eyebrow', "Ibadan's Integrated Healthcare Ecosystem", 'Bodija Health Hub'],
+    ['hero_slide1_order', '1', '3'],
+    ['hero_slide2_order', '2', '1'],
+    ['hero_slide3_order', '3', '2'],
+    ['hero_slide2_eyebrow', 'Bodija Advanced Care & Rehabilitation Centre', ''],
+    ['hero_slide3_eyebrow', 'Bodija Advanced Care & Rehabilitation Centre', ''],
   ];
 
   const get = db.prepare('SELECT value FROM site_content WHERE key = ?');
@@ -1748,6 +1760,25 @@ async function migrateContentSync() {
       await set.run(newVal, key);
       changed += 1;
     }
+  }
+
+  // New keys added with the lockup redesign — insert when the row is missing
+  // (persistent databases skipped the original seed).
+  try {
+    const ensure = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?, ?)');
+    for (const [key, value] of [
+      ['hero_slide1_org_style', 'text'],
+      ['hero_slide2_org_style', 'logo'],
+      ['hero_slide3_org_style', 'logo'],
+    ]) {
+      const row = await get.get(key);
+      if (!row) {
+        await ensure.run(key, value);
+        changed += 1;
+      }
+    }
+  } catch (err) {
+    console.error('[migrate] Hero org_style sync failed:', err.message);
   }
 
   // contact_info.address — doc location (only while still at the old seed).

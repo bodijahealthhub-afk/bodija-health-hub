@@ -69,46 +69,49 @@ function EmptyState({ icon: Icon, title, description, action }) {
 export default function Home() {
   const { isEnabled } = useFeatures()
   const [content, setContent] = useState({
-    hero_slide1_eyebrow: "Ibadan's Integrated Healthcare Ecosystem",
+    hero_slide1_eyebrow: 'Bodija Health Hub',
     hero_slide1_title: 'Wellness Starts Here.',
     hero_slide1_subtext: 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.',
     hero_slide1_cta1_text: 'Book Appointment',
     hero_slide1_cta1_link: '/appointments',
     hero_slide1_cta2_text: 'Visit Website',
     hero_slide1_cta2_link: '',
-    hero_slide2_eyebrow: 'Bodija Advanced Care & Rehabilitation Centre',
+    hero_slide2_eyebrow: '',
     hero_slide2_title: 'Restoring Function. Rebuilding Lives.',
     hero_slide2_subtext: "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life.",
     hero_slide2_cta1_text: 'Book Appointment',
     hero_slide2_cta1_link: '/appointments',
     hero_slide2_cta2_text: 'Visit Website',
     hero_slide2_cta2_link: '',
-    hero_slide3_eyebrow: 'Bodija Advanced Care & Rehabilitation Centre',
+    hero_slide3_eyebrow: '',
     hero_slide3_title: 'Every Step Forward Matters.',
     hero_slide3_subtext: 'From physiotherapy and speech therapy to occupational and behavioral support — our specialist-led programmes are built to restore what matters most: your movement, your voice, your independence.',
     hero_slide3_cta1_text: 'Book Appointment',
     hero_slide3_cta1_link: '/appointments',
     hero_slide3_cta2_text: 'Visit Website',
     hero_slide3_cta2_link: '',
-    hero_slide1_org: 'BODIJA HEALTH HUB',
+    hero_slide1_org: 'BHH',
     hero_slide1_logo: '/hero/bhh-mark-white.png',
     hero_slide1_image: '/hero/slide-1.jpg',
     hero_slide1_active: '1',
-    hero_slide1_order: '1',
+    hero_slide1_order: '3',
+    hero_slide1_org_style: 'text',
     hero_slide1_duration: '4000',
     hero_slide1_position: '68% 45%',
     hero_slide2_org: 'BACR',
     hero_slide2_logo: '/hero/bacr-mark-white.png',
     hero_slide2_image: '/hero/slide-2.jpg',
     hero_slide2_active: '1',
-    hero_slide2_order: '2',
+    hero_slide2_order: '1',
+    hero_slide2_org_style: 'logo',
     hero_slide2_duration: '4000',
     hero_slide2_position: '65% 50%',
     hero_slide3_org: 'BACR',
     hero_slide3_logo: '/hero/bacr-mark-white.png',
     hero_slide3_image: '/hero/slide-3.jpg',
     hero_slide3_active: '1',
-    hero_slide3_order: '3',
+    hero_slide3_order: '2',
+    hero_slide3_org_style: 'logo',
     hero_slide3_duration: '4000',
     hero_slide3_position: '58% 45%',
     about_headline: 'More Than a Service. A Connected Health Ecosystem.',
@@ -137,6 +140,7 @@ export default function Home() {
 
   const allHeroSlides = [1, 2, 3].map(n => ({
     org: content[`hero_slide${n}_org`] || '',
+    orgStyle: content[`hero_slide${n}_org_style`] || 'text',
     logo: content[`hero_slide${n}_logo`] || '',
     image: content[`hero_slide${n}_image`] || '',
     position: content[`hero_slide${n}_position`] || 'center',
@@ -281,7 +285,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.06]" />
           <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 md:pt-36 pb-14 md:pb-20">
-            <div className="relative min-h-[470px] sm:min-h-[490px] md:min-h-[510px] max-w-3xl">
+            <div className="relative min-h-[540px] sm:min-h-[520px] md:min-h-[520px] max-w-3xl">
               {heroSlides.map((s, i) => {
                 const active = i === heroIndex
                 const rise = reducedMotion ? '' : 'translate-y-0'
@@ -299,23 +303,40 @@ export default function Home() {
                     aria-hidden={!active}
                     className={`absolute inset-0 transition-all duration-700 ${layerCls}`}
                   >
-                    {s.logo && !failedAssets[s.logo] && (
-                      <img
-                        src={s.logo}
-                        alt=""
-                        aria-hidden="true"
-                        className={`block h-9 md:h-11 w-auto mb-4 ${el('')}`}
-                        onError={() => markAssetFailed(s.logo)}
-                      />
+                    {s.orgStyle === 'logo' && s.logo && !failedAssets[s.logo] ? (
+                      <h1 className={`mb-6 ${el('')}`}>
+                        <img
+                          src={s.logo}
+                          alt={s.org}
+                          className="block h-40 sm:h-52 md:h-56 w-auto"
+                          onError={() => markAssetFailed(s.logo)}
+                        />
+                      </h1>
+                    ) : (
+                      <>
+                        {s.logo && !failedAssets[s.logo] && (
+                          <img
+                            src={s.logo}
+                            alt=""
+                            aria-hidden="true"
+                            className={`block h-9 md:h-11 w-auto mb-4 ${el('')}`}
+                            onError={() => markAssetFailed(s.logo)}
+                          />
+                        )}
+                        {s.org && (
+                          <h1 className={`text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight leading-[1.05] mb-4 ${el('')}`}>
+                            {s.org}
+                          </h1>
+                        )}
+                      </>
                     )}
-                    <h1 className={`text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight leading-[1.05] mb-4 ${el('')}`}>
-                      {s.org}
-                    </h1>
-                    <span className={`inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium border border-white/10 mb-5 ${el('delay-100')}`}>
-                      <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
-                      {s.eyebrow}
-                    </span>
-                    <h2 key={`${i}-${active}`} className={`block text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.15] mb-5 ${el('delay-200')}`}>
+                    {s.eyebrow && (
+                      <span className={`inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium border border-white/10 mb-5 ${el('delay-100')}`}>
+                        <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
+                        {s.eyebrow}
+                      </span>
+                    )}
+                    <h2 key={`${i}-${active}`} className={`block text-xl sm:text-2xl lg:text-3xl font-extrabold leading-[1.2] mb-5 ${el('delay-200')}`}>
                       {(s.title || '').split(' ').map((word, w) => (
                         <span key={w} className="inline-block hero-word" style={{ animationDelay: `${0.3 + w * 0.12}s` }}>{`${word} `}</span>
                       ))}
