@@ -445,6 +445,86 @@ async function syncAdminPassword() {
   console.log(`[seed] Synced password hash for admin user ${adminEmail}`);
 }
 
+// Content keys added after the original seed (homepage sections + services page).
+// Fresh databases get them from siteContentDefaults; existing databases get them
+// from migrateContentSync() — one shared list keeps both in sync.
+const LATE_CONTENT_DEFAULTS = [
+  // Homepage — every visible section copy is admin-editable
+  ['home_trust_title', 'Our Existing Partner Network'],
+  ['home_about_eyebrow', 'Our Approach'],
+  ['home_about_quote', 'Because care works best when people and systems work together.'],
+  ['home_about_link1_text', 'Learn About Our Ecosystem'],
+  ['home_about_link1_url', '/ecosystem'],
+  ['home_about_link2_text', 'Our Full Story'],
+  ['home_about_link2_url', '/about'],
+  ['home_values_eyebrow', 'Core Values'],
+  ['home_values_title', 'Built on What Matters'],
+  ['home_values', JSON.stringify([
+    { title: 'Accessible', desc: 'Quality care reachable for every family.' },
+    { title: 'Connected', desc: 'Specialists, diagnostics, and services linked under one system.' },
+    { title: 'Continuous', desc: 'Support at every stage of life, from newborns to elders.' },
+  ])],
+  ['home_stats', JSON.stringify([
+    { value: '8', suffix: '', label: 'Our Services' },
+    { value: '4', suffix: '', label: 'Our Partners' },
+    { value: '3', suffix: '', label: 'Our Platforms' },
+    { value: '3', suffix: '', label: 'Core Values' },
+  ])],
+  ['home_services_eyebrow', 'Our Services'],
+  ['home_services_link_text', 'View All Services'],
+  ['home_services_link_url', '/services'],
+  ['home_eco_eyebrow', 'The Ecosystem'],
+  ['home_eco_title', 'The Ecosystem Behind the Care'],
+  ['home_eco_desc', 'Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.'],
+  ['home_ecosystem_cards', JSON.stringify([
+    { title: 'Primary Care' },
+    { title: 'Specialist care and referrals' },
+    { title: 'Diagnostics and laboratory services' },
+    { title: 'Audiology' },
+    { title: 'Physiotherapy, speech therapy, and behavioral therapy' },
+    { title: 'Chronic condition management' },
+    { title: 'Long-term wellness and elder care support' },
+    { title: 'Digital Solutions' },
+  ])],
+  ['home_testi_eyebrow', 'What People Say'],
+  ['home_programmes_eyebrow', 'Programmes'],
+  ['home_programmes_title', 'Health Programmes'],
+  ['home_events_eyebrow', 'Events'],
+  ['home_events_title', 'Upcoming Events'],
+  ['home_blog_eyebrow', 'Resources'],
+  ['home_blog_title', 'Latest Insights'],
+  ['home_blog_link_text', 'View All'],
+  ['home_blog_link_url', '/newsroom'],
+  ['home_cta_btn1_text', 'Get Started'],
+  ['home_cta_btn1_url', '/contact'],
+  ['home_cta_btn2_text', 'Join the Ecosystem'],
+  ['home_cta_btn2_url', '/partners'],
+  // Services page — hero + Quick Service Finder
+  ['services_hero_title', 'Our Services'],
+  ['services_hero_desc', 'Our network covers the full spectrum of healthcare needs — from prevention to recovery, from newborn to elder, from routine monitoring to specialist support.'],
+  ['services_finder_title', 'Quick Service Finder'],
+  ['services_finder_subtitle', 'Answer a quick question to find the right service'],
+  ['services_finder_q1', 'What do you need help with?'],
+  ['services_finder_q2', 'Who is this for?'],
+  ['services_finder_concerns', JSON.stringify([
+    { label: 'Routine check-up or screening', category: 'Preventive' },
+    { label: 'Lab test or scan', category: 'Diagnostics' },
+    { label: 'See a specialist', category: 'Specialist Care' },
+    { label: 'Elderly care support', category: 'Primary Care' },
+    { label: 'Long-term condition (BP, kidney)', category: 'Chronic Care' },
+    { label: 'Therapy or rehabilitation', category: 'Therapy' },
+    { label: 'Hearing or audiology', category: 'Specialist Care' },
+    { label: 'Community screening or outreach', category: 'Community' },
+  ])],
+  ['services_finder_ages', JSON.stringify([
+    { label: 'Infant or toddler (0–3)', filter: 'pediatric,child' },
+    { label: 'Child (4–12)', filter: 'pediatric,child' },
+    { label: 'Teenager (13–17)', filter: 'teen,adolescent' },
+    { label: 'Adult (18–64)', filter: '' },
+    { label: 'Senior (65+)', filter: 'geriatric,elderly,senior' },
+  ])],
+];
+
 async function insertContentDefaults() {
   // NOTE: No fake services, blog posts, or testimonials are seeded.
   // The spec requires real, admin-created content only — fresh installs start with
@@ -529,6 +609,7 @@ async function insertContentDefaults() {
     ['contact_address', 'Bodija, Ibadan, Oyo State, Nigeria'],
     ['contact_whatsapp', '+234 801 234 5678'],
     ['contact_hours', 'Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 2:00 PM'],
+    ...LATE_CONTENT_DEFAULTS,
     ['footer_tagline', 'Care. Connected. Community.'],
     ['footer_copyright', '© 2025 Bodija Health Hub. All rights reserved.'],
     ['welcome_modal_title', 'Welcome to Bodija Health Hub'],
@@ -1769,14 +1850,16 @@ async function migrateContentSync() {
     }
   }
 
-  // New keys added with the lockup redesign — insert when the row is missing
-  // (persistent databases skipped the original seed).
+  // New keys added after the original seed (org_style, homepage sections,
+  // services page) — insert when the row is missing (persistent databases
+  // skipped the original seed).
   try {
     const ensure = db.prepare('INSERT OR IGNORE INTO site_content (key, value) VALUES (?, ?)');
     for (const [key, value] of [
       ['hero_slide1_org_style', 'text'],
       ['hero_slide2_org_style', 'logo'],
       ['hero_slide3_org_style', 'logo'],
+      ...LATE_CONTENT_DEFAULTS,
     ]) {
       const row = await get.get(key);
       if (!row) {
@@ -1785,7 +1868,7 @@ async function migrateContentSync() {
       }
     }
   } catch (err) {
-    console.error('[migrate] Hero org_style sync failed:', err.message);
+    console.error('[migrate] New content key sync failed:', err.message);
   }
 
   // contact_info.address — doc location (only while still at the old seed).

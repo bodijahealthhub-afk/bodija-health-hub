@@ -24,10 +24,21 @@ const AGE_GROUPS = [
   { label: 'Senior (65+)', filter: 'geriatric,elderly,senior' },
 ]
 
-function ServiceWizard({ onSelect }) {
+function parseList(raw, fallback) {
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) && parsed.length ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function ServiceWizard({ onSelect, sc = {} }) {
   const [step, setStep] = useState(0)
   const [concern, setConcern] = useState(null)
   const [ageGroup, setAgeGroup] = useState(null)
+  const concerns = parseList(sc.services_finder_concerns, CONCERNS)
+  const ageGroups = parseList(sc.services_finder_ages, AGE_GROUPS)
 
   const handleComplete = (age) => {
     setAgeGroup(age)
@@ -41,16 +52,16 @@ function ServiceWizard({ onSelect }) {
           <span className="text-xl">🩺</span>
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900">Quick Service Finder</h3>
-          <p className="text-sm text-gray-500">Answer a quick question to find the right service</p>
+          <h3 className="font-semibold text-gray-900">{sc.services_finder_title || 'Quick Service Finder'}</h3>
+          <p className="text-sm text-gray-500">{sc.services_finder_subtitle || 'Answer a quick question to find the right service'}</p>
         </div>
       </div>
 
       {step === 0 ? (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700 mb-3">What do you need help with?</p>
+          <p className="text-sm font-medium text-gray-700 mb-3">{sc.services_finder_q1 || 'What do you need help with?'}</p>
           <div className="grid sm:grid-cols-2 gap-2">
-            {CONCERNS.map((c) => (
+            {concerns.map((c) => (
               <button
                 key={c.label}
                 onClick={() => { setConcern(c); setStep(1) }}
@@ -70,10 +81,10 @@ function ServiceWizard({ onSelect }) {
             <button onClick={() => setStep(0)} className="text-gray-400 hover:text-gray-600">
               <FiArrowLeft className="w-4 h-4" />
             </button>
-            <p className="text-sm font-medium text-gray-700">Who is this for?</p>
+            <p className="text-sm font-medium text-gray-700">{sc.services_finder_q2 || 'Who is this for?'}</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-2">
-            {AGE_GROUPS.map((a) => (
+            {ageGroups.map((a) => (
               <button
                 key={a.label}
                 onClick={() => handleComplete(a)}
@@ -92,6 +103,7 @@ function ServiceWizard({ onSelect }) {
 export default function Services() {
   const [services, setServices] = useState([])
   const [categories, setCategories] = useState([])
+  const [siteContent, setSiteContent] = useState({})
   const [activeCategory, setActiveCategory] = useState('')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -100,9 +112,10 @@ export default function Services() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [svcRes, catRes] = await Promise.all([
+        const [svcRes, catRes, scRes] = await Promise.all([
           fetch('/api/services'),
           fetch('/api/service-categories'),
+          fetch('/api/site-content'),
         ])
         if (svcRes.ok) {
           const data = await svcRes.json()
@@ -111,6 +124,10 @@ export default function Services() {
         if (catRes.ok) {
           const cats = await catRes.json()
           if (Array.isArray(cats)) setCategories(cats)
+        }
+        if (scRes.ok) {
+          const sc = await scRes.json()
+          if (sc && typeof sc === 'object') setSiteContent(sc)
         }
       } catch {
         // leave empty states
@@ -150,9 +167,9 @@ export default function Services() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal>
           <div className="max-w-3xl">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-6">Our Services</h1>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-6">{siteContent.services_hero_title || 'Our Services'}</h1>
             <p className="text-lg text-gray-300 leading-relaxed">
-              Our network covers the full spectrum of healthcare needs — from prevention to recovery, from newborn to elder, from routine monitoring to specialist support.
+              {siteContent.services_hero_desc || 'Our network covers the full spectrum of healthcare needs — from prevention to recovery, from newborn to elder, from routine monitoring to specialist support.'}
             </p>
           </div>
           </ScrollReveal>
@@ -162,7 +179,7 @@ export default function Services() {
       {/* Services */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ServiceWizard onSelect={handleWizardSelect} />
+          <ServiceWizard onSelect={handleWizardSelect} sc={siteContent} />
 
           {/* Category filter */}
           {(categories.length > 0 || query) && (

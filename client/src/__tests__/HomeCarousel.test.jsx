@@ -226,3 +226,62 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(currentIndicator()).toBe('2')
   })
 })
+
+describe('Homepage CMS fields (admin Site Content → Homepage tab)', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    vi.stubGlobal('IntersectionObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    })
+  })
+
+  it('renders admin-edited copy for every homepage section', async () => {
+    const cms = {
+      home_trust_title: 'CMS Trust Title',
+      home_about_eyebrow: 'CMS About Eyebrow',
+      home_values_eyebrow: 'CMS Values Eyebrow',
+      home_values_title: 'CMS Values Heading',
+      home_values: JSON.stringify([{ title: 'CMS Value One', desc: 'CMS Value Desc' }]),
+      home_stats: JSON.stringify([{ value: '12', suffix: '+', label: 'CMS Stat Label' }]),
+      home_services_eyebrow: 'CMS Services Eyebrow',
+      home_eco_eyebrow: 'CMS Eco Eyebrow',
+      home_eco_title: 'CMS Eco Heading',
+      home_testi_eyebrow: 'CMS Testimonials Eyebrow',
+      home_programmes_title: 'CMS Programmes Heading',
+      home_events_title: 'CMS Events Heading',
+      home_blog_title: 'CMS Blog Heading',
+      contact_headline: 'CMS CTA Headline',
+      home_cta_btn1_text: 'CMS CTA Button',
+    }
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => Promise.resolve({
+      ok: true,
+      json: async () => (String(url).includes('site-content') ? cms : {}),
+    })))
+    render(
+      <MemoryRouter>
+        <FeatureProvider>
+          <Home />
+        </FeatureProvider>
+      </MemoryRouter>
+    )
+    await waitFor(() => expect(screen.getByText('CMS Trust Title')).toBeInTheDocument())
+    expect(screen.getByText('CMS About Eyebrow')).toBeInTheDocument()
+    expect(screen.getByText('CMS Values Eyebrow')).toBeInTheDocument()
+    expect(screen.getByText('CMS Values Heading')).toBeInTheDocument()
+    expect(screen.getByText('CMS Value One')).toBeInTheDocument()
+    expect(screen.getByText('CMS Value Desc')).toBeInTheDocument()
+    expect(screen.getByText('CMS Stat Label')).toBeInTheDocument()
+    expect(screen.getByText('CMS Services Eyebrow')).toBeInTheDocument()
+    expect(screen.getByText('CMS Eco Eyebrow')).toBeInTheDocument()
+    expect(screen.getByText('CMS Eco Heading')).toBeInTheDocument()
+    expect(screen.getByText('CMS Testimonials Eyebrow')).toBeInTheDocument()
+    expect(screen.getByText('CMS Programmes Heading')).toBeInTheDocument()
+    expect(screen.getByText('CMS Events Heading')).toBeInTheDocument()
+    expect(screen.getByText('CMS Blog Heading')).toBeInTheDocument()
+    expect(screen.getByText('CMS CTA Headline')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /CMS CTA Button/ })).toHaveAttribute('href', '/contact')
+  })
+})

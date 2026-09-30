@@ -4,14 +4,92 @@ import { clearCache } from '../utils/api'
 
 const tabs = [
   { id: 'hero', label: 'Hero Section' },
+  { id: 'homepage', label: 'Homepage' },
   { id: 'about', label: 'About Us' },
   { id: 'ecosystem', label: 'Ecosystem' },
   { id: 'partners', label: 'Partners' },
   { id: 'platforms', label: 'Platforms' },
+  { id: 'services', label: 'Services Page' },
   { id: 'contact', label: 'Contact' },
   { id: 'footer', label: 'Footer' },
   { id: 'seo', label: 'SEO' },
 ]
+
+const Field = ({ label, value, onChange, placeholder, textarea }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+    {textarea ? (
+      <textarea
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+      />
+    ) : (
+      <input
+        type="text"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+      />
+    )}
+  </div>
+)
+
+const ListField = ({ label, hint, value, onChange, itemFields, addLabel = 'Add row' }) => {
+  let items = []
+  try {
+    const parsed = JSON.parse(value || '[]')
+    if (Array.isArray(parsed)) items = parsed
+  } catch {
+    items = []
+  }
+  const update = (i, key, v) =>
+    onChange(JSON.stringify(items.map((it, idx) => (idx === i ? { ...it, [key]: v } : it))))
+  const add = () =>
+    onChange(JSON.stringify([...items, Object.fromEntries(itemFields.map((f) => [f.key, '']))]))
+  const remove = (i) => onChange(JSON.stringify(items.filter((_, idx) => idx !== i)))
+  const move = (i, dir) => {
+    const j = i + dir
+    if (j < 0 || j >= items.length) return
+    const next = [...items]
+    const tmp = next[i]
+    next[i] = next[j]
+    next[j] = tmp
+    onChange(JSON.stringify(next))
+  }
+  return (
+    <div className="border border-gray-200 rounded-xl p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      {hint && <p className="text-xs text-gray-400 mb-3">{hint}</p>}
+      <div className="space-y-3">
+        {items.map((item, i) => (
+          <div key={i} className="flex flex-wrap gap-2 items-center bg-gray-50 rounded-lg p-2">
+            {itemFields.map((f) => (
+              <input
+                key={f.key}
+                type="text"
+                value={item[f.key] ?? ''}
+                onChange={(e) => update(i, f.key, e.target.value)}
+                placeholder={f.label}
+                className="flex-1 min-w-[140px] px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            ))}
+            <div className="flex gap-1">
+              <button type="button" onClick={() => move(i, -1)} aria-label="Move up" className="px-2 py-1 text-gray-400 hover:text-gray-700">↑</button>
+              <button type="button" onClick={() => move(i, 1)} aria-label="Move down" className="px-2 py-1 text-gray-400 hover:text-gray-700">↓</button>
+              <button type="button" onClick={() => remove(i)} aria-label="Remove row" className="px-2 py-1 text-red-400 hover:text-red-600">×</button>
+            </div>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-xs text-gray-400">No rows yet.</p>}
+      </div>
+      <button type="button" onClick={add} className="mt-3 text-sm text-primary font-semibold hover:underline">+ {addLabel}</button>
+    </div>
+  )
+}
 
 export default function SiteContent() {
   const [activeTab, setActiveTab] = useState('hero')
@@ -250,6 +328,165 @@ export default function SiteContent() {
     </div>
   )
 
+  const renderHomepageTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Trust Bar</h3>
+        <Field label="Section Title" value={content.home_trust_title} onChange={(v) => updateField('home_trust_title', v)} placeholder="Our Existing Partner Network" />
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">About Section</h3>
+        <p className="text-xs text-gray-400 mb-4">Headline and description are edited in the &quot;About Us&quot; tab.</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Eyebrow Badge" value={content.home_about_eyebrow} onChange={(v) => updateField('home_about_eyebrow', v)} placeholder="Our Approach" />
+          <Field label="Quote" value={content.home_about_quote} onChange={(v) => updateField('home_about_quote', v)} placeholder="Because care works best..." />
+          <Field label="Primary Link Text" value={content.home_about_link1_text} onChange={(v) => updateField('home_about_link1_text', v)} placeholder="Learn About Our Ecosystem" />
+          <Field label="Primary Link URL" value={content.home_about_link1_url} onChange={(v) => updateField('home_about_link1_url', v)} placeholder="/ecosystem" />
+          <Field label="Secondary Link Text" value={content.home_about_link2_text} onChange={(v) => updateField('home_about_link2_text', v)} placeholder="Our Full Story" />
+          <Field label="Secondary Link URL" value={content.home_about_link2_url} onChange={(v) => updateField('home_about_link2_url', v)} placeholder="/about" />
+        </div>
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Core Values</h3>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <Field label="Eyebrow Badge" value={content.home_values_eyebrow} onChange={(v) => updateField('home_values_eyebrow', v)} placeholder="Core Values" />
+          <Field label="Section Heading" value={content.home_values_title} onChange={(v) => updateField('home_values_title', v)} placeholder="Built on What Matters" />
+        </div>
+        <ListField
+          label="Value Cards"
+          hint="Each card shows a title and a short description. Icons follow the row order."
+          value={content.home_values}
+          onChange={(v) => updateField('home_values', v)}
+          itemFields={[{ key: 'title', label: 'Title' }, { key: 'desc', label: 'Description' }]}
+          addLabel="Add value"
+        />
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Impact Stats</h3>
+        <ListField
+          label="Stat Items"
+          hint="Value should be a number. Suffix is optional (e.g. +, %). Icons follow the row order."
+          value={content.home_stats}
+          onChange={(v) => updateField('home_stats', v)}
+          itemFields={[{ key: 'value', label: 'Value' }, { key: 'suffix', label: 'Suffix' }, { key: 'label', label: 'Label' }]}
+          addLabel="Add stat"
+        />
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Featured Services</h3>
+        <p className="text-xs text-gray-400 mb-4">Section heading and description are edited in the &quot;Ecosystem&quot; tab.</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Eyebrow Badge" value={content.home_services_eyebrow} onChange={(v) => updateField('home_services_eyebrow', v)} placeholder="Our Services" />
+          <Field label="Link Text" value={content.home_services_link_text} onChange={(v) => updateField('home_services_link_text', v)} placeholder="View All Services" />
+          <Field label="Link URL" value={content.home_services_link_url} onChange={(v) => updateField('home_services_link_url', v)} placeholder="/services" />
+        </div>
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ecosystem Cards</h3>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <Field label="Eyebrow Badge" value={content.home_eco_eyebrow} onChange={(v) => updateField('home_eco_eyebrow', v)} placeholder="The Ecosystem" />
+          <Field label="Section Heading" value={content.home_eco_title} onChange={(v) => updateField('home_eco_title', v)} placeholder="The Ecosystem Behind the Care" />
+        </div>
+        <div className="mb-4">
+          <Field label="Section Description" textarea value={content.home_eco_desc} onChange={(v) => updateField('home_eco_desc', v)} placeholder="Care does not exist in isolation..." />
+        </div>
+        <ListField
+          label="Cards"
+          hint="Description is optional — leave it empty for a title-only card. Colors and icons follow the row order."
+          value={content.home_ecosystem_cards}
+          onChange={(v) => updateField('home_ecosystem_cards', v)}
+          itemFields={[{ key: 'title', label: 'Title' }, { key: 'desc', label: 'Description (optional)' }]}
+          addLabel="Add card"
+        />
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Testimonials</h3>
+        <Field label="Eyebrow Badge" value={content.home_testi_eyebrow} onChange={(v) => updateField('home_testi_eyebrow', v)} placeholder="What People Say" />
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Programmes &amp; Events</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Programmes Eyebrow" value={content.home_programmes_eyebrow} onChange={(v) => updateField('home_programmes_eyebrow', v)} placeholder="Programmes" />
+          <Field label="Programmes Heading" value={content.home_programmes_title} onChange={(v) => updateField('home_programmes_title', v)} placeholder="Health Programmes" />
+          <Field label="Events Eyebrow" value={content.home_events_eyebrow} onChange={(v) => updateField('home_events_eyebrow', v)} placeholder="Events" />
+          <Field label="Events Heading" value={content.home_events_title} onChange={(v) => updateField('home_events_title', v)} placeholder="Upcoming Events" />
+        </div>
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Resources</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Eyebrow Badge" value={content.home_blog_eyebrow} onChange={(v) => updateField('home_blog_eyebrow', v)} placeholder="Resources" />
+          <Field label="Section Heading" value={content.home_blog_title} onChange={(v) => updateField('home_blog_title', v)} placeholder="Latest Insights" />
+          <Field label="Link Text" value={content.home_blog_link_text} onChange={(v) => updateField('home_blog_link_text', v)} placeholder="View All" />
+          <Field label="Link URL" value={content.home_blog_link_url} onChange={(v) => updateField('home_blog_link_url', v)} placeholder="/newsroom" />
+        </div>
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Community CTA</h3>
+        <p className="text-xs text-gray-400 mb-4">Headline and description are shared with the &quot;Contact&quot; tab.</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Headline" value={content.contact_headline} onChange={(v) => updateField('contact_headline', v)} placeholder="Ready to Be Part of Something Bigger?" />
+          <Field label="Primary Button Text" value={content.home_cta_btn1_text} onChange={(v) => updateField('home_cta_btn1_text', v)} placeholder="Get Started" />
+          <Field label="Primary Button URL" value={content.home_cta_btn1_url} onChange={(v) => updateField('home_cta_btn1_url', v)} placeholder="/contact" />
+          <Field label="Secondary Button Text" value={content.home_cta_btn2_text} onChange={(v) => updateField('home_cta_btn2_text', v)} placeholder="Join the Ecosystem" />
+          <Field label="Secondary Button URL" value={content.home_cta_btn2_url} onChange={(v) => updateField('home_cta_btn2_url', v)} placeholder="/partners" />
+        </div>
+        <div className="mt-4">
+          <Field label="Description" textarea value={content.contact_description} onChange={(v) => updateField('contact_description', v)} placeholder="Whether you are a patient, a family..." />
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderServicesPageTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Page Hero</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Page Title" value={content.services_hero_title} onChange={(v) => updateField('services_hero_title', v)} placeholder="Our Services" />
+          <Field label="Page Description" textarea value={content.services_hero_desc} onChange={(v) => updateField('services_hero_desc', v)} placeholder="Our network covers the full spectrum..." />
+        </div>
+      </div>
+
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Service Finder</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Finder Title" value={content.services_finder_title} onChange={(v) => updateField('services_finder_title', v)} placeholder="Quick Service Finder" />
+          <Field label="Finder Subtitle" value={content.services_finder_subtitle} onChange={(v) => updateField('services_finder_subtitle', v)} placeholder="Answer a quick question to find the right service" />
+          <Field label="Step 1 Question" value={content.services_finder_q1} onChange={(v) => updateField('services_finder_q1', v)} placeholder="What do you need help with?" />
+          <Field label="Step 2 Question" value={content.services_finder_q2} onChange={(v) => updateField('services_finder_q2', v)} placeholder="Who is this for?" />
+        </div>
+        <div className="mt-4 space-y-4">
+          <ListField
+            label="Concerns (Step 1)"
+            hint="Each concern maps to a service category — the category must match a category in Services → Categories."
+            value={content.services_finder_concerns}
+            onChange={(v) => updateField('services_finder_concerns', v)}
+            itemFields={[{ key: 'label', label: 'Concern' }, { key: 'category', label: 'Service category' }]}
+            addLabel="Add concern"
+          />
+          <ListField
+            label="Age Groups (Step 2)"
+            hint="Filter is a comma-separated keyword list matched against services, or empty for all ages."
+            value={content.services_finder_ages}
+            onChange={(v) => updateField('services_finder_ages', v)}
+            itemFields={[{ key: 'label', label: 'Age group' }, { key: 'filter', label: 'Filter keywords' }]}
+            addLabel="Add age group"
+          />
+        </div>
+      </div>
+    </div>
+  )
+
   const renderAboutTab = () => (
     <div className="space-y-6">
       <div>
@@ -470,10 +707,12 @@ export default function SiteContent() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'hero': return renderHeroTab()
+      case 'homepage': return renderHomepageTab()
       case 'about': return renderAboutTab()
       case 'ecosystem': return renderEcosystemTab()
       case 'partners': return renderPartnersTab()
       case 'platforms': return renderPlatformsTab()
+      case 'services': return renderServicesPageTab()
       case 'contact': return renderContactTab()
       case 'footer': return renderFooterTab()
       case 'seo': return renderSeoTab()

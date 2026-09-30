@@ -39,6 +39,15 @@ const impactStats = [
   { value: 3, suffix: '', label: 'Core Values', icon: FiHeart },
 ]
 
+function parseList(raw, fallback) {
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) && parsed.length ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
 const serviceIcons = {
   'primary-care': FiActivity, 'specialist-consultations': FiZap,
   'diagnostics-laboratory': FiCheckCircle, 'hearing-audiology': FiUsers,
@@ -423,7 +432,7 @@ export default function Home() {
       <ScrollReveal>
         <section className="py-6 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Our Existing Partner Network</p>
+            <p className="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{content.home_trust_title || 'Our Existing Partner Network'}</p>
             <div className="flex items-center justify-center gap-8 sm:gap-12 flex-wrap opacity-50">
               {[FiHeart, FiShield, FiActivity, FiStar, FiCheckCircle, FiUsers].map((Icon, i) => (
                 <Icon key={i} className="w-7 h-7 text-gray-400" />
@@ -439,7 +448,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <ScrollReveal>
-                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Our Approach</span>
+                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_about_eyebrow || 'Our Approach'}</span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 leading-tight">
                   {content.about_headline || 'More Than a Service. A Connected Health Ecosystem.'}
                 </h2>
@@ -447,18 +456,18 @@ export default function Home() {
                   {content.about_description || 'We are an integrated healthcare network redefining how families in Ibadan access and experience care. By coordinating clinics, specialists, wellness services, and digital platforms under one hub, we close the gaps that typically fall between separate healthcare providers — ensuring seamless, continuous support from prevention to recovery.'}
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <Link to="/ecosystem" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
-                    Learn About Our Ecosystem <FiChevronRight className="w-4 h-4" />
+                  <Link to={content.home_about_link1_url || '/ecosystem'} className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
+                    {content.home_about_link1_text || 'Learn About Our Ecosystem'} <FiChevronRight className="w-4 h-4" />
                   </Link>
-                  <Link to="/about" className="inline-flex items-center gap-2 text-gray-500 font-medium hover:text-primary transition-colors">
-                    Our Full Story <FiArrowRight className="w-4 h-4" />
+                  <Link to={content.home_about_link2_url || '/about'} className="inline-flex items-center gap-2 text-gray-500 font-medium hover:text-primary transition-colors">
+                    {content.home_about_link2_text || 'Our Full Story'} <FiArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               </ScrollReveal>
               <ScrollReveal delay={200}>
                 <div className="bg-gradient-to-br from-primary/5 via-emerald-50/50 to-teal-50/30 rounded-3xl p-10 border border-primary/10">
                   <blockquote className="text-xl sm:text-2xl font-medium text-gray-900 leading-relaxed italic">
-                    &ldquo;Because care works best when people and systems work together.&rdquo;
+                    &ldquo;{content.home_about_quote || 'Because care works best when people and systems work together.'}&rdquo;
                   </blockquote>
                   <div className="mt-6 w-12 h-1 bg-primary rounded-full" />
                 </div>
@@ -474,13 +483,18 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ScrollReveal>
               <div className="text-center mb-14">
-                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Core Values</span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Built on What Matters</h2>
+                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_values_eyebrow || 'Core Values'}</span>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">{content.home_values_title || 'Built on What Matters'}</h2>
               </div>
             </ScrollReveal>
             <div className="grid md:grid-cols-3 gap-8">
-              {coreValues.map(({ icon: Icon, title, desc }, i) => (
-                <ScrollReveal key={title} delay={i * 100}>
+              {parseList(content.home_values, coreValues).map((v, i) => {
+                const base = coreValues[i % coreValues.length]
+                const Icon = base.icon
+                const title = v.title ?? base.title
+                const desc = v.desc ?? base.desc
+                return (
+                <ScrollReveal key={i} delay={i * 100}>
                   <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 text-center h-full">
                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                       <Icon className="w-8 h-8 text-primary" />
@@ -489,7 +503,8 @@ export default function Home() {
                     <p className="text-gray-500 leading-relaxed">{desc}</p>
                   </div>
                 </ScrollReveal>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
@@ -500,15 +515,19 @@ export default function Home() {
         <section className="py-16 bg-gradient-to-r from-primary to-emerald-700 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-              {impactStats.map(({ value, suffix, label, icon: Icon }) => (
-                <div key={label} className="flex flex-col items-center">
+              {parseList(content.home_stats, impactStats).map((s, i) => {
+                const base = impactStats[i % impactStats.length]
+                const Icon = base.icon
+                return (
+                <div key={i} className="flex flex-col items-center">
                   <Icon className="w-6 h-6 text-white/60 mb-2" />
                   <div className="text-3xl sm:text-4xl font-bold mb-1">
-                    <AnimatedCounter target={value} suffix={suffix} />
+                    <AnimatedCounter target={s.value ?? base.value} suffix={s.suffix ?? base.suffix} />
                   </div>
-                  <div className="text-sm text-white/70 font-medium">{label}</div>
+                  <div className="text-sm text-white/70 font-medium">{s.label ?? base.label}</div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
@@ -520,7 +539,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ScrollReveal>
               <div className="text-center mb-14">
-                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Our Services</span>
+                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_services_eyebrow || 'Our Services'}</span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">{content.ecosystem_headline || 'One Hub. Many Hands. Whole-Person Care.'}</h2>
                 <p className="text-gray-500 max-w-3xl mx-auto">{content.ecosystem_description}</p>
               </div>
@@ -555,8 +574,8 @@ export default function Home() {
             {services.length > 0 && (
               <ScrollReveal>
                 <div className="text-center mt-10">
-                  <Link to="/services" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
-                    View All Services <FiArrowRight className="w-4 h-4" />
+                  <Link to={content.home_services_link_url || '/services'} className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
+                    {content.home_services_link_text || 'View All Services'} <FiArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               </ScrollReveal>
@@ -571,14 +590,17 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ScrollReveal>
               <div className="text-center mb-14">
-                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">The Ecosystem</span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">The Ecosystem Behind the Care</h2>
-                <p className="text-gray-500 max-w-3xl mx-auto">Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.</p>
+                <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_eco_eyebrow || 'The Ecosystem'}</span>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">{content.home_eco_title || 'The Ecosystem Behind the Care'}</h2>
+                <p className="text-gray-500 max-w-3xl mx-auto">{content.home_eco_desc || 'Care does not exist in isolation. At Bodija Health Hub, we have built a living ecosystem where every partner, platform, and service works together as one coordinated system designed around you.'}</p>
               </div>
             </ScrollReveal>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {ecosystemCards.map(({ icon: Icon, title, desc, color, border }, i) => (
-                <ScrollReveal key={title} delay={i * 80}>
+              {parseList(content.home_ecosystem_cards, ecosystemCards).map((c, i) => {
+                const base = ecosystemCards[i % ecosystemCards.length]
+                const { icon: Icon, title, desc, color, border } = { ...base, ...c }
+                return (
+                <ScrollReveal key={i} delay={i * 80}>
                   <div className={`bg-white rounded-2xl p-7 border ${border} hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-full`}>
                     <div className={`w-12 h-12 ${color} rounded-xl flex items-center justify-center mb-4`}>
                       <Icon className="w-6 h-6" />
@@ -587,7 +609,8 @@ export default function Home() {
                     {desc && <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>}
                   </div>
                 </ScrollReveal>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
@@ -598,7 +621,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ScrollReveal>
             <div className="text-center mb-14">
-              <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">What People Say</span>
+              <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_testi_eyebrow || 'What People Say'}</span>
             </div>
           </ScrollReveal>
           {testimonialsLoading ? (
@@ -641,8 +664,8 @@ export default function Home() {
                 <div>
                   <ScrollReveal>
                     <div className="mb-8">
-                      <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Programmes</span>
-                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Health Programmes</h2>
+                      <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_programmes_eyebrow || 'Programmes'}</span>
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">{content.home_programmes_title || 'Health Programmes'}</h2>
                     </div>
                   </ScrollReveal>
                   {programmes.length === 0 ? (
@@ -679,8 +702,8 @@ export default function Home() {
                 <div>
                   <ScrollReveal>
                     <div className="mb-8">
-                      <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Events</span>
-                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Upcoming Events</h2>
+                      <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_events_eyebrow || 'Events'}</span>
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">{content.home_events_title || 'Upcoming Events'}</h2>
                     </div>
                   </ScrollReveal>
                   {eventsLoading ? (
@@ -726,12 +749,12 @@ export default function Home() {
             <ScrollReveal>
               <div className="flex items-end justify-between mb-10">
                 <div>
-                  <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">Resources</span>
-                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Latest Insights</h2>
+                  <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">{content.home_blog_eyebrow || 'Resources'}</span>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">{content.home_blog_title || 'Latest Insights'}</h2>
                 </div>
                 {blogPosts.length > 0 && (
-                  <Link to="/newsroom" className="hidden sm:inline-flex items-center gap-2 text-primary font-semibold hover:underline text-sm">
-                    View All <FiArrowRight className="w-4 h-4" />
+                  <Link to={content.home_blog_link_url || '/newsroom'} className="hidden sm:inline-flex items-center gap-2 text-primary font-semibold hover:underline text-sm">
+                    {content.home_blog_link_text || 'View All'} <FiArrowRight className="w-4 h-4" />
                   </Link>
                 )}
               </div>
@@ -770,7 +793,7 @@ export default function Home() {
             )}
             {blogPosts.length > 0 && (
               <div className="sm:hidden text-center mt-8">
-                <Link to="/newsroom" className="inline-flex items-center gap-2 text-primary font-semibold">View All <FiArrowRight className="w-4 h-4" /></Link>
+                <Link to={content.home_blog_link_url || '/newsroom'} className="inline-flex items-center gap-2 text-primary font-semibold">{content.home_blog_link_text || 'View All'} <FiArrowRight className="w-4 h-4" /></Link>
               </div>
             )}
           </div>
@@ -785,16 +808,16 @@ export default function Home() {
               <div className="bg-gradient-to-br from-primary to-teal-700 rounded-3xl p-10 sm:p-16 text-white text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.05]" />
                 <div className="relative">
-                  <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Be Part of Something Bigger?</h2>
+                  <h2 className="text-3xl sm:text-4xl font-bold mb-4">{content.contact_headline || 'Ready to Be Part of Something Bigger?'}</h2>
                   <p className="text-teal-100 text-lg mb-10 max-w-2xl mx-auto">
-                    Whether you are a patient, a family, a healthcare provider, or a caregiver — BHH has a place for you.
+                    {content.contact_description || 'Whether you are a patient, a family, a healthcare provider, or a caregiver — BHH has a place for you.'}
                   </p>
                   <div className="flex flex-wrap justify-center gap-4">
-                    <Link to="/contact" className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-colors shadow-lg">
-                      Get Started <FiArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                    <Link to={content.home_cta_btn1_url || '/contact'} className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-primary font-semibold rounded-full hover:bg-teal-50 transition-colors shadow-lg">
+                      {content.home_cta_btn1_text || 'Get Started'} <FiArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                     </Link>
-                    <Link to="/partners" className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-colors">
-                      Join the Ecosystem
+                    <Link to={content.home_cta_btn2_url || '/partners'} className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-colors">
+                      {content.home_cta_btn2_text || 'Join the Ecosystem'}
                     </Link>
                   </div>
                 </div>
