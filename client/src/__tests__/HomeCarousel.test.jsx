@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { FeatureProvider } from '../context/FeatureContext'
 import Home from '../pages/Home'
@@ -89,6 +89,12 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(mark.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByText('Bodija Health Hub')).toBeInTheDocument()
     expect(group.querySelector('h2').textContent).toContain('Wellness Starts Here.')
+    const explore = within(group).getByRole('link', { name: 'Explore Ecosystem' })
+    expect(explore).toHaveAttribute('href', '/ecosystem')
+    const ourServices = within(group).getByRole('link', { name: 'Our Services' })
+    expect(ourServices).toHaveAttribute('href', '/services')
+    expect(within(group).queryByRole('button', { name: 'Visit Website' })).toBeNull()
+    expect(within(group).queryByText('Book Appointment')).toBeNull()
   })
 
   it('loads background photos with per-slide object-position from CMS', async () => {
@@ -140,7 +146,7 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(activeSlideGroup().textContent).toContain('Restoring Function. Rebuilding Lives.')
   })
 
-  it('has three indicators 01/02/03 with aria-current and a 4000ms progress fill on the active one', () => {
+  it('has three indicators 01/02/03 with aria-current and a 7000ms progress fill on the first slide, 4000ms on the others', () => {
     const { container } = renderHome()
     expect(screen.getByText('01')).toBeInTheDocument()
     expect(screen.getByText('02')).toBeInTheDocument()
@@ -148,7 +154,7 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(currentIndicator()).toBe('1')
     const fills = container.querySelectorAll('.hero-progress')
     expect(fills).toHaveLength(1)
-    expect(fills[0].style.animationDuration).toBe('4000ms')
+    expect(fills[0].style.animationDuration).toBe('7000ms')
     expect(fills[0].style.animationPlayState).toBe('running')
     fireEvent.click(screen.getByRole('button', { name: 'Go to slide 2' }))
     expect(currentIndicator()).toBe('2')
@@ -164,12 +170,15 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(subtext.textContent).toContain('specialist-led')
   })
 
-  it('auto-advances every 4000ms and manual navigation resets the timer', () => {
+  it('auto-advances the first slide after 7000ms, later slides after 4000ms, and manual navigation resets the timer', () => {
     vi.useFakeTimers()
     renderHome()
     expect(currentIndicator()).toBe('1')
 
     tick(4000)
+    expect(currentIndicator()).toBe('1')
+
+    tick(3000)
     expect(currentIndicator()).toBe('2')
 
     tick(2000)
@@ -195,7 +204,7 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     expect(currentIndicator()).toBe('1')
 
     fireEvent.mouseLeave(hero)
-    tick(4000)
+    tick(7000)
     expect(currentIndicator()).toBe('2')
   })
 

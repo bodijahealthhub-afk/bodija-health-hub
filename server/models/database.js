@@ -44,6 +44,50 @@ const SCHEMA = `
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS partners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    partner_type TEXT DEFAULT 'healthcare',
+    description TEXT,
+    logo TEXT,
+    location TEXT,
+    website TEXT,
+    contact_email TEXT,
+    contact_phone TEXT,
+    services_offered TEXT,
+    featured INTEGER DEFAULT 0,
+    display_order INTEGER DEFAULT 0,
+    config TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS providers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    provider_type TEXT DEFAULT 'BHH' CHECK(provider_type IN ('BHH','PARTNER','INDEPENDENT','EXTERNAL')),
+    description TEXT,
+    logo TEXT,
+    location TEXT,
+    contact_email TEXT,
+    contact_phone TEXT,
+    website TEXT,
+    services_offered TEXT,
+    booking_method TEXT DEFAULT 'BHH_MANAGED' CHECK(booking_method IN ('BHH_MANAGED','PARTNER_REQUEST','EXTERNAL')),
+    booking_url TEXT,
+    external_booking_url TEXT,
+    featured INTEGER DEFAULT 0,
+    display_order INTEGER DEFAULT 0,
+    partner_id INTEGER REFERENCES partners(id),
+    config TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS services (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -73,50 +117,6 @@ const SCHEMA = `
     display_order INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS providers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    slug TEXT UNIQUE,
-    provider_type TEXT DEFAULT 'BHH' CHECK(provider_type IN ('BHH','PARTNER','INDEPENDENT','EXTERNAL')),
-    description TEXT,
-    logo TEXT,
-    location TEXT,
-    contact_email TEXT,
-    contact_phone TEXT,
-    website TEXT,
-    services_offered TEXT,
-    booking_method TEXT DEFAULT 'BHH_MANAGED' CHECK(booking_method IN ('BHH_MANAGED','PARTNER_REQUEST','EXTERNAL')),
-    booking_url TEXT,
-    external_booking_url TEXT,
-    featured INTEGER DEFAULT 0,
-    display_order INTEGER DEFAULT 0,
-    partner_id INTEGER REFERENCES partners(id),
-    config TEXT,
-    is_active INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS partners (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    slug TEXT UNIQUE,
-    partner_type TEXT DEFAULT 'healthcare',
-    description TEXT,
-    logo TEXT,
-    location TEXT,
-    website TEXT,
-    contact_email TEXT,
-    contact_phone TEXT,
-    services_offered TEXT,
-    featured INTEGER DEFAULT 0,
-    display_order INTEGER DEFAULT 0,
-    config TEXT,
-    is_active INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS appointments (
@@ -472,10 +472,10 @@ async function insertContentDefaults() {
     ['hero_slide1_eyebrow', 'Bodija Health Hub'],
     ['hero_slide1_title', 'Wellness Starts Here.'],
     ['hero_slide1_subtext', 'A community-based integrated healthcare ecosystem — bringing clinics, specialists, and quality digital solutions together for every family in Ibadan.'],
-    ['hero_slide1_cta1_text', 'Book Appointment'],
-    ['hero_slide1_cta1_link', '/appointments'],
-    ['hero_slide1_cta2_text', 'Visit Website'],
-    ['hero_slide1_cta2_link', ''],
+    ['hero_slide1_cta1_text', 'Explore Ecosystem'],
+    ['hero_slide1_cta1_link', '/ecosystem'],
+    ['hero_slide1_cta2_text', 'Our Services'],
+    ['hero_slide1_cta2_link', '/services'],
     ['hero_slide2_eyebrow', ''],
     ['hero_slide2_title', 'Restoring Function. Rebuilding Lives.'],
     ['hero_slide2_subtext', "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life."],
@@ -504,7 +504,7 @@ async function insertContentDefaults() {
     ['hero_slide2_image', '/hero/slide-2.jpg'],
     ['hero_slide2_active', '1'],
     ['hero_slide2_order', '1'],
-    ['hero_slide2_duration', '4000'],
+    ['hero_slide2_duration', '7000'],
     ['hero_slide2_position', '65% 50%'],
     ['hero_slide3_org', 'BACR'],
     ['hero_slide3_org_style', 'logo'],
@@ -1749,6 +1749,13 @@ async function migrateContentSync() {
     ['hero_slide3_order', '3', '2'],
     ['hero_slide2_eyebrow', 'Bodija Advanced Care & Rehabilitation Centre', ''],
     ['hero_slide3_eyebrow', 'Bodija Advanced Care & Rehabilitation Centre', ''],
+    // Timing + BHH slide CTAs per client review: first displayed slide lingers 7s,
+    // BHH slide swaps Book Appointment/Visit Website for Explore Ecosystem/Our Services.
+    ['hero_slide2_duration', '4000', '7000'],
+    ['hero_slide1_cta1_text', 'Book Appointment', 'Explore Ecosystem'],
+    ['hero_slide1_cta1_link', '/appointments', '/ecosystem'],
+    ['hero_slide1_cta2_text', 'Visit Website', 'Our Services'],
+    ['hero_slide1_cta2_link', '', '/services'],
   ];
 
   const get = db.prepare('SELECT value FROM site_content WHERE key = ?');
