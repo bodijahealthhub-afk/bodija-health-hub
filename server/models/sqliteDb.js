@@ -1,11 +1,21 @@
 'use strict';
 
 const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
 const rootDir = path.resolve(__dirname, '../..');
 
 const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'database.sqlite');
-const db = new Database(path.isAbsolute(dbPath) ? dbPath : path.join(rootDir, dbPath));
+let resolved = path.isAbsolute(dbPath) ? dbPath : path.join(rootDir, dbPath);
+try {
+  // DB_PATH may point at a mount (e.g. Render disk) that does not exist until
+  // a disk is attached — create it, or fall back to the default location.
+  fs.mkdirSync(path.dirname(resolved), { recursive: true });
+} catch (err) {
+  console.warn(`[db] Cannot create DB directory ${path.dirname(resolved)} (${err.message}); using default path`);
+  resolved = path.join(__dirname, '..', 'database.sqlite');
+}
+const db = new Database(resolved);
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
