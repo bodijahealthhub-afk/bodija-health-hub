@@ -14,6 +14,7 @@ if (process.env.SENTRY_DSN) {
 const db = require('./models/database');
 const { generateSitemapXml } = require('./routes/seo');
 const { startScheduler } = require('./utils/scheduler');
+const { uploadsDir } = require('./utils/uploads');
 const { authenticateToken, requireRole } = require('./middleware/auth');
 const { requireFeature } = require('./middleware/features');
 
@@ -114,7 +115,7 @@ app.use('/api/appointments', publicWriteLimiter);
 app.use('/api/careers', publicWriteLimiter);
 app.use('/api/upcoming-registrations', publicWriteLimiter);
 
-app.use('/uploads', express.static(process.env.UPLOADS_DIR || path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Cache headers for public read-only data (short TTL so admin edits show quickly)
 app.use('/api/services', (req, res, next) => {

@@ -18,8 +18,14 @@ function startScheduler() {
     return;
   }
 
-  const backupsDir = process.env.BACKUP_DIR || path.join(uploadsDir, '..', 'backups');
-  fs.mkdirSync(backupsDir, { recursive: true });
+  let backupsDir = process.env.BACKUP_DIR || path.join(uploadsDir, '..', 'backups');
+  try {
+    fs.mkdirSync(backupsDir, { recursive: true });
+  } catch (err) {
+    console.warn(`[scheduler] Cannot create backups directory ${backupsDir} (${err.message}); using default path`);
+    backupsDir = path.join(__dirname, '..', 'backups');
+    fs.mkdirSync(backupsDir, { recursive: true });
+  }
   const retention = Math.max(1, parseInt(process.env.BACKUP_RETENTION || '14', 10));
 
   const run = async () => {
