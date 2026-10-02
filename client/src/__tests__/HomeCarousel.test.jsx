@@ -50,10 +50,12 @@ describe('Home hero carousel (BACR_Carousel_v2.docx + lockup redesign)', () => {
     vi.useRealTimers()
   })
 
-  it('renders slide 1: BACR lockup as the h1, no pill, doc headline, Book Appointment, disabled Visit Website', () => {
+  it('renders slide 1: Bodija Health Hub presents pill above the BACR lockup, doc headline, Book Appointment, disabled Visit Website', () => {
     renderHome()
     const h1 = screen.getByRole('heading', { level: 1, name: 'BACR' })
     expect(h1.querySelector('img[src="/hero/bacr-mark-white.png"]')).toBeTruthy()
+    const pill = within(activeSlideGroup()).getByText('Bodija Health Hub presents')
+    expect(pill.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByText('Bodija Advanced Care & Rehabilitation Centre')).toBeNull()
     expect(activeSlideGroup().querySelector('h2').textContent).toContain('Restoring Function. Rebuilding Lives.')
     expect(activeSlideGroup().textContent).toContain("Ibadan's dedicated rehabilitation centre")

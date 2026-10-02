@@ -85,7 +85,7 @@ export default function Home() {
     hero_slide1_cta1_link: '/ecosystem',
     hero_slide1_cta2_text: 'Our Services',
     hero_slide1_cta2_link: '/services',
-    hero_slide2_eyebrow: '',
+    hero_slide2_eyebrow: 'Bodija Health Hub presents',
     hero_slide2_title: 'Restoring Function. Rebuilding Lives.',
     hero_slide2_subtext: "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life.",
     hero_slide2_cta1_text: 'Book Appointment',
@@ -312,6 +312,12 @@ export default function Home() {
                     aria-hidden={!active}
                     className={`absolute inset-0 transition-all duration-700 ${layerCls}`}
                   >
+                    {s.eyebrow && (
+                      <span className={`inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium border border-white/10 mb-5 ${el('delay-100')}`}>
+                        <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
+                        {s.eyebrow}
+                      </span>
+                    )}
                     {s.orgStyle === 'logo' && s.logo && !failedAssets[s.logo] ? (
                       <h1 className={`mb-6 ${el('')}`}>
                         <img
@@ -338,12 +344,6 @@ export default function Home() {
                           </h1>
                         )}
                       </>
-                    )}
-                    {s.eyebrow && (
-                      <span className={`inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium border border-white/10 mb-5 ${el('delay-100')}`}>
-                        <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
-                        {s.eyebrow}
-                      </span>
                     )}
                     <h2 key={`${i}-${active}`} className={`block text-xl sm:text-2xl lg:text-3xl font-extrabold leading-[1.2] mb-5 ${el('delay-200')}`}>
                       {(s.title || '').split(' ').map((word, w) => (

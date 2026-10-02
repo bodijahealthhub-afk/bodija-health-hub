@@ -25,7 +25,7 @@ const SLIDE_DEFAULTS = {
   slide2_order: '1',
   slide2_duration: '7000',
   slide2_position: '65% 50%',
-  slide2_eyebrow: '',
+  slide2_eyebrow: 'Bodija Health Hub presents',
   slide2_title: 'Restoring Function. Rebuilding Lives.',
   slide2_subtext: "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life.",
   slide2_cta1_text: 'Book Appointment',

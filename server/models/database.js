@@ -556,7 +556,7 @@ async function insertContentDefaults() {
     ['hero_slide1_cta1_link', '/ecosystem'],
     ['hero_slide1_cta2_text', 'Our Services'],
     ['hero_slide1_cta2_link', '/services'],
-    ['hero_slide2_eyebrow', ''],
+    ['hero_slide2_eyebrow', 'Bodija Health Hub presents'],
     ['hero_slide2_title', 'Restoring Function. Rebuilding Lives.'],
     ['hero_slide2_subtext', "Recovery is not just physical — it is personal. BACR is Ibadan's dedicated rehabilitation centre, designed to support individuals on every step of their journey back to independence, strength, and quality of life."],
     ['hero_slide2_cta1_text', 'Book Appointment'],
@@ -1840,6 +1840,7 @@ async function migrateContentSync() {
     ['hero_slide1_org_style', 'text', 'logo'],
     ['hero_slide1_logo', '/hero/bhh-mark-white.png', '/hero/bhh-lockup-white.png'],
     ['hero_slide1_eyebrow', 'Bodija Health Hub', ''],
+    ['hero_slide2_eyebrow', '', 'Bodija Health Hub presents'],
   ];
 
   const get = db.prepare('SELECT value FROM site_content WHERE key = ?');
